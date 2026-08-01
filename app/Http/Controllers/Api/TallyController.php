@@ -15,7 +15,12 @@ class TallyController extends Controller
     public function partySync(PartySyncRequest $request): JsonResponse
     {
         try {
-            $request->validated();
+            $validated = $request->validated();
+            
+            foreach ($validated['Data'] as $item) {
+                $item['raw_payload'] = $item;
+                \App\Models\TallyPartySync::create($item);
+            }
 
             return $this->successResponse();
         } catch (Throwable $exception) {
@@ -26,7 +31,12 @@ class TallyController extends Controller
     public function salesBill(SalesBillRequest $request): JsonResponse
     {
         try {
-            $request->validated();
+            $validated = $request->validated();
+            
+            foreach ($validated['Data'] as $item) {
+                $item['raw_payload'] = $item;
+                \App\Models\TallySalesBill::create($item);
+            }
 
             return $this->successResponse();
         } catch (Throwable $exception) {
@@ -37,7 +47,12 @@ class TallyController extends Controller
     public function openingClosing(OpeningClosingRequest $request): JsonResponse
     {
         try {
-            $request->validated();
+            $validated = $request->validated();
+            
+            foreach ($validated['Data'] as $item) {
+                $item['raw_payload'] = $item;
+                \App\Models\TallyOpeningClosing::create($item);
+            }
 
             return $this->successResponse();
         } catch (Throwable $exception) {

@@ -7,15 +7,16 @@ class SalesBillRequest extends TallyFormRequest
     public function rules(): array
     {
         return [
-            'financial_year' => ['required', 'string', 'max:20'],
-            'invoice_date' => ['required', 'date'],
-            'party_name' => ['required', 'string', 'max:255'],
-            'product_name_with_packing' => ['required', 'string', 'max:255'],
-            'bill_type' => ['required', 'string', 'max:100'],
-            'qty' => ['required', 'numeric'],
-            'amount' => ['required', 'numeric'],
-            'gst_amount' => ['required', 'numeric'],
-            'grand_total' => ['required', 'numeric'],
+            'Data' => ['required', 'array'],
+            'Data.*.financial_year' => ['required', 'string', 'max:20'],
+            'Data.*.invoice_date' => ['required', 'date'],
+            'Data.*.party_name' => ['required', 'string', 'max:255'],
+            'Data.*.product_name_with_packing' => ['required', 'string', 'max:255'],
+            'Data.*.bill_type' => ['required', 'string', 'max:100'],
+            'Data.*.qty' => ['required', 'numeric'],
+            'Data.*.amount' => ['required', 'numeric'],
+            'Data.*.gst_amount' => ['required', 'numeric'],
+            'Data.*.grand_total' => ['required', 'numeric'],
         ];
     }
 }

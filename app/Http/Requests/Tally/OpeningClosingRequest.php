@@ -7,12 +7,13 @@ class OpeningClosingRequest extends TallyFormRequest
     public function rules(): array
     {
         return [
-            'date' => ['required', 'date'],
-            'party_name' => ['required', 'string', 'max:255'],
-            'opening_balance_amt' => ['required', 'numeric'],
-            'credit_amt' => ['required', 'numeric'],
-            'debit_amt' => ['required', 'numeric'],
-            'closing_balance_amt' => ['required', 'numeric'],
+            'Data' => ['required', 'array'],
+            'Data.*.date' => ['required', 'date'],
+            'Data.*.party_name' => ['required', 'string', 'max:255'],
+            'Data.*.opening_balance_amt' => ['required', 'numeric'],
+            'Data.*.credit_amt' => ['required', 'numeric'],
+            'Data.*.debit_amt' => ['required', 'numeric'],
+            'Data.*.closing_balance_amt' => ['required', 'numeric'],
         ];
     }
 }
