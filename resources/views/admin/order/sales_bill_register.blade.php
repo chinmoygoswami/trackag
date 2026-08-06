@@ -35,7 +35,6 @@
                                 <th>Invoice No</th>
                                 <th>Party Name</th>
                                 <th>Product Name with Packing</th>
-                                <th>Item Code</th>
                                 <th>Bill Type</th>
                                 <th>Qty</th>
                                 <th>Amount</th>
@@ -45,11 +44,34 @@
                             </tr>
                         </thead>
                         <tbody>
+                            @php
+                                $records = \App\Models\TallySalesBill::orderBy('id', 'desc')->paginate(15);
+                            @endphp
+                            @forelse($records as $index => $record)
                             <tr>
-                                <td colspan="13" class="text-center text-muted py-4">Data implementation pending...</td>
+                                <td>{{ $records->firstItem() + $index }}</td>
+                                <td>{{ $record->financial_year }}</td>
+                                <td>{{ $record->invoice_date ? $record->invoice_date->format('d-m-Y') : '' }}</td>
+                                <td>{{ $record->invoice_no }}</td>
+                                <td>{{ $record->party_name }}</td>
+                                <td>{{ $record->product_name_with_packing }}</td>
+                                <td>{{ $record->bill_type }}</td>
+                                <td>{{ $record->qty }}</td>
+                                <td>{{ number_format($record->amount, 2) }}</td>
+                                <td>{{ number_format($record->gst_amount, 2) }}</td>
+                                <td>{{ number_format($record->grand_total, 2) }}</td>
+                                <td>{{ $record->voucher_type }}</td>
                             </tr>
+                            @empty
+                            <tr>
+                                <td colspan="12" class="text-center text-muted py-4">No data available</td>
+                            </tr>
+                            @endforelse
                         </tbody>
                     </table>
+                    <div class="mt-3">
+                        {{ $records->links('pagination::bootstrap-5') }}
+                    </div>
                 </div>
             </div>
         </div>

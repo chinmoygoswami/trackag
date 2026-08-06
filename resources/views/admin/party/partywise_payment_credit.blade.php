@@ -39,11 +39,29 @@
                             </tr>
                         </thead>
                         <tbody>
+                            @php
+                                $records = \App\Models\TallyPartywisePaymentCredit::orderBy('id', 'desc')->paginate(15);
+                            @endphp
+                            @forelse($records as $index => $record)
                             <tr>
-                                <td colspan="7" class="text-center text-muted py-4">Data implementation pending...</td>
+                                <td>{{ $records->firstItem() + $index }}</td>
+                                <td>{{ $record->party_name }}</td>
+                                <td>{{ $record->payment_date ? $record->payment_date->format('d-m-Y') : '' }}</td>
+                                <td>{{ $record->payment_mode }}</td>
+                                <td>{{ number_format($record->credit_amount, 2) }}</td>
+                                <td>{{ $record->voucher_no }}</td>
+                                <td>{{ $record->voucher_type }}</td>
                             </tr>
+                            @empty
+                            <tr>
+                                <td colspan="7" class="text-center text-muted py-4">No data available</td>
+                            </tr>
+                            @endforelse
                         </tbody>
                     </table>
+                    <div class="mt-3">
+                        {{ $records->links('pagination::bootstrap-5') }}
+                    </div>
                 </div>
             </div>
         </div>

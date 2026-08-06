@@ -30,14 +30,14 @@
                         <thead class="table-light text-uppercase" style="font-size: 13px;">
                             <tr>
                                 <th>Sr. No.</th>
+                                <th>Group Name</th>
                                 <th>Party Name</th>
-                                <th>party_code</th>
-                                <th>phone 1</th>
-                                <th>phone 2</th>
-                                <th>contact_person_name</th>
-                                <th>state</th>
-                                <th>district</th>
-                                <th>tehsil</th>
+                                <th>Phone 1</th>
+                                <th>Phone 2</th>
+                                <th>Contact Person</th>
+                                <th>State</th>
+                                <th>District</th>
+                                <th>GST No</th>
                                 <th>Party Create Date</th>
                                 <th>Address</th>
                                 <th>Email</th>
@@ -47,11 +47,37 @@
                             </tr>
                         </thead>
                         <tbody>
+                            @php
+                                $records = \App\Models\TallyPartySync::orderBy('id', 'desc')->paginate(15);
+                            @endphp
+                            @forelse($records as $index => $record)
                             <tr>
-                                <td colspan="15" class="text-center text-muted py-4">Data implementation pending...</td>
+                                <td>{{ $records->firstItem() + $index }}</td>
+                                <td>{{ $record->group_name }}</td>
+                                <td>{{ $record->party_name }}</td>
+                                <td>{{ $record->phone_1 }}</td>
+                                <td>{{ $record->phone_2 }}</td>
+                                <td>{{ $record->contact_person_name }}</td>
+                                <td>{{ $record->state }}</td>
+                                <td>{{ $record->district }}</td>
+                                <td>{{ $record->gst_no }}</td>
+                                <td>{{ $record->party_create_date ? $record->party_create_date->format('d-m-Y') : '' }}</td>
+                                <td>{{ $record->address }}</td>
+                                <td>{{ $record->email }}</td>
+                                <td>{{ $record->pan_no }}</td>
+                                <td>{{ $record->credit_days }}</td>
+                                <td>{{ $record->credit_limit }}</td>
                             </tr>
+                            @empty
+                            <tr>
+                                <td colspan="15" class="text-center text-muted py-4">No data available</td>
+                            </tr>
+                            @endforelse
                         </tbody>
                     </table>
+                    <div class="mt-3">
+                        {{ $records->links('pagination::bootstrap-5') }}
+                    </div>
                 </div>
             </div>
         </div>

@@ -32,7 +32,6 @@
                                 <th>Sr. No.</th>
                                 <th>Date</th>
                                 <th>Party Name</th>
-                                <th>Party Code</th>
                                 <th>Opening Balance Amt.</th>
                                 <th>Debit Amt.</th>
                                 <th>Credit Amt.</th>
@@ -40,11 +39,29 @@
                             </tr>
                         </thead>
                         <tbody>
+                            @php
+                                $records = \App\Models\TallyOpeningClosing::orderBy('id', 'desc')->paginate(15);
+                            @endphp
+                            @forelse($records as $index => $record)
                             <tr>
-                                <td colspan="8" class="text-center text-muted py-4">Data implementation pending...</td>
+                                <td>{{ $records->firstItem() + $index }}</td>
+                                <td>{{ $record->date ? $record->date->format('d-m-Y') : '' }}</td>
+                                <td>{{ $record->party_name }}</td>
+                                <td>{{ number_format($record->opening_balance_amt, 2) }}</td>
+                                <td>{{ number_format($record->debit_amt, 2) }}</td>
+                                <td>{{ number_format($record->credit_amt, 2) }}</td>
+                                <td>{{ number_format($record->closing_balance_amt, 2) }}</td>
                             </tr>
+                            @empty
+                            <tr>
+                                <td colspan="7" class="text-center text-muted py-4">No data available</td>
+                            </tr>
+                            @endforelse
                         </tbody>
                     </table>
+                    <div class="mt-3">
+                        {{ $records->links('pagination::bootstrap-5') }}
+                    </div>
                 </div>
             </div>
         </div>
