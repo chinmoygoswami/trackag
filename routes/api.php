@@ -36,6 +36,7 @@ Route::prefix('tally')->group(function () {
         Route::post('/sales-bill', [TallyController::class, 'salesBill']);
         Route::get('/opening-closing', [TallyController::class, 'openingClosing']);
         Route::post('/opening-closing', [TallyController::class, 'openingClosing']);
+        Route::post('/partywise-payment-credit', [TallyController::class, 'partywisePaymentCredit']);
     });
 });
 

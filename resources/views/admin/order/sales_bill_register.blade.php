@@ -32,6 +32,7 @@
                                 <th>Sr. No.</th>
                                 <th>Financial Year</th>
                                 <th>Invoice Date</th>
+                                <th>Invoice No</th>
                                 <th>Party Name</th>
                                 <th>Product Name with Packing</th>
                                 <th>Item Code</th>
@@ -40,11 +41,12 @@
                                 <th>Amount</th>
                                 <th>GST Amount</th>
                                 <th>Grand Total</th>
+                                <th>Voucher Type</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr>
-                                <td colspan="11" class="text-center text-muted py-4">Data implementation pending...</td>
+                                <td colspan="13" class="text-center text-muted py-4">Data implementation pending...</td>
                             </tr>
                         </tbody>
                     </table>

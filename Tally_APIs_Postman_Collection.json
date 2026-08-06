@@ -1,0 +1,175 @@
+{
+	"info": {
+		"_postman_id": "b3e34b5c-44d3-4f9e-9988-88849b2513f5",
+		"name": "Tally APIs",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Tally Login",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"username\": \"testuser\",\n  \"password\": \"password\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/tally/login",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"tally",
+						"login"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Party Sync",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"Data\": [\n    {\n      \"group_name\": \"Sundry Debtors\",\n      \"party_name\": \"John Doe Enterprises\",\n      \"phone_1\": \"1234567890\",\n      \"phone_2\": \"0987654321\",\n      \"contact_person_name\": \"John Doe\",\n      \"state\": \"Maharashtra\",\n      \"district\": \"Mumbai\",\n      \"gst_no\": \"27AAAAA1234A1ZA\",\n      \"party_create_date\": \"2023-01-01\",\n      \"address\": \"123 Main St, Mumbai\",\n      \"email\": \"john@example.com\",\n      \"pan_no\": \"AAAAA1234A\",\n      \"credit_days\": 30,\n      \"credit_limit\": 50000.00\n    }\n  ]\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/tally/party-sync",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"tally",
+						"party-sync"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Sales Bill",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"Data\": [\n    {\n      \"financial_year\": \"2023-24\",\n      \"invoice_date\": \"2023-10-15\",\n      \"invoice_no\": \"INV-1001\",\n      \"party_name\": \"John Doe Enterprises\",\n      \"product_name_with_packing\": \"Widget A (10kg)\",\n      \"bill_type\": \"Tax Invoice\",\n      \"qty\": 10.500,\n      \"amount\": 1050.00,\n      \"gst_amount\": 189.00,\n      \"grand_total\": 1239.00,\n      \"voucher_type\": \"Sales\"\n    }\n  ]\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/tally/sales-bill",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"tally",
+						"sales-bill"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Opening Closing Balance",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"Data\": [\n    {\n      \"date\": \"2023-10-31\",\n      \"party_name\": \"John Doe Enterprises\",\n      \"opening_balance_amt\": 5000.00,\n      \"credit_amt\": 2000.00,\n      \"debit_amt\": 1000.00,\n      \"closing_balance_amt\": 4000.00\n    }\n  ]\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/tally/opening-closing",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"tally",
+						"opening-closing"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Partywise Payment Credit",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"Data\": [\n    {\n      \"sr_no\": \"1\",\n      \"party_name\": \"John Doe Enterprises\",\n      \"payment_date\": \"2023-10-20\",\n      \"payment_mode\": \"Bank Transfer\",\n      \"credit_amount\": 1500.00,\n      \"voucher_no\": \"VCH-202\",\n      \"voucher_type\": \"Receipt\"\n    }\n  ]\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/tally/partywise-payment-credit",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"tally",
+						"partywise-payment-credit"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8000"
+		},
+		{
+			"key": "token",
+			"value": "YOUR_TALLY_ACCESS_TOKEN"
+		}
+	]
+}

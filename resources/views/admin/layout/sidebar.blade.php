@@ -968,7 +968,7 @@
 
                         {{-- Integration Menu --}}
                         @php
-                            $isIntegrationMenu = request()->routeIs('party.sync') || request()->routeIs('sales.bill.register') || request()->routeIs('party.opening.closing');
+                            $isIntegrationMenu = request()->routeIs('party.sync') || request()->routeIs('sales.bill.register') || request()->routeIs('party.opening.closing') || request()->routeIs('partywise.payment.credit');
                         @endphp
                         <li class="nav-item {{ $isIntegrationMenu ? 'menu-open' : '' }}">
                             <a href="#" class="nav-link {{ $isIntegrationMenu ? 'active' : '' }}">
@@ -994,6 +994,13 @@
                                 <li class="nav-item">
                                     <a href="{{ route('party.opening.closing') }}" class="nav-link {{ request()->routeIs('party.opening.closing') ? 'active' : '' }}">
                                         <i class="bi bi-circle me-2"></i><p>Party Opening/Closing</p>
+                                    </a>
+                                </li>
+                                
+                                {{-- Partywise Payment Credit --}}
+                                <li class="nav-item">
+                                    <a href="{{ route('partywise.payment.credit') }}" class="nav-link {{ request()->routeIs('partywise.payment.credit') ? 'active' : '' }}">
+                                        <i class="bi bi-circle me-2"></i><p>Partywise Payment Credit</p>
                                     </a>
                                 </li>
                             </ul>

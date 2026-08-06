@@ -17,6 +17,11 @@ class PartySyncRequest extends TallyFormRequest
             'Data.*.district' => ['nullable', 'string', 'max:255'],
             'Data.*.gst_no' => ['nullable', 'string', 'max:50'],
             'Data.*.party_create_date' => ['nullable', 'date'],
+            'Data.*.address' => ['nullable', 'string', 'max:500'],
+            'Data.*.email' => ['nullable', 'email', 'max:255'],
+            'Data.*.pan_no' => ['nullable', 'string', 'max:50'],
+            'Data.*.credit_days' => ['nullable', 'integer'],
+            'Data.*.credit_limit' => ['nullable', 'numeric'],
         ];
     }
 }

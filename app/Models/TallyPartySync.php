@@ -19,6 +19,11 @@ class TallyPartySync extends Model
         'district',
         'gst_no',
         'party_create_date',
+        'address',
+        'email',
+        'pan_no',
+        'credit_days',
+        'credit_limit',
         'raw_payload',
     ];
 

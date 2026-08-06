@@ -60,6 +60,22 @@ class TallyController extends Controller
         }
     }
 
+    public function partywisePaymentCredit(\App\Http\Requests\Tally\PartywisePaymentCreditRequest $request): JsonResponse
+    {
+        try {
+            $validated = $request->validated();
+            
+            foreach ($validated['Data'] as $item) {
+                $item['raw_payload'] = $item;
+                \App\Models\TallyPartywisePaymentCredit::create($item);
+            }
+
+            return $this->successResponse();
+        } catch (Throwable $exception) {
+            return $this->errorResponse($exception, 'partywise-payment-credit');
+        }
+    }
+
     private function successResponse(): JsonResponse
     {
         return response()->json([

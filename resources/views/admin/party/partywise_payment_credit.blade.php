@@ -1,5 +1,5 @@
 @extends('admin.layout.layout')
-@section('title', 'Party Sync | Trackag')
+@section('title', 'Partywise Payment Credit | Trackag')
 
 @section('content')
 <main class="app-main">
@@ -7,12 +7,12 @@
         <div class="container-fluid px-4">
             <div class="row align-items-center">
                 <div class="col-sm-6">
-                    <h3 class="mb-0 text-primary"><i class="bi bi-arrow-repeat me-2"></i>Party Sync</h3>
+                    <h3 class="mb-0 text-primary"><i class="bi bi-currency-rupee me-2"></i>Partywise Payment Credit</h3>
                 </div>
                 <div class="col-sm-6 text-sm-end">
                     <ol class="breadcrumb float-sm-end mb-0">
                         <li class="breadcrumb-item"><a href="{{ url('admin/dashboard') }}">Dashboard</a></li>
-                        <li class="breadcrumb-item active">Party Sync</li>
+                        <li class="breadcrumb-item active">Partywise Payment Credit</li>
                     </ol>
                 </div>
             </div>
@@ -23,7 +23,7 @@
         <div class="container-fluid px-4">
             <div class="card shadow-sm border-0">
                 <div class="card-header bg-white border-0 py-3">
-                    <h5 class="mb-0 text-primary fw-semibold">Party Sync Details</h5>
+                    <h5 class="mb-0 text-primary fw-semibold">Partywise Payment Credit Details</h5>
                 </div>
                 <div class="card-body table-responsive">
                     <table class="table table-bordered table-hover table-striped align-middle">
@@ -31,24 +31,16 @@
                             <tr>
                                 <th>Sr. No.</th>
                                 <th>Party Name</th>
-                                <th>party_code</th>
-                                <th>phone 1</th>
-                                <th>phone 2</th>
-                                <th>contact_person_name</th>
-                                <th>state</th>
-                                <th>district</th>
-                                <th>tehsil</th>
-                                <th>Party Create Date</th>
-                                <th>Address</th>
-                                <th>Email</th>
-                                <th>PAN No</th>
-                                <th>Credit Days</th>
-                                <th>Credit Limit</th>
+                                <th>Payment Date</th>
+                                <th>Payment Mode</th>
+                                <th>Credit Amount</th>
+                                <th>Voucher No</th>
+                                <th>Voucher Type</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr>
-                                <td colspan="15" class="text-center text-muted py-4">Data implementation pending...</td>
+                                <td colspan="7" class="text-center text-muted py-4">Data implementation pending...</td>
                             </tr>
                         </tbody>
                     </table>
