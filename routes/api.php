@@ -4,6 +4,10 @@ use App\Http\Controllers\Api\ApiTripController;
 use App\Http\Controllers\Api\BudgetApiController;
 use App\Http\Controllers\Api\CommanController;
 use App\Http\Controllers\Api\ExpenseController;
+use App\Http\Controllers\Api\AdminTaDaReportController;
+use App\Http\Controllers\Api\AdminExpenseReportController;
+use App\Http\Controllers\Api\AdminPartyVisitReportController;
+use App\Http\Controllers\Api\AdminOrderReportController;
 use App\Http\Controllers\Api\FailedJobController;
 use App\Http\Controllers\Api\FarmerController;
 use App\Http\Controllers\Api\LocationApiController;
@@ -11,6 +15,7 @@ use App\Http\Controllers\Api\PartyController;
 use App\Http\Controllers\Api\PartyPaymentController;
 use App\Http\Controllers\Api\FarmVisitController;
 use App\Http\Controllers\Api\MonthlyPlanApiController;
+use App\Http\Controllers\Api\MonthlyPlanReportController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\StockController;
 use App\Http\Controllers\Api\TallyAuthController;
@@ -66,6 +71,12 @@ Route::middleware([TenantAuthenticate::class])->group(function () {
     Route::delete('/expenses-delete/{id}', [ExpenseController::class, 'destroy']);
     Route::get('/ta-da-report', [ExpenseController::class, 'taDaReport']);
 
+    // New combined admin report API. The existing TA-DA API above is unchanged.
+    Route::get('/admin/ta-da-report', [AdminTaDaReportController::class, 'index']);
+    Route::get('/admin/expense-report', [AdminExpenseReportController::class, 'index']);
+    Route::get('/admin/party-visit-report', [AdminPartyVisitReportController::class, 'index']);
+    Route::get('/admin/order-report', [AdminOrderReportController::class, 'index']);
+
     //party vist api
     Route::get('/get-party-visits', [PartyController::class, 'index']);
     Route::post('/party-visits-store', [PartyController::class, 'partyVisitsStore']);
@@ -117,6 +128,7 @@ Route::middleware([TenantAuthenticate::class])->group(function () {
     Route::get('/monthly-plan/packing-list', [MonthlyPlanApiController::class, 'getProductPackingList']);
     Route::get('/monthly-plan/list', [MonthlyPlanApiController::class, 'getPlanList']);
     Route::post('/monthly-plan/bulk-store', [MonthlyPlanApiController::class, 'bulkStorePlan']);
+    Route::get('/monthly-plan/report', [MonthlyPlanReportController::class, 'index']);
 
     Route::get('/budget/annual', [BudgetApiController::class, 'annualBudget']);
     Route::post('/update-fcm-token', [ApiAuthController::class, 'updateToken']);
