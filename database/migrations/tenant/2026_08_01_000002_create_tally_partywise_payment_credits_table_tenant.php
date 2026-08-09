@@ -8,16 +8,11 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (function_exists('tenancy') && tenancy()->initialized) {
-            $tenant = tenancy()->tenant;
-            if ($tenant && !empty($tenant->tenancy_db_name)) {
-                config(['database.connections.tenant.database' => $tenant->tenancy_db_name]);
-                \Illuminate\Support\Facades\DB::purge('tenant');
-                \Illuminate\Support\Facades\DB::reconnect('tenant');
-            }
+        if (Schema::hasTable('tally_partywise_payment_credits')) {
+            return;
         }
 
-        Schema::connection('tenant')->create('tally_partywise_payment_credits', function (Blueprint $table) {
+        Schema::create('tally_partywise_payment_credits', function (Blueprint $table) {
             $table->id();
             $table->string('sr_no')->nullable();
             $table->string('party_name');
@@ -31,15 +26,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        if (function_exists('tenancy') && tenancy()->initialized) {
-            $tenant = tenancy()->tenant;
-            if ($tenant && !empty($tenant->tenancy_db_name)) {
-                config(['database.connections.tenant.database' => $tenant->tenancy_db_name]);
-                \Illuminate\Support\Facades\DB::purge('tenant');
-                \Illuminate\Support\Facades\DB::reconnect('tenant');
-            }
-        }
-        
-        Schema::connection('tenant')->dropIfExists('tally_partywise_payment_credits');
+        Schema::dropIfExists('tally_partywise_payment_credits');
     }
 };

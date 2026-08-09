@@ -8,6 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (Schema::hasTable('tally_party_syncs')) {
+            return;
+        }
+
         Schema::create('tally_party_syncs', function (Blueprint $table) {
             $table->id();
             $table->string('group_name');

@@ -8,6 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (Schema::hasTable('tally_partywise_payment_credits')) {
+            return;
+        }
+
         Schema::create('tally_partywise_payment_credits', function (Blueprint $table) {
             $table->id();
             $table->string('sr_no')->nullable();

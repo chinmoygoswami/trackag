@@ -8,6 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (Schema::hasTable('tally_opening_closings')) {
+            return;
+        }
+
         Schema::create('tally_opening_closings', function (Blueprint $table) {
             $table->id();
             $table->date('date');
