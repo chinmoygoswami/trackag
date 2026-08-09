@@ -14,7 +14,7 @@ class AdminPartyVisitReportController extends Controller
     public function index(Request $request)
     {
         $validated = $request->validate([
-            'employee_id' => 'nullable|integer|exists:users,id',
+            'employee_id' => 'nullable|integer',
             'start_date' => 'nullable|date_format:Y-m-d',
             'end_date' => 'nullable|date_format:Y-m-d|after_or_equal:start_date',
         ]);
