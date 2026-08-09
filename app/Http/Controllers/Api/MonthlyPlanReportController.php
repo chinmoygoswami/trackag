@@ -19,8 +19,8 @@ class MonthlyPlanReportController extends Controller
             'view_type' => 'nullable|in:month_wise,state_wise',
             'month' => 'nullable|integer|min:1|max:12',
             'year' => 'nullable|integer|min:2000|max:2100',
-            'state_id' => 'nullable|integer|exists:states,id',
-            'product_id' => 'nullable|integer|exists:products,id',
+            'state_id' => 'nullable|integer',
+            'product_id' => 'nullable|integer',
         ]);
 
         $user = Auth::user();
