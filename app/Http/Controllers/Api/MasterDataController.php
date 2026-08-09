@@ -1,0 +1,98 @@
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use App\Models\Product;
+use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\Request;
+
+class MasterDataController extends Controller
+{
+    public function products(Request $request)
+    {
+        if ($response = $this->authorizeAdmin($request)) {
+            return $response;
+        }
+
+        $products = Product::query()
+            ->where('status', 1)
+            ->orderBy('product_name')
+            ->get([
+                'id',
+                'product_name',
+                'technical_name',
+                'item_code',
+                'product_category_id',
+                'gst',
+            ]);
+
+        return response()->json([
+            'success' => true,
+            'data' => $products,
+        ]);
+    }
+
+    public function employees(Request $request)
+    {
+        if ($response = $this->authorizeAdmin($request)) {
+            return $response;
+        }
+
+        $validated = $request->validate([
+            'state_id' => 'nullable|integer',
+        ]);
+
+        $employees = User::query()
+            ->with('state:id,name')
+            ->where('status', 'Active')
+            ->where('is_active', 1)
+            ->when($validated['state_id'] ?? null, function (Builder $query, int $stateId) {
+                $query->where('state_id', $stateId);
+            })
+            ->where(function (Builder $query) {
+                $query->whereNull('user_level')
+                    ->orWhereNotIn('user_level', ['master_admin', 'sub_admin']);
+            })
+            ->orderBy('name')
+            ->get([
+                'id',
+                'name',
+                'mobile',
+                'email',
+                'user_code',
+                'designation_id',
+                'state_id',
+            ]);
+
+        return response()->json([
+            'success' => true,
+            'selected_filters' => [
+                'state_id' => $validated['state_id'] ?? null,
+            ],
+            'data' => $employees,
+        ]);
+    }
+
+    private function authorizeAdmin(Request $request)
+    {
+        $user = $request->user();
+
+        if (! $user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized user.',
+            ], 401);
+        }
+
+        if (! $user->hasAnyRole(['master_admin', 'sub_admin'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Only Master Admin and Sub Admin can access this API.',
+            ], 403);
+        }
+
+        return null;
+    }
+}
