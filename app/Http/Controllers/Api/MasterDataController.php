@@ -12,9 +12,9 @@ class MasterDataController extends Controller
 {
     public function products(Request $request)
     {
-        if ($response = $this->authorizeAdmin($request)) {
-            return $response;
-        }
+        // if ($response = $this->authorizeAdmin($request)) {
+        //     return $response;
+        // }
 
         $products = Product::query()
             ->where('status', 1)
@@ -36,25 +36,15 @@ class MasterDataController extends Controller
 
     public function employees(Request $request)
     {
-        if ($response = $this->authorizeAdmin($request)) {
-            return $response;
-        }
-
-        $validated = $request->validate([
-            'state_id' => 'nullable|integer',
-        ]);
+        // if ($response = $this->authorizeAdmin($request)) {
+        //     return $response;
+        // }
 
         $employees = User::query()
             ->with('state:id,name')
             ->where('status', 'Active')
             ->where('is_active', 1)
-            ->when($validated['state_id'] ?? null, function (Builder $query, int $stateId) {
-                $query->where('state_id', $stateId);
-            })
-            ->where(function (Builder $query) {
-                $query->whereNull('user_level')
-                    ->orWhereNotIn('user_level', ['master_admin', 'sub_admin']);
-            })
+            
             ->orderBy('name')
             ->get([
                 'id',
@@ -68,9 +58,6 @@ class MasterDataController extends Controller
 
         return response()->json([
             'success' => true,
-            'selected_filters' => [
-                'state_id' => $validated['state_id'] ?? null,
-            ],
             'data' => $employees,
         ]);
     }
