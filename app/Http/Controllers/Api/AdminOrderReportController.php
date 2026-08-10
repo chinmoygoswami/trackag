@@ -14,8 +14,8 @@ class AdminOrderReportController extends Controller
     public function index(Request $request)
     {
         $validated = $request->validate([
-            'employee_id' => 'nullable|integer|exists:users,id',
-            'state_id' => 'nullable|integer|exists:states,id',
+            'employee_id' => 'nullable|integer',
+            'state_id' => 'nullable|integer',
         ]);
 
         $user = $request->user();
