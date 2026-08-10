@@ -75,7 +75,7 @@ return [
         'suffix_base' => 'tenant',
         'disks' => [
             'local',
-            'public',
+            // Keep public uploads shared in storage/app/public.
             // 's3',
         ],
         'root_override' => [
