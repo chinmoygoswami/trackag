@@ -27,7 +27,7 @@ class AdminOrderReportController extends Controller
             ], 401);
         }
 
-        if (! $user->hasAnyRole(['master_admin', 'sub_admin'])) {
+        if (!$user->hasAnyRole(['master_admin', 'sub_admin'])) {
             return response()->json([
                 'success' => false,
                 'message' => 'Only Master Admin and Sub Admin can access this report.',

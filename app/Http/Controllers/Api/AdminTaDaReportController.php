@@ -29,14 +29,14 @@ class AdminTaDaReportController extends Controller
 
         $user = $request->user();
 
-        if (! $user) {
+        if (!$user) {
             return response()->json([
                 'success' => false,
                 'message' => 'Unauthorized user.',
             ], 401);
         }
 
-        if (! $user->hasAnyRole(['master_admin', 'sub_admin'])) {
+        if (!$user->hasAnyRole(['master_admin', 'sub_admin'])) {
             return response()->json([
                 'success' => false,
                 'message' => 'Only Master Admin and Sub Admin can access this report.',
