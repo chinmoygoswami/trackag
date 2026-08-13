@@ -8,6 +8,7 @@ class PartySyncRequest extends TallyFormRequest
     {
         return [
             'Data' => ['required', 'array'],
+            'Data.*.master_id' => ['nullable', 'string', 'max:255'],
             'Data.*.group_name' => ['required', 'string', 'max:255'],
             'Data.*.party_name' => ['required', 'string', 'max:255'],
             'Data.*.phone_1' => ['nullable', 'string', 'max:30'],

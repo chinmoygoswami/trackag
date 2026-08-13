@@ -30,6 +30,7 @@
                         <thead class="table-light text-uppercase" style="font-size: 13px;">
                             <tr>
                                 <th>Sr. No.</th>
+                                <th>Master ID</th>
                                 <th>Group Name</th>
                                 <th>Party Name</th>
                                 <th>Phone 1</th>
@@ -53,6 +54,7 @@
                             @forelse($records as $index => $record)
                             <tr>
                                 <td>{{ $records->firstItem() + $index }}</td>
+                                <td>{{ $record->master_id }}</td>
                                 <td>{{ $record->group_name }}</td>
                                 <td>{{ $record->party_name }}</td>
                                 <td>{{ $record->phone_1 }}</td>
@@ -70,7 +72,7 @@
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="15" class="text-center text-muted py-4">No data available</td>
+                                <td colspan="16" class="text-center text-muted py-4">No data available</td>
                             </tr>
                             @endforelse
                         </tbody>

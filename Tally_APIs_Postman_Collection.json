@@ -49,7 +49,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n  \"Data\": [\n    {\n      \"group_name\": \"Sundry Debtors\",\n      \"party_name\": \"John Doe Enterprises\",\n      \"phone_1\": \"1234567890\",\n      \"phone_2\": \"0987654321\",\n      \"contact_person_name\": \"John Doe\",\n      \"state\": \"Maharashtra\",\n      \"district\": \"Mumbai\",\n      \"gst_no\": \"27AAAAA1234A1ZA\",\n      \"party_create_date\": \"2023-01-01\",\n      \"address\": \"123 Main St, Mumbai\",\n      \"email\": \"john@example.com\",\n      \"pan_no\": \"AAAAA1234A\",\n      \"credit_days\": 30,\n      \"credit_limit\": 50000.00\n    }\n  ]\n}"
+					"raw": "{\n  \"Data\": [\n    {\n      \"master_id\": \"MAS-001\",\n      \"group_name\": \"Sundry Debtors\",\n      \"party_name\": \"John Doe Enterprises\",\n      \"phone_1\": \"1234567890\",\n      \"phone_2\": \"0987654321\",\n      \"contact_person_name\": \"John Doe\",\n      \"state\": \"Maharashtra\",\n      \"district\": \"Mumbai\",\n      \"gst_no\": \"27AAAAA1234A1ZA\",\n      \"party_create_date\": \"2023-01-01\",\n      \"address\": \"123 Main St, Mumbai\",\n      \"email\": \"john@example.com\",\n      \"pan_no\": \"AAAAA1234A\",\n      \"credit_days\": 30,\n      \"credit_limit\": 50000.00\n    }\n  ]\n}"
 				},
 				"url": {
 					"raw": "{{base_url}}/api/tally/party-sync",

@@ -14,6 +14,7 @@ return new class extends Migration
 
         Schema::create('tally_party_syncs', function (Blueprint $table) {
             $table->id();
+            $table->string('master_id')->nullable();
             $table->string('group_name');
             $table->string('party_name');
             $table->string('phone_1', 30)->nullable();

@@ -10,6 +10,7 @@ class TallyPartySync extends Model
     use TenantConnectionTrait;
 
     protected $fillable = [
+        'master_id',
         'group_name',
         'party_name',
         'phone_1',
