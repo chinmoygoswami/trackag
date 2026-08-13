@@ -16,8 +16,22 @@ class TallyController extends Controller
     {
         try {
             $validated = $request->validated();
+            $data = collect($validated['Data']);
             
-            foreach ($validated['Data'] as $item) {
+            // Get all unique, non-empty master_ids from the request
+            $masterIds = $data->pluck('master_id')->filter()->unique();
+            
+            // Fetch all existing master_ids in a single query
+            $existingMasterIds = \App\Models\TallyPartySync::whereIn('master_id', $masterIds)
+                ->pluck('master_id')
+                ->toArray();
+            
+            foreach ($data as $item) {
+                // Skip if this master_id already exists in the database
+                if (!empty($item['master_id']) && in_array($item['master_id'], $existingMasterIds)) {
+                    continue;
+                }
+                
                 $item['raw_payload'] = $item;
                 \App\Models\TallyPartySync::create($item);
             }
