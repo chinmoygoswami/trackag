@@ -16,7 +16,7 @@ class SalesBillRequest extends TallyFormRequest
             'Data.*.bill_type' => ['required', 'string', 'max:100'],
             'Data.*.qty' => ['required', 'numeric'],
             'Data.*.amount' => ['required', 'numeric'],
-            'Data.*.gst_amount' => ['required', 'numeric'],
+            'Data.*.gst_amount' => ['nullable', 'numeric'],
             'Data.*.grand_total' => ['required', 'numeric'],
             'Data.*.voucher_type' => ['nullable', 'string', 'max:100'],
         ];
