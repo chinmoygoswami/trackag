@@ -48,6 +48,7 @@ class TallyController extends Controller
             $validated = $request->validated();
             
             foreach ($validated['Data'] as $item) {
+                $item['gst_amount'] = $item['gst_amount'] ?? 0;
                 $item['raw_payload'] = $item;
                 \App\Models\TallySalesBill::create($item);
             }
