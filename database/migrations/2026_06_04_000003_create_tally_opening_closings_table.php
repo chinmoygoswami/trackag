@@ -14,7 +14,7 @@ return new class extends Migration
 
         Schema::create('tally_opening_closings', function (Blueprint $table) {
             $table->id();
-            $table->string('master_id')->nullable();
+            $table->string('master_id')->unique()->nullable();
             $table->date('date');
             $table->string('party_name');
             $table->decimal('opening_balance_amt', 15, 2);

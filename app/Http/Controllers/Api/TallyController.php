@@ -64,9 +64,19 @@ class TallyController extends Controller
         try {
             $validated = $request->validated();
             
-            foreach ($validated['Data'] as $item) {
+            $data = collect($validated['Data']);
+            
+            foreach ($data as $item) {
                 $item['raw_payload'] = $item;
-                \App\Models\TallyOpeningClosing::create($item);
+                
+                if (!empty($item['master_id'])) {
+                    \App\Models\TallyOpeningClosing::updateOrCreate(
+                        ['master_id' => $item['master_id']],
+                        $item
+                    );
+                } else {
+                    \App\Models\TallyOpeningClosing::create($item);
+                }
             }
 
             return $this->successResponse();
