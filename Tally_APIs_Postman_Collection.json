@@ -113,7 +113,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n  \"Data\": [\n    {\n      \"date\": \"2023-10-31\",\n      \"party_name\": \"John Doe Enterprises\",\n      \"opening_balance_amt\": 5000.00,\n      \"credit_amt\": 2000.00,\n      \"debit_amt\": 1000.00,\n      \"closing_balance_amt\": 4000.00\n    }\n  ]\n}"
+					"raw": "{\n  \"Data\": [\n    {\n      \"master_id\": \"MAS-001\",\n      \"date\": \"2023-10-31\",\n      \"party_name\": \"John Doe Enterprises\",\n      \"opening_balance_amt\": 5000.00,\n      \"credit_amt\": 2000.00,\n      \"debit_amt\": 1000.00,\n      \"closing_balance_amt\": 4000.00\n    }\n  ]\n}"
 				},
 				"url": {
 					"raw": "{{base_url}}/api/tally/opening-closing",

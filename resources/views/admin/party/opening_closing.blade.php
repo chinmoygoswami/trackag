@@ -30,6 +30,7 @@
                         <thead class="table-light text-uppercase" style="font-size: 13px;">
                             <tr>
                                 <th>Sr. No.</th>
+                                <th>Master ID</th>
                                 <th>Date</th>
                                 <th>Party Name</th>
                                 <th>Opening Balance Amt.</th>
@@ -45,6 +46,7 @@
                             @forelse($records as $index => $record)
                             <tr>
                                 <td>{{ $records->firstItem() + $index }}</td>
+                                <td>{{ $record->master_id }}</td>
                                 <td>{{ $record->date ? $record->date->format('d-m-Y') : '' }}</td>
                                 <td>{{ $record->party_name }}</td>
                                 <td>{{ number_format($record->opening_balance_amt, 2) }}</td>
@@ -54,7 +56,7 @@
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="7" class="text-center text-muted py-4">No data available</td>
+                                <td colspan="8" class="text-center text-muted py-4">No data available</td>
                             </tr>
                             @endforelse
                         </tbody>

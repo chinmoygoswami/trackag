@@ -8,6 +8,7 @@ class OpeningClosingRequest extends TallyFormRequest
     {
         return [
             'Data' => ['required', 'array'],
+            'Data.*.master_id' => ['nullable', 'string', 'max:255'],
             'Data.*.date' => ['required', 'date'],
             'Data.*.party_name' => ['required', 'string', 'max:255'],
             'Data.*.opening_balance_amt' => ['required', 'numeric'],

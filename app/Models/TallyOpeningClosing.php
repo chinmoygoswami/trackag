@@ -10,6 +10,7 @@ class TallyOpeningClosing extends Model
     use TenantConnectionTrait;
 
     protected $fillable = [
+        'master_id',
         'date',
         'party_name',
         'opening_balance_amt',
