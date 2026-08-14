@@ -17,6 +17,7 @@ use Maatwebsite\Excel\Facades\Excel;
 use Maatwebsite\Excel\Validators\Failure;
 use App\Imports\CustomersImport;
 use App\Models\UserStateAccess;
+use App\Models\TallyPartySync;
 
 class CustomerController extends Controller
 {
@@ -298,6 +299,51 @@ class CustomerController extends Controller
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Import failed: '.$e->getMessage());
         }
+    }
+
+    public function assignParty(Request $request)
+    {
+        $request->validate([
+            'party_ids' => 'required|array',
+            'party_ids.*' => 'integer|exists:tally_party_syncs,id',
+            'user_id' => 'required|exists:users,id'
+        ]);
+
+        $parties = TallyPartySync::whereIn('id', $request->party_ids)->get();
+
+        foreach ($parties as $party) {
+            // Attempt to find State and District if names match
+            $stateId = null;
+            if ($party->state) {
+                $stateId = State::where('name', $party->state)->value('id');
+            }
+
+            $districtId = null;
+            if ($party->district && $stateId) {
+                $districtId = District::where('name', $party->district)->where('state_id', $stateId)->value('id');
+            } elseif ($party->district) {
+                $districtId = District::where('name', $party->district)->value('id');
+            }
+
+            Customer::create([
+                'type' => 'web',
+                'agro_name' => $party->party_name,
+                'contact_person_name' => $party->contact_person_name ?? $party->party_name,
+                'party_code' => $party->master_id,
+                'address' => $party->address,
+                'phone' => $party->phone_1 ?? $party->phone_2 ?? 'N/A',
+                'email' => $party->email,
+                'gst_no' => $party->gst_no,
+                'party_active_since' => $party->party_create_date ?? now(),
+                'user_id' => $request->user_id,
+                'is_active' => 1,
+                'status' => 'approved',
+                'state_id' => $stateId,
+                'district_id' => $districtId,
+            ]);
+        }
+
+        return response()->json(['success' => true, 'message' => 'Parties assigned successfully!']);
     }
 
 }

@@ -35,6 +35,9 @@
                             <label for="max-date" class="form-label">To Date</label>
                             <input type="date" id="max-date" class="form-control form-control-sm">
                         </div>
+                        <div class="col-md-8 text-end align-self-end">
+                            <button id="btnAssignModal" class="btn btn-primary btn-sm" style="display:none;" data-bs-toggle="modal" data-bs-target="#assignModal">Assign to Customer</button>
+                        </div>
                     </div>
                     <table id="data-table" class="table table-bordered table-hover table-striped align-middle">
                         <thead class="table-light text-uppercase" style="font-size: 13px;">
@@ -60,7 +63,8 @@
                         </thead>
                         <tbody>
                             @php
-                                $records = \App\Models\TallyPartySync::orderBy('id', 'desc')->get();
+                                $assignedPartyCodes = \App\Models\Customer::whereNotNull('party_code')->pluck('party_code')->toArray();
+                                $records = \App\Models\TallyPartySync::whereNotIn('master_id', $assignedPartyCodes)->orderBy('id', 'desc')->get();
                             @endphp
                             @forelse($records as $index => $record)
                             <tr>
@@ -95,6 +99,36 @@
         </div>
     </div>
 </main>
+
+<!-- Assign Modal -->
+<div class="modal fade" id="assignModal" tabindex="-1" aria-labelledby="assignModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="assignModalLabel">Assign Party to Customer</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="assignForm">
+            <div class="mb-3">
+                <label for="assign_user_id" class="form-label">Assign Person</label>
+                <select class="form-select" id="assign_user_id" required>
+                    <option value="">Select Person...</option>
+                    @foreach(\App\Models\User::where('id', '!=', 1)->get() as $user)
+                        <option value="{{ $user->id }}">{{ $user->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="btnConfirmAssign">Assign</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 @endsection
 
 @push('scripts')
@@ -145,6 +179,7 @@ $(document).ready(function() {
         $('#selectAll').on('click', function() {
             var rows = table.rows({ 'search': 'applied' }).nodes();
             $('input[type="checkbox"].row-checkbox', rows).prop('checked', this.checked);
+            toggleAssignButton();
         });
 
         $('#data-table tbody').on('change', 'input[type="checkbox"].row-checkbox', function(){
@@ -154,6 +189,54 @@ $(document).ready(function() {
                     el.indeterminate = true;
                 }
             }
+            toggleAssignButton();
+        });
+
+        function toggleAssignButton() {
+            if ($('input[type="checkbox"].row-checkbox:checked').length > 0) {
+                $('#btnAssignModal').show();
+            } else {
+                $('#btnAssignModal').hide();
+            }
+        }
+
+        $('#btnConfirmAssign').click(function() {
+            var selectedIds = $('input[type="checkbox"].row-checkbox:checked').map(function(){
+                return $(this).val();
+            }).get();
+
+            var userId = $('#assign_user_id').val();
+
+            if (selectedIds.length === 0) {
+                alert('Please select at least one party.');
+                return;
+            }
+            if (!userId) {
+                alert('Please select a person to assign.');
+                return;
+            }
+
+            $(this).prop('disabled', true).text('Assigning...');
+
+            $.ajax({
+                url: '{{ route("party.sync.assign") }}',
+                type: 'POST',
+                data: {
+                    _token: '{{ csrf_token() }}',
+                    party_ids: selectedIds,
+                    user_id: userId
+                },
+                success: function(response) {
+                    if(response.success) {
+                        alert(response.message);
+                        location.reload();
+                    }
+                },
+                error: function(xhr) {
+                    alert('An error occurred while assigning parties.');
+                    $('#btnConfirmAssign').prop('disabled', false).text('Assign');
+                }
+            });
         });
     }
 });
