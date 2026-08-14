@@ -303,8 +303,8 @@ select[disabled] {
                                                     <option value="A" {{ $status=='A' ? 'selected' : '' }}>A</option>
 
                                                     @foreach($leaves as $leave)
-                                                        <option value="{{ $leave->code }}"
-                                                            {{ $status==$leave->code ? 'selected' : '' }}>
+                                                        <option value="{{ $leave->leave_code }}"
+                                                            {{ $status==$leave->leave_code ? 'selected' : '' }}>
                                                             {{ $leave->leave_name }}
                                                         </option>
                                                     @endforeach
