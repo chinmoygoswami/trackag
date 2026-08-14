@@ -27,11 +27,11 @@
                 </div>
                 <div class="card-body table-responsive">
                     <div class="row mb-3">
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <label for="min-date" class="form-label">From Date</label>
                             <input type="date" id="min-date" class="form-control form-control-sm">
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <label for="max-date" class="form-label">To Date</label>
                             <input type="date" id="max-date" class="form-control form-control-sm">
                         </div>
@@ -39,7 +39,6 @@
                     <table id="data-table" class="table table-bordered table-hover table-striped align-middle">
                         <thead class="table-light text-uppercase" style="font-size: 13px;">
                             <tr>
-                                <th><input type="checkbox" id="selectAll"></th>
                                 <th>Sr. No.</th>
                                 <th>Financial Year</th>
                                 <th>Invoice Date</th>
@@ -60,7 +59,6 @@
                             @endphp
                             @forelse($records as $index => $record)
                             <tr>
-                                <td><input type="checkbox" class="row-checkbox" value="{{ $record->id }}"></td>
                                 <td>{{ $loop->iteration }}</td>
                                 <td>{{ $record->financial_year }}</td>
                                 <td>{{ $record->invoice_date ? $record->invoice_date->format('d-m-Y') : '' }}</td>
@@ -76,7 +74,7 @@
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="13" class="text-center text-muted py-4">No data available</td>
+                                <td colspan="12" class="text-center text-muted py-4">No data available</td>
                             </tr>
                             @endforelse
                         </tbody>
@@ -124,27 +122,10 @@ $(document).ready(function() {
             autoWidth: false,
             pageLength: 15,
             lengthMenu: [15, 25, 50, 100],
-            columnDefs: [
-                { orderable: false, targets: 0 }
-            ]
         });
 
         $('#min-date, #max-date').on('change', function () {
             table.draw();
-        });
-
-        $('#selectAll').on('click', function() {
-            var rows = table.rows({ 'search': 'applied' }).nodes();
-            $('input[type="checkbox"].row-checkbox', rows).prop('checked', this.checked);
-        });
-
-        $('#data-table tbody').on('change', 'input[type="checkbox"].row-checkbox', function(){
-            if(!this.checked){
-                var el = $('#selectAll').get(0);
-                if(el && el.checked && ('indeterminate' in el)){
-                    el.indeterminate = true;
-                }
-            }
         });
     }
 });

@@ -27,11 +27,11 @@
                 </div>
                 <div class="card-body table-responsive">
                     <div class="row mb-3">
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <label for="min-date" class="form-label">From Date</label>
                             <input type="date" id="min-date" class="form-control form-control-sm">
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <label for="max-date" class="form-label">To Date</label>
                             <input type="date" id="max-date" class="form-control form-control-sm">
                         </div>
