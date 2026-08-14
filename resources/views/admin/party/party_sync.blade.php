@@ -131,7 +131,7 @@ $(document).ready(function() {
         var table = $('#data-table').DataTable({
             responsive: true,
             autoWidth: false,
-            pageLength: 15,
+            pageLength: 50,
             lengthMenu: [15, 25, 50, 100],
             columnDefs: [
                 { orderable: false, targets: 0 }
