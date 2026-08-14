@@ -63,8 +63,12 @@
                         </thead>
                         <tbody>
                             @php
-                                $assignedPartyCodes = \App\Models\Customer::whereNotNull('party_code')->pluck('party_code')->toArray();
-                                $records = \App\Models\TallyPartySync::whereNotIn('master_id', $assignedPartyCodes)->orderBy('id', 'desc')->get();
+                                $records = \App\Models\TallyPartySync::whereNotExists(function ($query) {
+                                    $query->select(\Illuminate\Support\Facades\DB::raw(1))
+                                          ->from('customers')
+                                          ->whereColumn('customers.party_code', 'tally_party_syncs.master_id')
+                                          ->whereNotNull('customers.party_code');
+                                })->orderBy('id', 'desc')->get();
                             @endphp
                             @forelse($records as $index => $record)
                             <tr>

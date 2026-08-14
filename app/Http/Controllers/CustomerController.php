@@ -311,18 +311,39 @@ class CustomerController extends Controller
 
         $parties = TallyPartySync::whereIn('id', $request->party_ids)->get();
 
+        // Pre-fetch state and district maps to avoid N+1 query issues in the loop
+        $stateMap = State::pluck('id', 'name')->mapWithKeys(function ($id, $name) {
+            return [strtolower(trim($name)) => $id];
+        })->toArray();
+
+        $districts = District::select('id', 'name', 'state_id')->get();
+        $districtMap = [];
+        foreach ($districts as $d) {
+            $name = strtolower(trim($d->name));
+            $districtMap[$d->state_id . '-' . $name] = $d->id;
+            // Fallback map without state_id
+            if (!isset($districtMap['any-' . $name])) {
+                $districtMap['any-' . $name] = $d->id;
+            }
+        }
+
+        $customersToInsert = [];
+        $now = now();
+
         foreach ($parties as $party) {
-            // Attempt to find State and District if names match
             $stateId = null;
             if ($party->state) {
-                $stateId = State::where('name', $party->state)->value('id');
+                $stateId = $stateMap[strtolower(trim($party->state))] ?? null;
             }
 
             $districtId = null;
-            if ($party->district && $stateId) {
-                $districtId = District::where('name', $party->district)->where('state_id', $stateId)->value('id');
-            } elseif ($party->district) {
-                $districtId = District::where('name', $party->district)->value('id');
+            if ($party->district) {
+                $districtName = strtolower(trim($party->district));
+                if ($stateId && isset($districtMap[$stateId . '-' . $districtName])) {
+                    $districtId = $districtMap[$stateId . '-' . $districtName];
+                } else {
+                    $districtId = $districtMap['any-' . $districtName] ?? null;
+                }
             }
 
             Customer::create([
@@ -334,7 +355,7 @@ class CustomerController extends Controller
                 'phone' => $party->phone_1 ?? $party->phone_2 ?? 'N/A',
                 'email' => $party->email,
                 'gst_no' => $party->gst_no,
-                'party_active_since' => $party->party_create_date ?? now(),
+                'party_active_since' => $party->party_create_date ?? $now,
                 'user_id' => $request->user_id,
                 'is_active' => 1,
                 'status' => 'approved',
