@@ -19,6 +19,8 @@ return new class extends Migration
             $table->date('payment_date');
             $table->string('payment_mode')->nullable();
             $table->decimal('credit_amount', 15, 2);
+            $table->string('voucher_no')->nullable();
+            $table->string('voucher_type')->nullable();
             $table->json('raw_payload')->nullable();
             $table->timestamps();
         });
