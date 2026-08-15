@@ -538,7 +538,7 @@
                                 </div>
                                 <span class="metric-icon primary"><i class="fas fa-shopping-cart"></i></span>
                             </div>
-                            <a href="{{ url('admin/orders') }}" class="metric-link">
+                            <a href="{{ url('admin/order') }}" class="metric-link">
                                 <span>View orders</span><i class="fas fa-arrow-right"></i>
                             </a>
                         </div>
@@ -605,7 +605,7 @@
                                 </div>
                                 <span class="metric-icon success"><i class="fas fa-wallet"></i></span>
                             </div>
-                            <a href="{{ url('admin/expenses') }}" class="metric-link">
+                            <a href="{{ url('admin/expense') }}" class="metric-link">
                                 <span>View expenses</span><i class="fas fa-arrow-right"></i>
                             </a>
                         </div>
@@ -620,7 +620,7 @@
                                 </div>
                                 <span class="metric-icon warning"><i class="fas fa-handshake"></i></span>
                             </div>
-                            <a href="{{ url('admin/party-visits') }}" class="metric-link">
+                            <a href="{{ route('party-visit-report') }}" class="metric-link">
                                 <span>View visits</span><i class="fas fa-arrow-right"></i>
                             </a>
                         </div>
@@ -635,7 +635,7 @@
                                 </div>
                                 <span class="metric-icon danger"><i class="fas fa-clock"></i></span>
                             </div>
-                            <a href="{{ url('admin/attendances') }}" class="metric-link">
+                            <a href="{{ route('attendance.index') }}" class="metric-link">
                                 <span>View attendance</span><i class="fas fa-arrow-right"></i>
                             </a>
                         </div>
