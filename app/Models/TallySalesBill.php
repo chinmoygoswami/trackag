@@ -12,7 +12,6 @@ class TallySalesBill extends Model
     protected $fillable = [
         'financial_year',
         'invoice_date',
-        'invoice_no',
         'party_name',
         'product_name_with_packing',
         'bill_type',
@@ -20,7 +19,6 @@ class TallySalesBill extends Model
         'amount',
         'gst_amount',
         'grand_total',
-        'voucher_type',
         'raw_payload',
     ];
 

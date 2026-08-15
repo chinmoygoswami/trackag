@@ -13,11 +13,15 @@
 					{
 						"key": "Content-Type",
 						"value": "application/json"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
 					}
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n  \"username\": \"testuser\",\n  \"password\": \"password\"\n}"
+					"raw": "{\n  \"company_code\": \"testing\",\n  \"login_id\": \"1234567890\",\n  \"password\": \"password\"\n}"
 				},
 				"url": {
 					"raw": "{{base_url}}/api/tally/login",
@@ -41,6 +45,14 @@
 					{
 						"key": "Content-Type",
 						"value": "application/json"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "X-Company-Code",
+						"value": "testing"
 					},
 					{
 						"key": "Authorization",
@@ -75,6 +87,14 @@
 						"value": "application/json"
 					},
 					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "X-Company-Code",
+						"value": "testing"
+					},
+					{
 						"key": "Authorization",
 						"value": "Bearer {{token}}"
 					}
@@ -107,6 +127,14 @@
 						"value": "application/json"
 					},
 					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "X-Company-Code",
+						"value": "testing"
+					},
+					{
 						"key": "Authorization",
 						"value": "Bearer {{token}}"
 					}
@@ -137,6 +165,14 @@
 					{
 						"key": "Content-Type",
 						"value": "application/json"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json"
+					},
+					{
+						"key": "X-Company-Code",
+						"value": "testing"
 					},
 					{
 						"key": "Authorization",

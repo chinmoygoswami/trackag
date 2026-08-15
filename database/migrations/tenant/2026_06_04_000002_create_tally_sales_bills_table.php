@@ -16,6 +16,7 @@ return new class extends Migration
             $table->id();
             $table->string('financial_year', 20);
             $table->date('invoice_date');
+            $table->string('invoice_no')->nullable();
             $table->string('party_name');
             $table->string('product_name_with_packing');
             $table->string('bill_type', 100);
@@ -23,6 +24,7 @@ return new class extends Migration
             $table->decimal('amount', 15, 2);
             $table->decimal('gst_amount', 15, 2);
             $table->decimal('grand_total', 15, 2);
+            $table->string('voucher_type', 100)->nullable();
             $table->json('raw_payload');
             $table->timestamps();
         });

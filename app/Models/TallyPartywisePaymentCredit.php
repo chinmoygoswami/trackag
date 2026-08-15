@@ -15,8 +15,6 @@ class TallyPartywisePaymentCredit extends Model
         'payment_date',
         'payment_mode',
         'credit_amount',
-        'voucher_no',
-        'voucher_type',
         'raw_payload',
     ];
 
