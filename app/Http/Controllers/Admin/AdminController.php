@@ -17,6 +17,14 @@ use App\Models\District;
 // use App\Models\Role;
 use App\Models\State;
 use App\Models\Tehsil;
+use App\Models\Order;
+use App\Models\Product;
+use App\Models\ProductCategory;
+use App\Models\Trip;
+use App\Models\Expense;
+use App\Models\PartyVisit;
+use App\Models\Attendance;
+use App\Models\Depo;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Hash;
@@ -56,6 +64,24 @@ class AdminController extends Controller
             $totalPermissions = \Spatie\Permission\Models\Permission::count();
             $totalCustomers   = Customer::count();
 
+            // Catalog & Inventory
+            $totalProducts          = Product::count();
+            $totalProductCategories = ProductCategory::count();
+
+            // Sales
+            $totalOrders = Order::count();
+
+            // Field Operations
+            $totalTrips       = Trip::count();
+            $totalExpenses    = Expense::count();
+            $totalPartyVisits = PartyVisit::count();
+            $totalAttendances = Attendance::count();
+
+            // Setup
+            $totalCompanies = Company::count();
+            $totalDepos     = Depo::count();
+            $totalStates    = State::count();
+
             $onlineUsers = User::whereHas('sessions', function ($query) {
                 $query->whereNull('logout_at')->whereIn('platform', ['web', 'mobile']);
             })->with(['roles', 'permissions'])->get();
@@ -73,6 +99,24 @@ class AdminController extends Controller
             $totalPermissions = \Spatie\Permission\Models\Permission::count();
             $totalCustomers   = Customer::count();
 
+            // Scoped Catalog & Inventory
+            $totalProducts          = Product::count();
+            $totalProductCategories = ProductCategory::count();
+
+            // Scoped Sales
+            $totalOrders = Order::count();
+
+            // Scoped Field Operations
+            $totalTrips       = Trip::count();
+            $totalExpenses    = Expense::count();
+            $totalPartyVisits = PartyVisit::count();
+            $totalAttendances = Attendance::count();
+
+            // Setup
+            $totalCompanies = Company::count();
+            $totalDepos     = Depo::count();
+            $totalStates    = State::count();
+
             $onlineUsers = User::whereHas('sessions', function ($query) {
                 $query->whereNull('logout_at')->whereIn('platform', ['web', 'mobile']);
             })->with(['roles', 'permissions'])->get();
@@ -86,6 +130,16 @@ class AdminController extends Controller
             'totalRoles',
             'totalPermissions',
             'totalCustomers',
+            'totalProducts',
+            'totalProductCategories',
+            'totalOrders',
+            'totalTrips',
+            'totalExpenses',
+            'totalPartyVisits',
+            'totalAttendances',
+            'totalCompanies',
+            'totalDepos',
+            'totalStates',
             'onlineUsers',
             'sessionsGrouped',
             'isMasterAdmin'

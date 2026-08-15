@@ -523,6 +523,177 @@
                     @endif
                 </div>
 
+                {{-- Sales & Catalog --}}
+                <div class="d-flex justify-content-between align-items-center mt-4 mb-3">
+                    <h4 class="m-0 text-dark" style="font-weight: 700; font-size: 1.15rem;">Sales & Catalog</h4>
+                </div>
+                <div class="row g-3 stats-row" style="margin-top: 0;">
+                    <div class="col-xl-3 col-md-6">
+                        <div class="metric-card primary">
+                            <div class="metric-card-body">
+                                <div>
+                                    <div class="metric-label">Total Orders</div>
+                                    <h3 class="metric-value">{{ $totalOrders }}</h3>
+                                    <div class="metric-note">System orders</div>
+                                </div>
+                                <span class="metric-icon primary"><i class="fas fa-shopping-cart"></i></span>
+                            </div>
+                            <a href="{{ url('admin/orders') }}" class="metric-link">
+                                <span>View orders</span><i class="fas fa-arrow-right"></i>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-xl-3 col-md-6">
+                        <div class="metric-card success">
+                            <div class="metric-card-body">
+                                <div>
+                                    <div class="metric-label">Products</div>
+                                    <h3 class="metric-value">{{ $totalProducts }}</h3>
+                                    <div class="metric-note">Catalog items</div>
+                                </div>
+                                <span class="metric-icon success"><i class="fas fa-box"></i></span>
+                            </div>
+                            <a href="{{ url('admin/products') }}" class="metric-link">
+                                <span>View products</span><i class="fas fa-arrow-right"></i>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-xl-3 col-md-6">
+                        <div class="metric-card warning">
+                            <div class="metric-card-body">
+                                <div>
+                                    <div class="metric-label">Categories</div>
+                                    <h3 class="metric-value">{{ $totalProductCategories }}</h3>
+                                    <div class="metric-note">Product groups</div>
+                                </div>
+                                <span class="metric-icon warning"><i class="fas fa-tags"></i></span>
+                            </div>
+                            <a href="{{ url('admin/product-categories') }}" class="metric-link">
+                                <span>View categories</span><i class="fas fa-arrow-right"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Field Operations --}}
+                <div class="d-flex justify-content-between align-items-center mt-4 mb-3">
+                    <h4 class="m-0 text-dark" style="font-weight: 700; font-size: 1.15rem;">Field Operations</h4>
+                </div>
+                <div class="row g-3 stats-row" style="margin-top: 0;">
+                    <div class="col-xl-3 col-md-6">
+                        <div class="metric-card primary">
+                            <div class="metric-card-body">
+                                <div>
+                                    <div class="metric-label">Trips</div>
+                                    <h3 class="metric-value">{{ $totalTrips }}</h3>
+                                    <div class="metric-note">Employee trips</div>
+                                </div>
+                                <span class="metric-icon primary"><i class="fas fa-route"></i></span>
+                            </div>
+                            <a href="{{ url('admin/trips') }}" class="metric-link">
+                                <span>View trips</span><i class="fas fa-arrow-right"></i>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-xl-3 col-md-6">
+                        <div class="metric-card success">
+                            <div class="metric-card-body">
+                                <div>
+                                    <div class="metric-label">Expenses</div>
+                                    <h3 class="metric-value">{{ $totalExpenses }}</h3>
+                                    <div class="metric-note">Logged expenses</div>
+                                </div>
+                                <span class="metric-icon success"><i class="fas fa-wallet"></i></span>
+                            </div>
+                            <a href="{{ url('admin/expenses') }}" class="metric-link">
+                                <span>View expenses</span><i class="fas fa-arrow-right"></i>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-xl-3 col-md-6">
+                        <div class="metric-card warning">
+                            <div class="metric-card-body">
+                                <div>
+                                    <div class="metric-label">Party Visits</div>
+                                    <h3 class="metric-value">{{ $totalPartyVisits }}</h3>
+                                    <div class="metric-note">Customer meetings</div>
+                                </div>
+                                <span class="metric-icon warning"><i class="fas fa-handshake"></i></span>
+                            </div>
+                            <a href="{{ url('admin/party-visits') }}" class="metric-link">
+                                <span>View visits</span><i class="fas fa-arrow-right"></i>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-xl-3 col-md-6">
+                        <div class="metric-card danger">
+                            <div class="metric-card-body">
+                                <div>
+                                    <div class="metric-label">Attendances</div>
+                                    <h3 class="metric-value">{{ $totalAttendances }}</h3>
+                                    <div class="metric-note">Daily logs</div>
+                                </div>
+                                <span class="metric-icon danger"><i class="fas fa-clock"></i></span>
+                            </div>
+                            <a href="{{ url('admin/attendances') }}" class="metric-link">
+                                <span>View attendance</span><i class="fas fa-arrow-right"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Geography & Setup --}}
+                <div class="d-flex justify-content-between align-items-center mt-4 mb-3">
+                    <h4 class="m-0 text-dark" style="font-weight: 700; font-size: 1.15rem;">Geography & Setup</h4>
+                </div>
+                <div class="row g-3 stats-row" style="margin-top: 0;">
+                    <div class="col-xl-3 col-md-6">
+                        <div class="metric-card primary">
+                            <div class="metric-card-body">
+                                <div>
+                                    <div class="metric-label">Companies</div>
+                                    <h3 class="metric-value">{{ $totalCompanies }}</h3>
+                                    <div class="metric-note">Registered branches</div>
+                                </div>
+                                <span class="metric-icon primary"><i class="fas fa-building"></i></span>
+                            </div>
+                            <a href="{{ url('admin/companies') }}" class="metric-link">
+                                <span>View companies</span><i class="fas fa-arrow-right"></i>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-xl-3 col-md-6">
+                        <div class="metric-card success">
+                            <div class="metric-card-body">
+                                <div>
+                                    <div class="metric-label">Depos</div>
+                                    <h3 class="metric-value">{{ $totalDepos }}</h3>
+                                    <div class="metric-note">Warehouses</div>
+                                </div>
+                                <span class="metric-icon success"><i class="fas fa-warehouse"></i></span>
+                            </div>
+                            <a href="{{ url('admin/depos') }}" class="metric-link">
+                                <span>View depos</span><i class="fas fa-arrow-right"></i>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-xl-3 col-md-6">
+                        <div class="metric-card warning">
+                            <div class="metric-card-body">
+                                <div>
+                                    <div class="metric-label">States</div>
+                                    <h3 class="metric-value">{{ $totalStates }}</h3>
+                                    <div class="metric-note">Configured regions</div>
+                                </div>
+                                <span class="metric-icon warning"><i class="fas fa-map-marked-alt"></i></span>
+                            </div>
+                            <a href="{{ url('admin/states') }}" class="metric-link">
+                                <span>View states</span><i class="fas fa-arrow-right"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
                 {{-- Online Users --}}
                 <div class="card dashboard-card mt-4">
                     <div class="card-header">
