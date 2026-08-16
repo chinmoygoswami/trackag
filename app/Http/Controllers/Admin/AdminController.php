@@ -48,9 +48,21 @@ class AdminController extends Controller
     public function index()
     {
         $user = Auth::user();
-        $isMasterAdmin = $user->hasRole('master_admin');
+        $isMasterAdmin = false;
 
-        // 1. Top Cards: Daily Pulse
+        $todaysActiveUserCount = 0;
+        $todaysOrderCount = 0;
+        $todaysPaymentCollection = 0;
+        $todaysPartyVisits = 0;
+        $statesData = collect([]);
+        $employeeData = collect([]);
+
+        try {
+            if ($user) {
+                $isMasterAdmin = $user->hasRole('master_admin');
+            }
+
+            // 1. Top Cards: Daily Pulse
         $todaysActiveUserCount = \App\Models\UserSession::whereDate('login_at', today())->distinct('user_id')->count();
         $todaysOrderCount = \App\Models\Order::whereDate('created_at', today())->count();
         $todaysPaymentCollection = \App\Models\PartyPayment::whereDate('payment_date', today())->sum('amount');
@@ -262,6 +274,10 @@ class AdminController extends Controller
                 'trip_id' => $userTrip ? $userTrip->id : null,
             ];
         });
+
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::warning("Dashboard exception: " . $e->getMessage());
+        }
 
         return view('admin.dashboard', compact(
             'todaysActiveUserCount',
