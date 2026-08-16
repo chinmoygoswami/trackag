@@ -51,6 +51,8 @@
                                 <th>GST Amount</th>
                                 <th>Grand Total</th>
                                 <th>Voucher Type</th>
+                                <th>Created At</th>
+                                <th>Updated At</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -71,10 +73,12 @@
                                 <td>{{ number_format($record->gst_amount, 2) }}</td>
                                 <td>{{ number_format($record->grand_total, 2) }}</td>
                                 <td>{{ $record->voucher_type }}</td>
+                                <td>{{ $record->created_at ? $record->created_at->format('d-m-Y H:i:s') : '' }}</td>
+                                <td>{{ $record->updated_at ? $record->updated_at->format('d-m-Y H:i:s') : '' }}</td>
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="12" class="text-center text-muted py-4">No data available</td>
+                                <td colspan="14" class="text-center text-muted py-4">No data available</td>
                             </tr>
                             @endforelse
                         </tbody>
@@ -104,7 +108,7 @@ $(document).ready(function() {
                 var max = maxDateStr ? new Date(maxDateStr) : null;
                 if (max) max.setHours(23,59,59,999);
                 
-                var dateStr = data[3] || ""; 
+                var dateStr = data[2] || ""; 
                 var rowDate = null;
                 var parts = dateStr.split('-');
                 if (parts.length === 3) {

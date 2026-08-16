@@ -39,6 +39,7 @@
                     <table id="data-table" class="table table-bordered table-hover table-striped align-middle">
                         <thead class="table-light text-uppercase" style="font-size: 13px;">
                             <tr>
+                                <th>#</th>
                                 <th>Sr. No.</th>
                                 <th>Party Name</th>
                                 <th>Payment Date</th>
@@ -46,6 +47,8 @@
                                 <th>Credit Amount</th>
                                 <th>Voucher No</th>
                                 <th>Voucher Type</th>
+                                <th>Created At</th>
+                                <th>Updated At</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -55,16 +58,19 @@
                             @forelse($records as $index => $record)
                             <tr>
                                 <td>{{ $loop->iteration }}</td>
+                                <td>{{ $record->sr_no }}</td>
                                 <td>{{ $record->party_name }}</td>
                                 <td>{{ $record->payment_date ? $record->payment_date->format('d-m-Y') : '' }}</td>
                                 <td>{{ $record->payment_mode }}</td>
                                 <td>{{ number_format($record->credit_amount, 2) }}</td>
                                 <td>{{ $record->voucher_no }}</td>
                                 <td>{{ $record->voucher_type }}</td>
+                                <td>{{ $record->created_at ? $record->created_at->format('d-m-Y H:i:s') : '' }}</td>
+                                <td>{{ $record->updated_at ? $record->updated_at->format('d-m-Y H:i:s') : '' }}</td>
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="7" class="text-center text-muted py-4">No data available</td>
+                                <td colspan="10" class="text-center text-muted py-4">No data available</td>
                             </tr>
                             @endforelse
                         </tbody>

@@ -59,6 +59,8 @@
                                 <th>PAN No</th>
                                 <th>Credit Days</th>
                                 <th>Credit Limit</th>
+                                <th>Created At</th>
+                                <th>Updated At</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -89,10 +91,12 @@
                                 <td>{{ $record->pan_no }}</td>
                                 <td>{{ $record->credit_days }}</td>
                                 <td>{{ $record->credit_limit }}</td>
+                                <td>{{ $record->created_at ? $record->created_at->format('d-m-Y H:i:s') : '' }}</td>
+                                <td>{{ $record->updated_at ? $record->updated_at->format('d-m-Y H:i:s') : '' }}</td>
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="17" class="text-center text-muted py-4">No data available</td>
+                                <td colspan="19" class="text-center text-muted py-4">No data available</td>
                             </tr>
                             @endforelse
                         </tbody>
