@@ -350,7 +350,7 @@
                                 <th>Employee Name</th>
                                 <th>Day Start Time / Day End Time</th>
                                 <th>Login Hrs</th>
-                                <th>Tour Plan</th>
+                                <th>Tour Plan / Places</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -366,22 +366,28 @@
                                 </td>
                                 <td><span class="badge bg-light text-dark border">{{ $employee->login_hrs }}</span></td>
                                 <td>
-                                    <a href="#" class="btn-action btn-action-tour text-decoration-none d-inline-block">
-                                        <i class="fas fa-route me-1"></i> View Tour
-                                    </a>
+                                    <div class="fw-semibold text-primary mb-1"><i class="fas fa-route me-1"></i>{{ $employee->tour_plan }}</div>
+                                    @forelse ($employee->places_visited as $customer)
+                                        <span class="badge bg-light text-dark border mt-1">
+                                            <i class="fas fa-user me-1"></i>{{ $customer->agro_name ?? '-'}}
+                                        </span><br>
+                                    @empty
+                                    @endforelse
                                 </td>
                                 <td>
                                     <div class="d-flex gap-2">
                                         @if($employee->trip_id)
-                                            <a href="{{ route('trip.map', $employee->trip_id) }}" class="btn-action btn-action-map text-decoration-none" target="_blank">
+                                            <a href="{{ route('trips.show', $employee->trip_id) }}" class="btn-action btn-action-map text-decoration-none" target="_blank">
                                                 <i class="fas fa-map-marked-alt me-1"></i> MAP
                                             </a>
+                                            <button type="button" class="btn-action btn-action-log text-decoration-none border-0" 
+                                                onclick="loadTripLogs({{ $employee->trip_id }}, '{{ route('trips.logs', $employee->trip_id) }}')">
+                                                <i class="fas fa-list me-1"></i> LOGS
+                                            </button>
                                         @else
                                             <span class="btn-action btn-action-map text-decoration-none opacity-50"><i class="fas fa-map-marked-alt me-1"></i> MAP</span>
+                                            <span class="btn-action btn-action-log text-decoration-none opacity-50"><i class="fas fa-list me-1"></i> LOGS</span>
                                         @endif
-                                        <a href="#" class="btn-action btn-action-log text-decoration-none" onclick="event.preventDefault(); loadSessionHistory({{ $employee->id }});">
-                                            <i class="fas fa-history me-1"></i> LOG
-                                        </a>
                                     </div>
                                 </td>
                             </tr>
@@ -399,7 +405,7 @@
                     <div class="modal-dialog modal-lg modal-dialog-scrollable">
                         <div class="modal-content">
                             <div class="modal-header bg-primary text-white">
-                                <h5 class="modal-title" id="sessionHistoryModalLabel">Session History</h5>
+                                <h5 class="modal-title" id="sessionHistoryModalLabel">Trip Logs</h5>
                                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
                             <div class="modal-body">
@@ -416,8 +422,11 @@
 
 @push('scripts')
 <script>
-    function loadSessionHistory(userId) {
+    function loadTripLogs(tripId, url) {
         var modalElement = document.getElementById('sessionHistoryModal');
+        // Rename modal title
+        document.getElementById('sessionHistoryModalLabel').innerText = 'Trip Logs #' + tripId;
+        
         // Ensure bootstrap modal is loaded, if not, use jQuery depending on app's standard
         if (typeof bootstrap !== 'undefined') {
             var modal = new bootstrap.Modal(modalElement);
@@ -426,15 +435,60 @@
             $(modalElement).modal('show');
         }
 
-        document.getElementById('sessionHistoryContent').innerHTML = 'Loading...';
+        document.getElementById('sessionHistoryContent').innerHTML = `
+            <div class="text-center py-4">
+                <div class="spinner-border text-primary"></div>
+            </div>`;
         
-        fetch('{{ url("admin/users") }}/' + userId + '/sessions')
-            .then(response => response.text())
-            .then(html => {
-                document.getElementById('sessionHistoryContent').innerHTML = html;
+        fetch(url, { headers: { 'Accept': 'application/json' } })
+            .then(response => response.json())
+            .then(res => {
+                let logs = res.logs ?? [];
+                if (logs.length === 0) {
+                    document.getElementById('sessionHistoryContent').innerHTML = '<p class="text-center text-muted">No logs available</p>';
+                    return;
+                }
+
+                let tableHtml = `
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped table-sm align-middle text-nowrap">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Latitude</th>
+                                    <th>Longitude</th>
+                                    <th>Battery</th>
+                                    <th>GPS</th>
+                                    <th>Mobile Status</th>
+                                    <th>Recorded At</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+
+                logs.forEach((log, index) => {
+                    let gpsStatus = log.gps_status == 1 ? '<span class="badge bg-success">On</span>' : '<span class="badge bg-danger">Off</span>';
+                    let mobileStatus = log.mobile_status == 1 ? '<span class="badge bg-success">On</span>' : '<span class="badge bg-danger">-</span>';
+                    
+                    tableHtml += `
+                        <tr>
+                            <td>${index + 1}</td>
+                            <td>${log.latitude}</td>
+                            <td>${log.longitude}</td>
+                            <td>${log.battery}</td>
+                            <td>${gpsStatus}</td>
+                            <td>${mobileStatus}</td>
+                            <td>${log.recorded_at}</td>
+                        </tr>
+                    `;
+                });
+
+                tableHtml += `</tbody></table></div>`;
+                document.getElementById('sessionHistoryContent').innerHTML = tableHtml;
             })
             .catch(error => {
-                document.getElementById('sessionHistoryContent').innerHTML = '<p class="text-danger">Failed to load session history.</p>';
+                console.error("Error loading trip logs:", error);
+                document.getElementById('sessionHistoryContent').innerHTML = '<p class="text-danger">Failed to load trip logs.</p>';
             });
     }
 </script>

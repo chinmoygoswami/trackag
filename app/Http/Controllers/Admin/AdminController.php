@@ -107,7 +107,7 @@ class AdminController extends Controller
             ->groupBy('user_id');
 
         // Fetch today's trips for displaying in the table
-        $todayTrips = \App\Models\Trip::whereDate('trip_date', today())
+        $todayTrips = \App\Models\Trip::with('customers')->whereDate('trip_date', today())
             ->whereIn('user_id', $employees->pluck('id'))
             ->get()
             ->groupBy('user_id');
@@ -136,6 +136,7 @@ class AdminController extends Controller
                 'day_end' => $userTrip && $userTrip->end_time ? \Carbon\Carbon::parse($userTrip->end_time)->format('h:i A') : '-',
                 'login_hrs' => $loginHrs,
                 'tour_plan' => $userTrip ? ($userTrip->place_to_visit ?? 'Active Tour') : '-',
+                'places_visited' => $userTrip ? $userTrip->customers : collect([]),
                 'trip_id' => $userTrip ? $userTrip->id : null,
             ];
         });
