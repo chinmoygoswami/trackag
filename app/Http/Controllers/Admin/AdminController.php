@@ -93,7 +93,12 @@ class AdminController extends Controller
         });
 
         // 3. Bottom Table: Employee Daily Logs
-        $employees = \App\Models\User::where('is_active', 1)->where('id', '!=', 1)->get(); // Skip master admin
+        $activeTripUserIds = \App\Models\Trip::whereDate('trip_date', today())->pluck('user_id');
+        
+        $employees = \App\Models\User::where('is_active', 1)
+            ->where('id', '!=', 1) // Skip master admin
+            ->whereIn('id', $activeTripUserIds)
+            ->get();
 
         // Fetch today's sessions for employees
         $sessions = \App\Models\UserSession::whereDate('login_at', today())
@@ -101,7 +106,13 @@ class AdminController extends Controller
             ->get()
             ->groupBy('user_id');
 
-        $employeeData = $employees->map(function($emp) use ($sessions) {
+        // Fetch today's trips for displaying in the table
+        $todayTrips = \App\Models\Trip::whereDate('trip_date', today())
+            ->whereIn('user_id', $employees->pluck('id'))
+            ->get()
+            ->groupBy('user_id');
+
+        $employeeData = $employees->map(function($emp) use ($sessions, $todayTrips) {
             $userSessions = $sessions->get($emp->id);
             $dayStart = $userSessions ? $userSessions->min('login_at') : null;
             $dayEnd = $userSessions ? $userSessions->max('logout_at') : null;
@@ -116,13 +127,15 @@ class AdminController extends Controller
                 }
             }
 
+            $userTrip = $todayTrips->get($emp->id)?->first();
+
             return (object)[
                 'id' => $emp->id,
                 'name' => $emp->name,
                 'day_start' => $dayStart ? \Carbon\Carbon::parse($dayStart)->format('h:i A') : '-',
                 'day_end' => $dayEnd ? \Carbon\Carbon::parse($dayEnd)->format('h:i A') : '-',
                 'login_hrs' => $loginHrs,
-                'tour_plan' => 'View Tour', // Placeholder link
+                'tour_plan' => $userTrip ? ($userTrip->place_to_visit ?? 'Active Tour') : '-',
             ];
         });
 
