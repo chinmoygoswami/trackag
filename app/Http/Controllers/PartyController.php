@@ -648,7 +648,21 @@ class PartyController extends Controller
             $monthKeys->push(sprintf('%04d-%02d', $p->year, $p->month));
         }
         
-        $uniqueMonths = $monthKeys->unique()->sort()->values();
+        $maxYearMonth = $monthKeys->max();
+        if ($maxYearMonth) {
+            list($year, $month) = explode('-', $maxYearMonth);
+            $fyStartYear = ((int)$month < 4) ? (int)$year - 1 : (int)$year;
+        } else {
+            $currentMonth = (int)date('n');
+            $currentYear = (int)date('Y');
+            $fyStartYear = ($currentMonth < 4) ? $currentYear - 1 : $currentYear;
+        }
+
+        $uniqueMonths = collect();
+        for ($i = 0; $i < 12; $i++) {
+            $monthDate = \Carbon\Carbon::createFromDate($fyStartYear, 4, 1)->addMonths($i);
+            $uniqueMonths->push($monthDate->format('Y-m'));
+        }
         
         $salesGrouped = $sales->groupBy('party_name')->map(function($items) {
             return $items->keyBy(function($i) { return sprintf('%04d-%02d', $i->year, $i->month); });

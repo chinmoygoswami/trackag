@@ -2,6 +2,19 @@
 @section('title', 'Party Performance | Trackag')
 
 @section('content')
+@push('styles')
+<link rel="stylesheet" href="https://cdn.datatables.net/fixedcolumns/4.3.0/css/fixedColumns.dataTables.min.css">
+<style>
+    /* Ensure fixed columns have a solid background */
+    th.dtfc-fixed-left, td.dtfc-fixed-left {
+        background-color: #fff !important;
+        z-index: 1;
+    }
+    thead tr:nth-child(1) th.dtfc-fixed-left {
+        background-color: #f8f9fa !important;
+    }
+</style>
+@endpush
 <main class="app-main">
     <div class="app-content-header py-3 bg-light border-bottom">
         <div class="container-fluid px-4">
@@ -131,6 +144,7 @@
 @endsection
 
 @push('scripts')
+<script src="https://cdn.datatables.net/fixedcolumns/4.3.0/js/dataTables.fixedColumns.min.js"></script>
 <script>
 $(document).ready(function() {
     $('#data-table').DataTable({
@@ -141,7 +155,7 @@ $(document).ready(function() {
         lengthMenu: [15, 25, 50, 100],
         order: [], // Disable initial sort due to complex headers
         fixedColumns: {
-            left: 1
+            left: 7
         }
     });
 });
