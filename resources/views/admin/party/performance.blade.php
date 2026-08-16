@@ -89,6 +89,7 @@
                             <tr>
                                 <th rowspan="2" class="align-middle border-end text-start">Party Name(Shop Name)</th>
                                 <th rowspan="2" class="align-middle border-end">Employee Name</th>
+                                <th rowspan="2" class="align-middle border-end">State</th>
                                 <th rowspan="2" class="align-middle border-end">Opening</th>
                                 <th rowspan="2" class="align-middle border-end">Credit</th>
                                 <th rowspan="2" class="align-middle border-end">Debit</th>
@@ -109,6 +110,7 @@
                             <tr class="text-center">
                                 <td class="text-start border-end fw-medium" style="background-color: #f8f9fa;">{{ $record->party_name }}</td>
                                 <td class="border-end fw-medium">{{ $record->employee_name }}</td>
+                                <td class="border-end">{{ $record->state ?? '-' }}</td>
                                 <td class="border-end text-nowrap">{{ number_format(abs($record->opening_balance), 2) }} <span class="text-muted small">{{ $record->opening_balance < 0 ? 'Cr' : 'Dr' }}</span></td>
                                 <td class="border-end text-nowrap">{{ number_format($record->credit_amt, 2) }} <span class="text-muted small">Cr</span></td>
                                 <td class="border-end text-nowrap">{{ number_format($record->debit_amt, 2) }} <span class="text-muted small">Dr</span></td>

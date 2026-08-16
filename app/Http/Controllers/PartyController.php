@@ -688,6 +688,7 @@ class PartyController extends Controller
                 'master_id' => $party->master_id,
                 'party_name' => $name,
                 'employee_name' => $employeeName,
+                'state' => $party->state,
                 'opening_balance' => $b ? $b->opening_balance_amt : 0,
                 'credit_amt' => $b ? $b->credit_amt : 0,
                 'debit_amt' => $b ? $b->debit_amt : 0,
