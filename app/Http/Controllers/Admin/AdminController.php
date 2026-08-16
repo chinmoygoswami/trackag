@@ -47,101 +47,92 @@ class AdminController extends Controller
 
     public function index()
     {
-        $defaultDb = Config::get('database.default');
-        $defaultDbName = DB::connection()->getDatabaseName();
-
-        $tenantDb = null;
-        if (tenancy()->initialized) {
-            $tenantDb = DB::connection('tenant')->getDatabaseName();
-        }
-        
         $user = Auth::user();
-        $onlineTimeout = now()->subMinutes(10);
         $isMasterAdmin = $user->hasRole('master_admin');
-        if ($isMasterAdmin) {
-            $totalUsers       = User::count();
-            $totalRoles       = \Spatie\Permission\Models\Role::count();
-            $totalPermissions = \Spatie\Permission\Models\Permission::count();
-            $totalCustomers   = Customer::count();
 
-            // Catalog & Inventory
-            $totalProducts          = Product::count();
-            $totalProductCategories = ProductCategory::count();
+        // 1. Top Cards: Daily Pulse
+        $todaysActiveUserCount = \App\Models\UserSession::whereDate('login_at', today())->distinct('user_id')->count();
+        $todaysOrderCount = \App\Models\Order::whereDate('created_at', today())->count();
+        $todaysPaymentCollection = \App\Models\PartyPayment::whereDate('payment_date', today())->sum('amount');
+        $todaysPartyVisits = \App\Models\PartyVisit::whereDate('visited_date', today())->count();
 
-            // Sales
-            $totalOrders = Order::count();
+        // 2. Middle Cards: State-wise Groupings
+        $states = \App\Models\State::all();
+        
+        // Partywise Outstanding
+        $outstandingByState = \App\Models\TallyOpeningClosing::join('customers', 'tally_opening_closings.master_id', '=', 'customers.party_code')
+            ->groupBy('customers.state_id')
+            ->selectRaw('customers.state_id, SUM(closing_balance_amt) as total')
+            ->get()
+            ->pluck('total', 'state_id');
 
-            // Field Operations
-            $totalTrips       = Trip::count();
-            $totalExpenses    = Expense::count();
-            $totalPartyVisits = PartyVisit::count();
-            $totalAttendances = Attendance::count();
+        // TA-DA Info
+        $tadaByState = \App\Models\Expense::join('users', 'expenses.user_id', '=', 'users.id')
+            ->groupBy('users.state_id')
+            ->selectRaw('users.state_id, SUM(amount) as total')
+            ->get()
+            ->pluck('total', 'state_id');
 
-            // Setup
-            $totalCompanies = Company::count();
-            $totalDepos     = Depo::count();
-            $totalStates    = State::count();
+        // Payment Credit
+        $paymentCreditByState = \App\Models\PartyPayment::join('customers', 'party_payments.customer_id', '=', 'customers.id')
+            ->groupBy('customers.state_id')
+            ->selectRaw('customers.state_id, SUM(amount) as total')
+            ->get()
+            ->pluck('total', 'state_id');
 
-            $onlineUsers = User::whereHas('sessions', function ($query) {
-                $query->whereNull('logout_at')->whereIn('platform', ['web', 'mobile']);
-            })->with(['roles', 'permissions'])->get();
+        $statesData = $states->map(function($state) use ($outstandingByState, $tadaByState, $paymentCreditByState) {
+            return (object)[
+                'name' => $state->name,
+                'target_ach' => rand(30, 90), // Placeholder for complex logic
+                'outstanding' => $outstandingByState->get($state->id, 0),
+                'tada' => $tadaByState->get($state->id, 0),
+                'payment_credit' => $paymentCreditByState->get($state->id, 0),
+            ];
+        })->filter(function($s) {
+            return $s->outstanding > 0 || $s->tada > 0 || $s->payment_credit > 0;
+        });
 
-            $sessionsQuery = UserSession::with('user')->whereDate('login_at', now());
-        } else {
-            $companyId        = $user->company_id;
-            if($user->hasRole('sub_admin')){
-                $totalUsers       = User::count();
-            }else{
-                $totalUsers       = User::where('reporting_to',$user->id)->count();
-            }
+        // 3. Bottom Table: Employee Daily Logs
+        $employees = \App\Models\User::where('is_active', 1)->where('id', '!=', 1)->get(); // Skip master admin
+
+        // Fetch today's sessions for employees
+        $sessions = \App\Models\UserSession::whereDate('login_at', today())
+            ->whereIn('user_id', $employees->pluck('id'))
+            ->get()
+            ->groupBy('user_id');
+
+        $employeeData = $employees->map(function($emp) use ($sessions) {
+            $userSessions = $sessions->get($emp->id);
+            $dayStart = $userSessions ? $userSessions->min('login_at') : null;
+            $dayEnd = $userSessions ? $userSessions->max('logout_at') : null;
             
-            $totalRoles       = \Spatie\Permission\Models\Role::count();
-            $totalPermissions = \Spatie\Permission\Models\Permission::count();
-            $totalCustomers   = Customer::count();
+            // Calc login hours
+            $loginHrs = '-';
+            if ($dayStart) {
+                if ($dayEnd) {
+                    $loginHrs = \Carbon\Carbon::parse($dayStart)->diffInHours(\Carbon\Carbon::parse($dayEnd)) . ' Hrs';
+                } else {
+                    $loginHrs = \Carbon\Carbon::parse($dayStart)->diffInHours(now()) . ' Hrs (Active)';
+                }
+            }
 
-            // Scoped Catalog & Inventory
-            $totalProducts          = Product::count();
-            $totalProductCategories = ProductCategory::count();
-
-            // Scoped Sales
-            $totalOrders = Order::count();
-
-            // Scoped Field Operations
-            $totalTrips       = Trip::count();
-            $totalExpenses    = Expense::count();
-            $totalPartyVisits = PartyVisit::count();
-            $totalAttendances = Attendance::count();
-
-            // Setup
-            $totalCompanies = Company::count();
-            $totalDepos     = Depo::count();
-            $totalStates    = State::count();
-
-            $onlineUsers = User::whereHas('sessions', function ($query) {
-                $query->whereNull('logout_at')->whereIn('platform', ['web', 'mobile']);
-            })->with(['roles', 'permissions'])->get();
-
-            $sessionsQuery = UserSession::with('user')->whereDate('login_at', now());
-        }
-        $sessionsGrouped = $sessionsQuery->get()->groupBy('user_id');
+            return (object)[
+                'id' => $emp->id,
+                'name' => $emp->name,
+                'day_start' => $dayStart ? \Carbon\Carbon::parse($dayStart)->format('h:i A') : '-',
+                'day_end' => $dayEnd ? \Carbon\Carbon::parse($dayEnd)->format('h:i A') : '-',
+                'login_hrs' => $loginHrs,
+                'tour_plan' => 'View Tour', // Placeholder link
+            ];
+        });
 
         return view('admin.dashboard', compact(
-            'totalUsers',
-            'totalRoles',
-            'totalPermissions',
-            'totalCustomers',
-            'totalProducts',
-            'totalProductCategories',
-            'totalOrders',
-            'totalTrips',
-            'totalExpenses',
-            'totalPartyVisits',
-            'totalAttendances',
-            'totalCompanies',
-            'totalDepos',
-            'totalStates',
-            'onlineUsers',
-            'sessionsGrouped',
+            'todaysActiveUserCount',
+            'todaysOrderCount',
+            'todaysPaymentCollection',
+            'todaysPartyVisits',
+            'statesData',
+            'employeeData',
             'isMasterAdmin'
         ));
     }
