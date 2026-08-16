@@ -194,6 +194,8 @@ class AdminController extends Controller
             return (object)[
                 'id' => $state->id,
                 'name' => $state->name,
+                'target' => $target,
+                'achievement' => $achievement,
                 'target_ach' => $percent,
                 'outstanding' => $outstandingByState->get($state->id, 0),
                 'tada' => $tadaByState[$state->id] ?? 0,

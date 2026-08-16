@@ -281,7 +281,12 @@
                                 @forelse($statesData as $state)
                                     <div class="state-row">
                                         <span>{{ $state->name }}</span>
-                                        <span class="text-primary">{{ $state->target_ach }}%</span>
+                                        <div class="text-end">
+                                            <span class="text-muted small me-2" title="Achievement: {{ number_format($state->achievement, 0) }}">
+                                                ₹{{ number_format($state->target, 0) }}
+                                            </span>
+                                            <span class="text-primary fw-bold">{{ $state->target_ach }}%</span>
+                                        </div>
                                     </div>
                                 @empty
                                     <div class="text-center text-muted py-3">No state data</div>
