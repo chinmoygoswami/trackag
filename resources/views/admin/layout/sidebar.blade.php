@@ -56,14 +56,14 @@
                             </a>
                         </li>
                         @endcanany
-                        @canany(['view_plan_vs_achievement','create_plan_vs_achievement','edit_plan_vs_achievement','delete_plan_vs_achievement'])
+                        {{-- @canany(['view_plan_vs_achievement','create_plan_vs_achievement','edit_plan_vs_achievement','delete_plan_vs_achievement'])
                         <li class="nav-item">
                             <a href="{{ url('admin/achievement') }}" class="nav-link {{ request()->is('admin/achievement*') ? 'active' : '' }}">
                                 <i class="bi bi-graph-up-arrow me-2"></i>
                                 <p>Plan Vs Achievement</p>
                             </a>
                         </li>
-                        @endcanany
+                        @endcanany --}}
                     </ul>
                 </li>
                 @endcanany
@@ -134,7 +134,7 @@
                             </a>
                         </li>
 
-                        {{-- Party Ledger --}}
+                        {{-- Party Ledger
                         <li class="nav-item">
                             <a href="{{ route('coming-soon') }}"
                             class="nav-link {{ request()->routeIs('coming-soon') ? 'active' : '' }}">
@@ -142,6 +142,7 @@
                                 <p>Party Ledger</p>
                             </a>
                         </li>
+                        --}}
 
                     </ul>
                 </li>

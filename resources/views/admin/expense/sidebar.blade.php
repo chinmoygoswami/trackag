@@ -40,13 +40,13 @@
                                 <p>Monthly Plan</p>
                             </a>
                         </li>
-                        <li class="nav-item">
+                        {{-- <li class="nav-item">
                             <a href="{{ url('admin/achievement') }}"
                                 class="nav-link {{ request()->is('admin/achievement*') ? 'active' : '' }}">
                                 <i class="bi bi-graph-up-arrow me-2"></i>
                                 <p>Plan Vs Achievement</p>
                             </a>
-                        </li>
+                        </li> --}}
                     </ul>
                 </li>
 
