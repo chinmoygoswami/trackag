@@ -619,4 +619,45 @@ class PartyController extends Controller
 
         return response()->json(['data' => $data]);
     }
+
+    public function partyPerformance(Request $request)
+    {
+        $parties = \App\Models\TallyPartySync::orderBy('party_name')->get();
+        
+        $sales = \App\Models\TallySalesBill::selectRaw('party_name, SUM(qty) as total_qty, SUM(grand_total) as total_sales')
+            ->groupBy('party_name')
+            ->get()
+            ->keyBy('party_name');
+            
+        $payments = \App\Models\TallyPartywisePaymentCredit::selectRaw('party_name, SUM(credit_amount) as total_credit')
+            ->groupBy('party_name')
+            ->get()
+            ->keyBy('party_name');
+            
+        $balances = \App\Models\TallyOpeningClosing::orderBy('date', 'desc')
+            ->get()
+            ->groupBy('party_name')
+            ->map(function($items) {
+                return $items->first();
+            });
+            
+        $performanceData = $parties->map(function($party) use ($sales, $payments, $balances) {
+            $name = $party->party_name;
+            $s = $sales->get($name);
+            $p = $payments->get($name);
+            $b = $balances->get($name);
+            
+            return (object) [
+                'master_id' => $party->master_id,
+                'party_name' => $name,
+                'state' => $party->state,
+                'total_qty' => $s ? $s->total_qty : 0,
+                'total_sales' => $s ? $s->total_sales : 0,
+                'total_payment' => $p ? $p->total_credit : 0,
+                'closing_balance' => $b ? $b->closing_balance_amt : 0,
+            ];
+        });
+        
+        return view('admin.party.performance', compact('performanceData'));
+    }
 }

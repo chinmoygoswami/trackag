@@ -127,8 +127,8 @@
 
                         {{-- Party Performance --}}
                         <li class="nav-item">
-                            <a href="{{ route('coming-soon') }}"
-                            class="nav-link {{ request()->routeIs('coming-soon') ? 'active' : '' }}">
+                            <a href="{{ route('party.performance') }}"
+                            class="nav-link {{ request()->routeIs('party.performance') ? 'active' : '' }}">
                                 <i class="bi bi-bar-chart-fill me-2"></i>
                                 <p>Party Performance</p>
                             </a>

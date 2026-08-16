@@ -198,6 +198,7 @@ Route::middleware(['web'])->group(function () {
             Route::post('party-sync/assign', [CustomerController::class, 'assignParty'])->name('party.sync.assign');
             Route::view('party-opening-closing', 'admin.party.opening_closing')->name('party.opening.closing');
             Route::view('partywise-payment-credit', 'admin.party.partywise_payment_credit')->name('partywise.payment.credit');
+            Route::get('party-performance', [PartyController::class, 'partyPerformance'])->name('party.performance');
             
             Route::post('order-status-update', [OrderController::class, 'updateStatus'])->name('order.status.update');
             Route::post('order/item/update', [OrderController::class, 'updateItem'])->name('order.item.update');
