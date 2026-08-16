@@ -92,7 +92,15 @@ class TallyController extends Controller
             
             foreach ($validated['Data'] as $item) {
                 $item['raw_payload'] = $item;
-                \App\Models\TallyPartywisePaymentCredit::create($item);
+                
+                if (!empty($item['voucher_no'])) {
+                    \App\Models\TallyPartywisePaymentCredit::updateOrCreate(
+                        ['voucher_no' => $item['voucher_no']],
+                        $item
+                    );
+                } else {
+                    \App\Models\TallyPartywisePaymentCredit::create($item);
+                }
             }
 
             return $this->successResponse();
