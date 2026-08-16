@@ -114,28 +114,29 @@ class AdminController extends Controller
 
         $employeeData = $employees->map(function($emp) use ($sessions, $todayTrips) {
             $userSessions = $sessions->get($emp->id);
-            $dayStart = $userSessions ? $userSessions->min('login_at') : null;
-            $dayEnd = $userSessions ? $userSessions->max('logout_at') : null;
+            
+            $userTrip = $todayTrips->get($emp->id)?->first();
             
             // Calc login hours
             $loginHrs = '-';
-            if ($dayStart) {
-                if ($dayEnd) {
-                    $loginHrs = \Carbon\Carbon::parse($dayStart)->diffInHours(\Carbon\Carbon::parse($dayEnd)) . ' Hrs';
+            $sessionStart = $userSessions ? $userSessions->min('login_at') : null;
+            $sessionEnd = $userSessions ? $userSessions->max('logout_at') : null;
+            if ($sessionStart) {
+                if ($sessionEnd) {
+                    $loginHrs = \Carbon\Carbon::parse($sessionStart)->diffInHours(\Carbon\Carbon::parse($sessionEnd)) . ' Hrs';
                 } else {
-                    $loginHrs = \Carbon\Carbon::parse($dayStart)->diffInHours(now()) . ' Hrs (Active)';
+                    $loginHrs = \Carbon\Carbon::parse($sessionStart)->diffInHours(now()) . ' Hrs (Active)';
                 }
             }
-
-            $userTrip = $todayTrips->get($emp->id)?->first();
 
             return (object)[
                 'id' => $emp->id,
                 'name' => $emp->name,
-                'day_start' => $dayStart ? \Carbon\Carbon::parse($dayStart)->format('h:i A') : '-',
-                'day_end' => $dayEnd ? \Carbon\Carbon::parse($dayEnd)->format('h:i A') : '-',
+                'day_start' => $userTrip && $userTrip->start_time ? \Carbon\Carbon::parse($userTrip->start_time)->format('h:i A') : '-',
+                'day_end' => $userTrip && $userTrip->end_time ? \Carbon\Carbon::parse($userTrip->end_time)->format('h:i A') : '-',
                 'login_hrs' => $loginHrs,
                 'tour_plan' => $userTrip ? ($userTrip->place_to_visit ?? 'Active Tour') : '-',
+                'trip_id' => $userTrip ? $userTrip->id : null,
             ];
         });
 

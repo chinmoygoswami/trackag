@@ -372,10 +372,14 @@
                                 </td>
                                 <td>
                                     <div class="d-flex gap-2">
-                                        <a href="#" class="btn-action btn-action-map text-decoration-none">
-                                            <i class="fas fa-map-marked-alt me-1"></i> MAP
-                                        </a>
-                                        <a href="#" class="btn-action btn-action-log text-decoration-none" onclick="event.preventDefault(); alert('Session logs for {{ $employee->name }}');">
+                                        @if($employee->trip_id)
+                                            <a href="{{ route('trip.map', $employee->trip_id) }}" class="btn-action btn-action-map text-decoration-none" target="_blank">
+                                                <i class="fas fa-map-marked-alt me-1"></i> MAP
+                                            </a>
+                                        @else
+                                            <span class="btn-action btn-action-map text-decoration-none opacity-50"><i class="fas fa-map-marked-alt me-1"></i> MAP</span>
+                                        @endif
+                                        <a href="#" class="btn-action btn-action-log text-decoration-none" onclick="event.preventDefault(); loadSessionHistory({{ $employee->id }});">
                                             <i class="fas fa-history me-1"></i> LOG
                                         </a>
                                     </div>
@@ -390,8 +394,49 @@
                     </table>
                 </div>
 
+                {{-- Session History Modal --}}
+                <div class="modal fade" id="sessionHistoryModal" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                        <div class="modal-content">
+                            <div class="modal-header bg-primary text-white">
+                                <h5 class="modal-title" id="sessionHistoryModalLabel">Session History</h5>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div id="sessionHistoryContent">Loading...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
     </main>
 @endsection
+
+@push('scripts')
+<script>
+    function loadSessionHistory(userId) {
+        var modalElement = document.getElementById('sessionHistoryModal');
+        // Ensure bootstrap modal is loaded, if not, use jQuery depending on app's standard
+        if (typeof bootstrap !== 'undefined') {
+            var modal = new bootstrap.Modal(modalElement);
+            modal.show();
+        } else {
+            $(modalElement).modal('show');
+        }
+
+        document.getElementById('sessionHistoryContent').innerHTML = 'Loading...';
+        
+        fetch('{{ url("admin/users") }}/' + userId + '/sessions')
+            .then(response => response.text())
+            .then(html => {
+                document.getElementById('sessionHistoryContent').innerHTML = html;
+            })
+            .catch(error => {
+                document.getElementById('sessionHistoryContent').innerHTML = '<p class="text-danger">Failed to load session history.</p>';
+            });
+    }
+</script>
+@endpush
 
