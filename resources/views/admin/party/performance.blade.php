@@ -36,16 +36,22 @@
         <div class="container-fluid px-4">
             
             <!-- Summary Widgets -->
+            @php
+                $totalOpening = $performanceData->sum('opening_balance');
+                $totalCredit = $performanceData->sum('credit_amt');
+                $totalDebit = $performanceData->sum('debit_amt');
+                $totalClosing = $performanceData->sum('closing_balance');
+            @endphp
             <div class="row mb-4">
                 <div class="col-lg-3 col-md-6">
                     <div class="card bg-primary text-white shadow-sm border-0 h-100">
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
-                                    <h6 class="text-white-50 mb-1">Total Sales</h6>
-                                    <h3 class="mb-0">₹{{ number_format($performanceData->sum('total_sales'), 2) }}</h3>
+                                    <h6 class="text-white-50 mb-1">Total Opening Balance</h6>
+                                    <h3 class="mb-0">₹{{ number_format(abs($totalOpening), 2) }} <span class="fs-5 text-white-50">{{ $totalOpening < 0 ? 'Cr' : 'Dr' }}</span></h3>
                                 </div>
-                                <div class="fs-1 text-white-50"><i class="bi bi-cart-check"></i></div>
+                                <div class="fs-1 text-white-50"><i class="bi bi-wallet-fill"></i></div>
                             </div>
                         </div>
                     </div>
@@ -55,8 +61,8 @@
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
-                                    <h6 class="text-white-50 mb-1">Total Payments Received</h6>
-                                    <h3 class="mb-0">₹{{ number_format($performanceData->sum('total_payment'), 2) }}</h3>
+                                    <h6 class="text-white-50 mb-1">Total Credit (Payment)</h6>
+                                    <h3 class="mb-0">₹{{ number_format($totalCredit, 2) }} <span class="fs-5 text-white-50">Cr</span></h3>
                                 </div>
                                 <div class="fs-1 text-white-50"><i class="bi bi-cash-coin"></i></div>
                             </div>
@@ -68,10 +74,10 @@
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
-                                    <h6 class="text-white-50 mb-1">Total Closing Balance</h6>
-                                    <h3 class="mb-0">₹{{ number_format($performanceData->sum('closing_balance'), 2) }}</h3>
+                                    <h6 class="text-white-50 mb-1">Total Debit (Bill)</h6>
+                                    <h3 class="mb-0">₹{{ number_format($totalDebit, 2) }} <span class="fs-5 text-white-50">Dr</span></h3>
                                 </div>
-                                <div class="fs-1 text-white-50"><i class="bi bi-wallet2"></i></div>
+                                <div class="fs-1 text-white-50"><i class="bi bi-cart-check"></i></div>
                             </div>
                         </div>
                     </div>
@@ -81,10 +87,10 @@
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
-                                    <h6 class="text-white-50 mb-1">Total Items Sold (Qty)</h6>
-                                    <h3 class="mb-0">{{ number_format($performanceData->sum('total_qty')) }}</h3>
+                                    <h6 class="text-white-50 mb-1">Total Closing Balance</h6>
+                                    <h3 class="mb-0">₹{{ number_format(abs($totalClosing), 2) }} <span class="fs-5 text-white-50">{{ $totalClosing < 0 ? 'Cr' : 'Dr' }}</span></h3>
                                 </div>
-                                <div class="fs-1 text-white-50"><i class="bi bi-boxes"></i></div>
+                                <div class="fs-1 text-white-50"><i class="bi bi-wallet2"></i></div>
                             </div>
                         </div>
                     </div>
