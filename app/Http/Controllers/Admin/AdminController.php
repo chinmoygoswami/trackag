@@ -124,12 +124,16 @@ class AdminController extends Controller
                 
                 if ($userTrip->end_time && $userTrip->status === 'completed') {
                     $endCarbon = \Carbon\Carbon::parse($userTrip->end_time);
-                    $hours = str_pad($startCarbon->diffInHours($endCarbon), 2, '0', STR_PAD_LEFT);
-                    $minutes = str_pad($startCarbon->diffInMinutes($endCarbon) % 60, 2, '0', STR_PAD_LEFT);
+                    $h = (int) $startCarbon->diffInHours($endCarbon);
+                    $m = (int) ($startCarbon->diffInMinutes($endCarbon) % 60);
+                    $hours = str_pad($h, 2, '0', STR_PAD_LEFT);
+                    $minutes = str_pad($m, 2, '0', STR_PAD_LEFT);
                     $loginHrs = "{$hours}:{$minutes} Hrs";
                 } else {
-                    $hours = str_pad($startCarbon->diffInHours(now()), 2, '0', STR_PAD_LEFT);
-                    $minutes = str_pad($startCarbon->diffInMinutes(now()) % 60, 2, '0', STR_PAD_LEFT);
+                    $h = (int) $startCarbon->diffInHours(now());
+                    $m = (int) ($startCarbon->diffInMinutes(now()) % 60);
+                    $hours = str_pad($h, 2, '0', STR_PAD_LEFT);
+                    $minutes = str_pad($m, 2, '0', STR_PAD_LEFT);
                     $loginHrs = "{$hours}:{$minutes} Hrs (Active)";
                 }
             }
