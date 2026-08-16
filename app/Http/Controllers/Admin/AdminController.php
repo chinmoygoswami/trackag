@@ -145,17 +145,20 @@ class AdminController extends Controller
             ->groupBy('customers.state_id')
             ->pluck('total', 'state_id');
 
-        // Target vs Achievement (Current Month)
-        $currentMonth = strtolower(now()->format('F'));
-        $currentMonthNum = now()->format('m');
-        $currentYear = now()->format('Y');
-
+        // Target vs Achievement (Financial Year)
         $currentMonthRaw = now()->format('n');
         if ($currentMonthRaw >= 4) {
+            $startYear = now()->format('Y');
+            $endYear = now()->format('Y') + 1;
             $fy = now()->format('Y') . '-' . (now()->format('y') + 1);
         } else {
+            $startYear = now()->format('Y') - 1;
+            $endYear = now()->format('Y');
             $fy = (now()->format('Y') - 1) . '-' . now()->format('y');
         }
+
+        $startDate = "$startYear-04-01 00:00:00";
+        $endDate = "$endYear-03-31 23:59:59";
 
         $budgets = \App\Models\Budget::whereIn('state_id', $states->pluck('id'))
             ->where('financial_year', $fy)
@@ -170,13 +173,14 @@ class AdminController extends Controller
                 $targetVsAchByState[$stateId] = ['target' => 0, 'achievement' => 0];
             }
 
-            $targetVsAchByState[$stateId]['target'] += $budget->$currentMonth ?? 0;
+            // Total target for the year
+            $targetVsAchByState[$stateId]['target'] += $budget->total_target ?? 0;
 
-            $achive = \App\Models\OrderItem::whereHas('order', function($q) use ($budget, $currentMonthNum, $currentYear) {
+            // Total achievement for the year
+            $achive = \App\Models\OrderItem::whereHas('order', function($q) use ($budget, $startDate, $endDate) {
                 $q->where('user_id', $budget->user_id)
                   ->where('status', 'approved')
-                  ->whereMonth('created_at', $currentMonthNum)
-                  ->whereYear('created_at', $currentYear);
+                  ->whereBetween('created_at', [$startDate, $endDate]);
             })->sum('total_price');
 
             $targetVsAchByState[$stateId]['achievement'] += $achive;
