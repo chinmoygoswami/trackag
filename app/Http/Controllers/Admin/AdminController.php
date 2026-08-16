@@ -117,15 +117,20 @@ class AdminController extends Controller
             
             $userTrip = $todayTrips->get($emp->id)?->first();
             
-            // Calc login hours
+            // Calc login hours from trip
             $loginHrs = '-';
-            $sessionStart = $userSessions ? $userSessions->min('login_at') : null;
-            $sessionEnd = $userSessions ? $userSessions->max('logout_at') : null;
-            if ($sessionStart) {
-                if ($sessionEnd) {
-                    $loginHrs = \Carbon\Carbon::parse($sessionStart)->diffInHours(\Carbon\Carbon::parse($sessionEnd)) . ' Hrs';
+            if ($userTrip && $userTrip->start_time) {
+                $startCarbon = \Carbon\Carbon::parse($userTrip->start_time);
+                
+                if ($userTrip->end_time && $userTrip->status === 'completed') {
+                    $endCarbon = \Carbon\Carbon::parse($userTrip->end_time);
+                    $hours = $startCarbon->diffInHours($endCarbon);
+                    $minutes = $startCarbon->diffInMinutes($endCarbon) % 60;
+                    $loginHrs = "{$hours}h {$minutes}m";
                 } else {
-                    $loginHrs = \Carbon\Carbon::parse($sessionStart)->diffInHours(now()) . ' Hrs (Active)';
+                    $hours = $startCarbon->diffInHours(now());
+                    $minutes = $startCarbon->diffInMinutes(now()) % 60;
+                    $loginHrs = "{$hours}h {$minutes}m (Active)";
                 }
             }
 
