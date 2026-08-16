@@ -56,8 +56,17 @@ class AdminController extends Controller
         $todaysPaymentCollection = \App\Models\PartyPayment::whereDate('payment_date', today())->sum('amount');
         $todaysPartyVisits = \App\Models\PartyVisit::whereDate('visited_date', today())->count();
 
-        // 2. Middle Cards: State-wise Groupings
-        $states = \App\Models\State::all();
+        // 2. Middle Cards: State-wise groupings
+        $companyCount = \App\Models\Company::count();
+        if ($companyCount == 1) {
+            $company = \App\Models\Company::first();
+            $companyStates = $company && $company->state ? array_map('intval', explode(',', $company->state)) : [];
+            $states = \App\Models\State::where('status', 1)
+                        ->whereIn('id', $companyStates)
+                        ->get();
+        } else {
+            $states = \App\Models\State::where('status', 1)->get();
+        }
         
         // Partywise Outstanding
         $outstandingByState = \App\Models\TallyOpeningClosing::join('customers', 'tally_opening_closings.master_id', '=', 'customers.party_code')
@@ -66,26 +75,124 @@ class AdminController extends Controller
             ->get()
             ->pluck('total', 'state_id');
 
-        // TA-DA Info
-        $tadaByState = \App\Models\Expense::join('users', 'expenses.user_id', '=', 'users.id')
-            ->groupBy('users.state_id')
-            ->selectRaw('users.state_id, SUM(amount) as total')
-            ->get()
-            ->pluck('total', 'state_id');
+        // TA-DA Info (Using Slab logic from state-wise report)
+        $tadaTrips = \App\Models\Trip::with(['user'])
+            ->where('approval_status', 'approved')
+            ->whereDate('trip_date', today())
+            ->get();
+        
+        $tadaByState = [];
+        foreach ($tadaTrips as $item) {
+            if (!$item->user || !$item->user->state_id) continue;
+            $stateId = $item->user->state_id;
+
+            $slabType = $item->user->slab ?? "";
+            $da_amount = null;
+            $ta_amount = null;
+
+            if ($slabType == "Slab Wise") {
+                $da_amount = \App\Models\TaDaTourSlab::where('tour_type_id', $item->tour_type)->whereNull('user_id')->where('designation_id', $item->user->slab_designation_id)->first();
+                $ta_amount = \App\Models\TaDaVehicleSlab::where('travel_mode_id', $item->travel_mode)->whereNull('user_id')->where('designation_id', $item->user->slab_designation_id)->first();
+            }
+
+            if ($slabType == "Individual") {
+                $da_amount = \App\Models\TaDaTourSlab::where('tour_type_id', $item->tour_type)->where('user_id', $item->user->id)->first();
+                $ta_amount = \App\Models\TaDaVehicleSlab::where('travel_mode_id', $item->travel_mode)->where('user_id', $item->user->id)->first();
+            }
+
+            $expense = \App\Models\Expense::where('user_id', $item->user_id)->whereDate('bill_date', $item->trip_date)
+                ->where('approval_status', 'Approved')->sum('amount');
+
+            $slabInfo = null;
+            if ($slabType == 'Individual') {
+                $slabInfo = \App\Models\TaDaSlab::where('user_id', $item->user->id)->first();
+            } else {
+                $slabInfo = \App\Models\TaDaSlab::whereNull('user_id')->first();
+            }
+            $limitEnabled = $slabInfo ? $slabInfo->travel_mode_enabled : 0;
+            $limitValue = $slabInfo ? $slabInfo->travel_mode_limit : 0;
+
+            $travelKm = ((float)$item->end_km - (float)$item->starting_km);
+
+            if ($limitEnabled == 1 && $travelKm < $limitValue && $item->trip_limit_override == 0) {
+                $ta = 0; $da = 0;
+            } else if($limitEnabled == 1 && $travelKm < $limitValue && $item->trip_limit_override == 1){
+                $ta = ($ta_amount->travelling_allow_per_km ?? 0) * $travelKm;
+                $da = $da_amount->da_amount ?? 0;
+            } else if($limitEnabled == 1 && $travelKm < $limitValue && $item->trip_limit_override == 2){
+                $ta = 0;
+                $da = $da_amount->da_amount ?? 0;
+            } else if($limitEnabled == 1 && $travelKm < $limitValue && $item->trip_limit_override == 3){
+                $ta = ($ta_amount->travelling_allow_per_km ?? 0) * $travelKm;
+                $da = 0;
+            } else {
+                $ta = ($ta_amount->travelling_allow_per_km ?? 0) * $travelKm;
+                $da = $da_amount->da_amount ?? 0;
+            }
+
+            $total = $ta + $da + $expense;
+            
+            if (!isset($tadaByState[$stateId])) {
+                $tadaByState[$stateId] = 0;
+            }
+            $tadaByState[$stateId] += $total;
+        }
 
         // Payment Credit
         $paymentCreditByState = \App\Models\PartyPayment::join('customers', 'party_payments.customer_id', '=', 'customers.id')
+            ->select('customers.state_id', \DB::raw('SUM(party_payments.amount) as total'))
+            ->whereDate('party_payments.payment_date', today())
             ->groupBy('customers.state_id')
-            ->selectRaw('customers.state_id, SUM(amount) as total')
-            ->get()
             ->pluck('total', 'state_id');
 
-        $statesData = $states->map(function($state) use ($outstandingByState, $tadaByState, $paymentCreditByState) {
+        // Target vs Achievement (Current Month)
+        $currentMonth = strtolower(now()->format('F'));
+        $currentMonthNum = now()->format('m');
+        $currentYear = now()->format('Y');
+
+        $currentMonthRaw = now()->format('n');
+        if ($currentMonthRaw >= 4) {
+            $fy = now()->format('Y') . '-' . (now()->format('y') + 1);
+        } else {
+            $fy = (now()->format('Y') - 1) . '-' . now()->format('y');
+        }
+
+        $budgets = \App\Models\Budget::whereIn('state_id', $states->pluck('id'))
+            ->where('financial_year', $fy)
+            ->get();
+            
+        $targetVsAchByState = [];
+
+        foreach ($budgets as $budget) {
+            $stateId = $budget->state_id;
+            
+            if (!isset($targetVsAchByState[$stateId])) {
+                $targetVsAchByState[$stateId] = ['target' => 0, 'achievement' => 0];
+            }
+
+            $targetVsAchByState[$stateId]['target'] += $budget->$currentMonth ?? 0;
+
+            $achive = \App\Models\OrderItem::whereHas('order', function($q) use ($budget, $currentMonthNum, $currentYear) {
+                $q->where('user_id', $budget->user_id)
+                  ->where('status', 'approved')
+                  ->whereMonth('created_at', $currentMonthNum)
+                  ->whereYear('created_at', $currentYear);
+            })->sum('total_price');
+
+            $targetVsAchByState[$stateId]['achievement'] += $achive;
+        }
+
+        $statesData = $states->map(function($state) use ($tadaByState, $outstandingByState, $paymentCreditByState, $targetVsAchByState) {
+            $target = $targetVsAchByState[$state->id]['target'] ?? 0;
+            $achievement = $targetVsAchByState[$state->id]['achievement'] ?? 0;
+            $percent = $target > 0 ? round(($achievement / $target) * 100, 1) : 0;
+
             return (object)[
+                'id' => $state->id,
                 'name' => $state->name,
-                'target_ach' => rand(30, 90), // Placeholder for complex logic
+                'target_ach' => $percent,
                 'outstanding' => $outstandingByState->get($state->id, 0),
-                'tada' => $tadaByState->get($state->id, 0),
+                'tada' => $tadaByState[$state->id] ?? 0,
                 'payment_credit' => $paymentCreditByState->get($state->id, 0),
             ];
         })->filter(function($s) {
