@@ -622,17 +622,16 @@ class PartyController extends Controller
 
     public function partyPerformance(Request $request)
     {
+        $customers = \App\Models\Customer::with('user')->whereNotNull('party_code')->get()->keyBy('party_code');
         $parties = \App\Models\TallyPartySync::orderBy('party_name')->get();
         
-        $sales = \App\Models\TallySalesBill::selectRaw('party_name, SUM(qty) as total_qty, SUM(grand_total) as total_sales')
-            ->groupBy('party_name')
-            ->get()
-            ->keyBy('party_name');
+        $sales = \App\Models\TallySalesBill::selectRaw('party_name, YEAR(invoice_date) as year, MONTH(invoice_date) as month, SUM(grand_total) as total_amount, SUM(qty) as total_qty')
+            ->groupBy('party_name', 'year', 'month')
+            ->get();
             
-        $payments = \App\Models\TallyPartywisePaymentCredit::selectRaw('party_name, SUM(credit_amount) as total_credit')
-            ->groupBy('party_name')
-            ->get()
-            ->keyBy('party_name');
+        $payments = \App\Models\TallyPartywisePaymentCredit::selectRaw('party_name, YEAR(payment_date) as year, MONTH(payment_date) as month, SUM(credit_amount) as total_amount')
+            ->groupBy('party_name', 'year', 'month')
+            ->get();
             
         $balances = \App\Models\TallyOpeningClosing::orderBy('date', 'desc')
             ->get()
@@ -640,24 +639,66 @@ class PartyController extends Controller
             ->map(function($items) {
                 return $items->first();
             });
+
+        $monthKeys = collect();
+        foreach ($sales as $s) {
+            $monthKeys->push(sprintf('%04d-%02d', $s->year, $s->month));
+        }
+        foreach ($payments as $p) {
+            $monthKeys->push(sprintf('%04d-%02d', $p->year, $p->month));
+        }
+        
+        $uniqueMonths = $monthKeys->unique()->sort()->values();
+        
+        $salesGrouped = $sales->groupBy('party_name')->map(function($items) {
+            return $items->keyBy(function($i) { return sprintf('%04d-%02d', $i->year, $i->month); });
+        });
+        $paymentsGrouped = $payments->groupBy('party_name')->map(function($items) {
+            return $items->keyBy(function($i) { return sprintf('%04d-%02d', $i->year, $i->month); });
+        });
             
-        $performanceData = $parties->map(function($party) use ($sales, $payments, $balances) {
+        $performanceData = $parties->map(function($party) use ($customers, $balances, $salesGrouped, $paymentsGrouped, $uniqueMonths) {
             $name = $party->party_name;
-            $s = $sales->get($name);
-            $p = $payments->get($name);
+            $customer = $customers->get($party->master_id);
+            $employeeName = $customer && $customer->user ? $customer->user->name : '-';
+            
             $b = $balances->get($name);
+            
+            $monthlyData = [];
+            $totalSales = 0;
+            $totalPayment = 0;
+            $totalQty = 0;
+
+            foreach ($uniqueMonths as $ym) {
+                $sAmt = isset($salesGrouped[$name][$ym]) ? $salesGrouped[$name][$ym]->total_amount : 0;
+                $sQty = isset($salesGrouped[$name][$ym]) ? $salesGrouped[$name][$ym]->total_qty : 0;
+                $pAmt = isset($paymentsGrouped[$name][$ym]) ? $paymentsGrouped[$name][$ym]->total_amount : 0;
+                
+                $monthlyData[$ym] = [
+                    'debit' => $sAmt,
+                    'credit' => $pAmt
+                ];
+                
+                $totalSales += $sAmt;
+                $totalPayment += $pAmt;
+                $totalQty += $sQty;
+            }
             
             return (object) [
                 'master_id' => $party->master_id,
                 'party_name' => $name,
-                'state' => $party->state,
-                'total_qty' => $s ? $s->total_qty : 0,
-                'total_sales' => $s ? $s->total_sales : 0,
-                'total_payment' => $p ? $p->total_credit : 0,
+                'employee_name' => $employeeName,
+                'opening_balance' => $b ? $b->opening_balance_amt : 0,
+                'credit_amt' => $b ? $b->credit_amt : 0,
+                'debit_amt' => $b ? $b->debit_amt : 0,
                 'closing_balance' => $b ? $b->closing_balance_amt : 0,
+                'total_qty' => $totalQty,
+                'total_sales' => $totalSales,
+                'total_payment' => $totalPayment,
+                'monthly' => $monthlyData
             ];
         });
         
-        return view('admin.party.performance', compact('performanceData'));
+        return view('admin.party.performance', compact('performanceData', 'uniqueMonths'));
     }
 }
