@@ -208,6 +208,21 @@ Route::middleware(['web'])->group(function () {
             Route::get('order-report', [OrderController::class, 'report'])->name('order.report');
             Route::resource('order', OrderController::class);
             Route::view('sales-bill-register', 'admin.order.sales_bill_register')->name('sales.bill.register');
+
+            Route::post('tally/bulk-delete/sales-bill', function (\Illuminate\Http\Request $request) {
+                \App\Models\TallySalesBill::whereIn('id', $request->ids ?? [])->delete();
+                return response()->json(['success' => true]);
+            })->name('tally.bulkDelete.salesBill');
+            
+            Route::post('tally/bulk-delete/opening-closing', function (\Illuminate\Http\Request $request) {
+                \App\Models\TallyOpeningClosing::whereIn('id', $request->ids ?? [])->delete();
+                return response()->json(['success' => true]);
+            })->name('tally.bulkDelete.openingClosing');
+
+            Route::post('tally/bulk-delete/partywise-payment-credit', function (\Illuminate\Http\Request $request) {
+                \App\Models\TallyPartywisePaymentCredit::whereIn('id', $request->ids ?? [])->delete();
+                return response()->json(['success' => true]);
+            })->name('tally.bulkDelete.partywisePaymentCredit');
             Route::resource('stock', StockController::class);
 
             Route::get('tracking/live-data', [TrackingController::class, 'liveData'])->name('tracking.liveData');

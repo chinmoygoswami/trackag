@@ -26,7 +26,7 @@
                     <h5 class="mb-0 text-primary fw-semibold">Sales Bill Register Details</h5>
                 </div>
                 <div class="card-body table-responsive">
-                    <div class="row mb-3">
+                    <div class="row mb-3 align-items-end">
                         <div class="col-md-2">
                             <label for="min-date" class="form-label">From Date</label>
                             <input type="date" id="min-date" class="form-control form-control-sm">
@@ -35,10 +35,16 @@
                             <label for="max-date" class="form-label">To Date</label>
                             <input type="date" id="max-date" class="form-control form-control-sm">
                         </div>
+                        <div class="col-md-2">
+                            <button id="btn-bulk-delete" class="btn btn-danger btn-sm" style="display: none;">
+                                <i class="bi bi-trash"></i> Bulk Delete
+                            </button>
+                        </div>
                     </div>
                     <table id="data-table" class="table table-bordered table-hover table-striped align-middle">
                         <thead class="table-light text-uppercase" style="font-size: 13px;">
                             <tr>
+                                <th class="text-center" style="width: 40px;"><input type="checkbox" id="selectAll"></th>
                                 <th>Sr. No.</th>
                                 <th>Financial Year</th>
                                 <th>Invoice Date</th>
@@ -61,6 +67,7 @@
                             @endphp
                             @forelse($records as $index => $record)
                             <tr>
+                                <td class="text-center"><input type="checkbox" class="row-checkbox" value="{{ $record->id }}"></td>
                                 <td>{{ $loop->iteration }}</td>
                                 <td>{{ $record->financial_year }}</td>
                                 <td>{{ $record->invoice_date ? $record->invoice_date->format('d-m-Y') : '' }}</td>
@@ -78,7 +85,7 @@
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="14" class="text-center text-muted py-4">No data available</td>
+                                <td colspan="15" class="text-center text-muted py-4">No data available</td>
                             </tr>
                             @endforelse
                         </tbody>
@@ -130,6 +137,62 @@ $(document).ready(function() {
 
         $('#min-date, #max-date').on('change', function () {
             table.draw();
+        });
+
+        $('#selectAll').on('click', function() {
+            var rows = table.rows({ 'search': 'applied' }).nodes();
+            $('input[type="checkbox"].row-checkbox', rows).prop('checked', this.checked);
+            toggleBulkDeleteBtn();
+        });
+
+        $('#data-table tbody').on('change', 'input[type="checkbox"].row-checkbox', function() {
+            if (!this.checked) {
+                var el = $('#selectAll').get(0);
+                if (el && el.checked && ('indeterminate' in el)) {
+                    el.indeterminate = true;
+                }
+            }
+            toggleBulkDeleteBtn();
+        });
+
+        function toggleBulkDeleteBtn() {
+            var checkedCount = table.$('input[type="checkbox"].row-checkbox:checked').length;
+            if (checkedCount > 0) {
+                $('#btn-bulk-delete').show();
+            } else {
+                $('#btn-bulk-delete').hide();
+            }
+        }
+
+        $('#btn-bulk-delete').on('click', function() {
+            var selectedIds = [];
+            table.$('input[type="checkbox"].row-checkbox:checked').each(function() {
+                selectedIds.push($(this).val());
+            });
+
+            if (selectedIds.length > 0) {
+                if (confirm('Are you sure you want to delete the selected records?')) {
+                    $.ajax({
+                        url: "{{ route('tally.bulkDelete.salesBill') }}",
+                        type: 'POST',
+                        data: {
+                            _token: "{{ csrf_token() }}",
+                            ids: selectedIds
+                        },
+                        success: function(response) {
+                            if(response.success) {
+                                alert('Records deleted successfully.');
+                                location.reload();
+                            } else {
+                                alert('Failed to delete records.');
+                            }
+                        },
+                        error: function(xhr) {
+                            alert('An error occurred while deleting records.');
+                        }
+                    });
+                }
+            }
         });
     }
 });
