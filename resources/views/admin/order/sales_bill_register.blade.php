@@ -181,14 +181,15 @@ $(document).ready(function() {
                         },
                         success: function(response) {
                             if(response.success) {
-                                alert('Records deleted successfully.');
-                                location.reload();
+                                Swal.fire('Success', 'Records deleted successfully.', 'success').then(() => {
+                                    location.reload();
+                                });
                             } else {
-                                alert('Failed to delete records.');
+                                Swal.fire('Error', 'Failed to delete records.', 'error');
                             }
                         },
                         error: function(xhr) {
-                            alert('An error occurred while deleting records.');
+                            Swal.fire('Error', 'An error occurred while deleting records.', 'error');
                         }
                     });
                 }
