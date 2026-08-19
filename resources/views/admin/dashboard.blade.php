@@ -264,8 +264,9 @@
                         <a href="{{ url('admin/order') }}" class="text-decoration-none">
                             <div class="metric-card success">
                                 <div class="metric-card-body">
-                                    <div class="metric-label">Today's Place Order Count</div>
+                                    <div class="metric-label">Today's Orders (Count & Value)</div>
                                     <h3 class="metric-value">{{ $todaysOrderCount }}</h3>
+                                    <span class="badge text-success mt-2 fs-6" style="background: rgba(22, 163, 74, 0.1);">₹{{ number_format($todaysOrderValue, 2) }}</span>
                                 </div>
                             </div>
                         </a>
