@@ -57,13 +57,18 @@ class AdminController extends Controller
         $statesData = collect([]);
         $employeeData = collect([]);
 
+        $tallyPendingPartySyncCount = 0;
+        $tallyTotalSalesAmount = 0;
+        $tallyTotalClosingBalance = 0;
+        $tallyTotalCreditAmount = 0;
+
         try {
             if ($user) {
                 $isMasterAdmin = $user->hasRole('master_admin');
             }
 
             // 1. Top Cards: Daily Pulse
-        $todaysActiveUserCount = \App\Models\UserSession::whereDate('login_at', today())->distinct('user_id')->count();
+        $todaysActiveTripCount = \App\Models\Trip::where('status', 'started')->count();
         $todaysOrderCount = \App\Models\Order::whereDate('created_at', today())->count();
         $todaysPaymentCollection = \App\Models\PartyPayment::whereDate('payment_date', today())->sum('amount');
         $todaysPartyVisits = \App\Models\PartyVisit::whereDate('visited_date', today())->count();
@@ -93,6 +98,14 @@ class AdminController extends Controller
             ->whereDate('trip_date', today())
             ->get();
         
+        $tadaUserIds = $tadaTrips->pluck('user_id')->unique();
+        $expensesByUserId = \App\Models\Expense::whereIn('user_id', $tadaUserIds)
+            ->whereDate('bill_date', today())
+            ->where('approval_status', 'Approved')
+            ->select('user_id', \DB::raw('SUM(amount) as total'))
+            ->groupBy('user_id')
+            ->pluck('total', 'user_id');
+
         $tadaByState = [];
         foreach ($tadaTrips as $item) {
             if (!$item->user || !$item->user->state_id) continue;
@@ -112,8 +125,7 @@ class AdminController extends Controller
                 $ta_amount = \App\Models\TaDaVehicleSlab::where('travel_mode_id', $item->travel_mode)->where('user_id', $item->user->id)->first();
             }
 
-            $expense = \App\Models\Expense::where('user_id', $item->user_id)->whereDate('bill_date', $item->trip_date)
-                ->where('approval_status', 'Approved')->sum('amount');
+            $expense = $expensesByUserId->get($item->user_id, 0);
 
             $slabInfo = null;
             if ($slabType == 'Individual') {
@@ -150,12 +162,27 @@ class AdminController extends Controller
             $tadaByState[$stateId] += $total;
         }
 
-        // Payment Credit
-        $paymentCreditByState = \App\Models\PartyPayment::join('customers', 'party_payments.customer_id', '=', 'customers.id')
+        // Payment Credit from Field App
+        $paymentCreditByStateArray = \App\Models\PartyPayment::join('customers', 'party_payments.customer_id', '=', 'customers.id')
             ->select('customers.state_id', \DB::raw('SUM(party_payments.amount) as total'))
             ->whereDate('party_payments.payment_date', today())
             ->groupBy('customers.state_id')
-            ->pluck('total', 'state_id');
+            ->pluck('total', 'state_id')->toArray();
+
+        // Tally Payment Credit
+        $tallyCredits = \App\Models\TallyPartywisePaymentCredit::join('customers', 'tally_partywise_payment_credits.party_name', '=', 'customers.party_code')
+            ->select('customers.state_id', \DB::raw('SUM(tally_partywise_payment_credits.credit_amount) as total'))
+            ->whereDate('tally_partywise_payment_credits.payment_date', today())
+            ->groupBy('customers.state_id')
+            ->pluck('total', 'state_id')->toArray();
+
+        foreach($tallyCredits as $stateId => $amount) {
+            if(!isset($paymentCreditByStateArray[$stateId])) {
+                $paymentCreditByStateArray[$stateId] = 0;
+            }
+            $paymentCreditByStateArray[$stateId] += $amount;
+        }
+        $paymentCreditByState = collect($paymentCreditByStateArray);
 
         // Target vs Achievement (Financial Year)
         $currentMonthRaw = now()->format('n');
@@ -275,18 +302,33 @@ class AdminController extends Controller
             ];
         });
 
+        // 4. Tally Overview Metrics
+        $tallyPendingPartySyncCount = \App\Models\TallyPartySync::whereNotExists(function ($query) {
+            $query->select(\Illuminate\Support\Facades\DB::raw(1))
+                  ->from('customers')
+                  ->whereColumn('customers.party_code', 'tally_party_syncs.master_id')
+                  ->whereNotNull('customers.party_code');
+        })->count();
+        $tallyTotalSalesAmount = \App\Models\TallySalesBill::sum('grand_total');
+        $tallyTotalClosingBalance = \App\Models\TallyOpeningClosing::sum('closing_balance_amt');
+        $tallyTotalCreditAmount = \App\Models\TallyPartywisePaymentCredit::sum('credit_amount');
+
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::warning("Dashboard exception: " . $e->getMessage());
         }
 
         return view('admin.dashboard', compact(
-            'todaysActiveUserCount',
+            'todaysActiveTripCount',
             'todaysOrderCount',
             'todaysPaymentCollection',
             'todaysPartyVisits',
             'statesData',
             'employeeData',
-            'isMasterAdmin'
+            'isMasterAdmin',
+            'tallyPendingPartySyncCount',
+            'tallyTotalSalesAmount',
+            'tallyTotalClosingBalance',
+            'tallyTotalCreditAmount'
         ));
     }
 

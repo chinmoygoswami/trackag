@@ -53,38 +53,38 @@
         }
 
         .metric-card {
-            background: #fff;
-            border: 1px solid rgba(148, 163, 184, .24);
-            border-radius: .5rem;
-            box-shadow: 0 14px 30px rgba(15, 23, 42, .08);
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            border-radius: 1rem;
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.05);
             display: flex;
             flex-direction: column;
             min-height: 120px;
             overflow: hidden;
             position: relative;
-            transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
         }
 
         .metric-card:hover {
-            border-color: rgba(59, 130, 246, .28);
-            box-shadow: 0 18px 38px rgba(15, 23, 42, .12);
-            transform: translateY(-2px);
+            transform: translateY(-6px) scale(1.02);
+            box-shadow: 0 15px 45px rgba(31, 38, 135, 0.12);
+            border-color: rgba(255, 255, 255, 0.9);
         }
 
-        .metric-card::before {
+        .metric-card::after {
             content: "";
-            bottom: 0;
-            height: auto;
-            left: 0;
             position: absolute;
-            top: 0;
-            width: 4px;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(120deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0) 100%);
+            pointer-events: none;
         }
 
-        .metric-card.primary::before { background: #2563eb; }
-        .metric-card.success::before { background: #16a34a; }
-        .metric-card.warning::before { background: #f59e0b; }
-        .metric-card.danger::before { background: #dc2626; }
+        .metric-card.primary { background: linear-gradient(135deg, rgba(37,99,235,0.08), rgba(255,255,255,0.9)); border-left: 5px solid #2563eb; }
+        .metric-card.success { background: linear-gradient(135deg, rgba(22,163,74,0.08), rgba(255,255,255,0.9)); border-left: 5px solid #16a34a; }
+        .metric-card.warning { background: linear-gradient(135deg, rgba(245,158,11,0.08), rgba(255,255,255,0.9)); border-left: 5px solid #f59e0b; }
+        .metric-card.danger { background: linear-gradient(135deg, rgba(220,38,38,0.08), rgba(255,255,255,0.9)); border-left: 5px solid #dc2626; }
 
         .metric-card-body {
             align-items: center;
@@ -112,21 +112,32 @@
         }
 
         .dashboard-card {
-            background: #fff;
-            border: 1px solid rgba(148, 163, 184, .24);
-            border-radius: .5rem;
-            box-shadow: 0 14px 30px rgba(15, 23, 42, .08);
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            border-radius: 1rem;
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.05);
             overflow: hidden;
             height: 100%;
+            transition: all 0.3s ease;
+        }
+
+        .dashboard-card:hover {
+            box-shadow: 0 15px 45px rgba(31, 38, 135, 0.1);
+            transform: translateY(-3px);
         }
 
         .dashboard-card .card-header {
-            background: #f8fafc;
-            border-bottom: 1px solid #e2e8f0;
+            background: rgba(248, 250, 252, 0.9);
+            border-bottom: 1px solid rgba(226, 232, 240, 0.6);
             padding: 1rem 1.25rem;
             font-weight: 800;
             font-size: 1.05rem;
             color: #1e293b;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
         }
 
         .dashboard-card .card-body {
@@ -148,10 +159,12 @@
         }
 
         .dashboard-table-container {
-            background: #fff;
-            border: 1px solid rgba(148, 163, 184, .24);
-            border-radius: .5rem;
-            box-shadow: 0 14px 30px rgba(15, 23, 42, .08);
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            border-radius: 1rem;
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.05);
             overflow: hidden;
             margin-top: 2rem;
         }
@@ -163,8 +176,8 @@
         }
 
         .dashboard-table thead th {
-            background: #f8fafc;
-            border-bottom: 1px solid #e2e8f0;
+            background: rgba(248, 250, 252, 0.9);
+            border-bottom: 1px solid rgba(226, 232, 240, 0.6);
             color: #475569;
             font-size: .8rem;
             letter-spacing: .02em;
@@ -238,36 +251,88 @@
                 <!-- Top Cards Row -->
                 <div class="row g-4 mb-4">
                     <div class="col-lg-3 col-md-6">
-                        <div class="metric-card primary">
-                            <div class="metric-card-body">
-                                <div class="metric-label">Todays Active User Count</div>
-                                <h3 class="metric-value">{{ $todaysActiveUserCount }}</h3>
+                        <a href="{{ url('admin/trips') }}" class="text-decoration-none">
+                            <div class="metric-card primary">
+                                <div class="metric-card-body">
+                                    <div class="metric-label">All Active Trip Count</div>
+                                    <h3 class="metric-value">{{ $todaysActiveTripCount }}</h3>
+                                </div>
                             </div>
-                        </div>
+                        </a>
                     </div>
                     <div class="col-lg-3 col-md-6">
-                        <div class="metric-card success">
-                            <div class="metric-card-body">
-                                <div class="metric-label">Today's Place Order Count</div>
-                                <h3 class="metric-value">{{ $todaysOrderCount }}</h3>
+                        <a href="{{ url('admin/order') }}" class="text-decoration-none">
+                            <div class="metric-card success">
+                                <div class="metric-card-body">
+                                    <div class="metric-label">Today's Place Order Count</div>
+                                    <h3 class="metric-value">{{ $todaysOrderCount }}</h3>
+                                </div>
                             </div>
-                        </div>
+                        </a>
                     </div>
                     <div class="col-lg-3 col-md-6">
-                        <div class="metric-card warning">
-                            <div class="metric-card-body">
-                                <div class="metric-label">Todays Payment Collection</div>
-                                <h3 class="metric-value">₹{{ number_format($todaysPaymentCollection, 2) }}</h3>
+                        <a href="{{ route('party-payment') }}" class="text-decoration-none">
+                            <div class="metric-card warning">
+                                <div class="metric-card-body">
+                                    <div class="metric-label">Todays Payment Collection</div>
+                                    <h3 class="metric-value">₹{{ number_format($todaysPaymentCollection, 2) }}</h3>
+                                </div>
                             </div>
-                        </div>
+                        </a>
                     </div>
                     <div class="col-lg-3 col-md-6">
-                        <div class="metric-card danger">
-                            <div class="metric-card-body">
-                                <div class="metric-label">Todays Party Visit Count</div>
-                                <h3 class="metric-value">{{ $todaysPartyVisits }}</h3>
+                        <a href="{{ route('party-visit-report') }}" class="text-decoration-none">
+                            <div class="metric-card danger">
+                                <div class="metric-card-body">
+                                    <div class="metric-label">Todays Party Visit Count</div>
+                                    <h3 class="metric-value">{{ $todaysPartyVisits }}</h3>
+                                </div>
                             </div>
-                        </div>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Tally Integration Overview Row -->
+                <div class="row g-4 mb-4">
+                    <div class="col-lg-3 col-md-6">
+                        <a href="{{ route('party.sync') }}" class="text-decoration-none">
+                            <div class="metric-card primary">
+                                <div class="metric-card-body">
+                                    <div class="metric-label">Pending Party Sync</div>
+                                    <h3 class="metric-value">{{ $tallyPendingPartySyncCount }}</h3>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                        <a href="{{ route('sales.bill.register') }}" class="text-decoration-none">
+                            <div class="metric-card success">
+                                <div class="metric-card-body">
+                                    <div class="metric-label">Total Sales (Bills)</div>
+                                    <h3 class="metric-value">₹{{ number_format($tallyTotalSalesAmount, 2) }}</h3>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                        <a href="{{ route('party.opening.closing') }}" class="text-decoration-none">
+                            <div class="metric-card warning">
+                                <div class="metric-card-body">
+                                    <div class="metric-label">Total Closing Balance</div>
+                                    <h3 class="metric-value">₹{{ number_format($tallyTotalClosingBalance, 2) }}</h3>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-lg-3 col-md-6">
+                        <a href="{{ route('partywise.payment.credit') }}" class="text-decoration-none">
+                            <div class="metric-card danger">
+                                <div class="metric-card-body">
+                                    <div class="metric-label">Total Payment Credit</div>
+                                    <h3 class="metric-value">₹{{ number_format($tallyTotalCreditAmount, 2) }}</h3>
+                                </div>
+                            </div>
+                        </a>
                     </div>
                 </div>
 
@@ -276,7 +341,11 @@
                     <!-- Target Vs Ach % -->
                     <div class="col-lg-3 col-md-6">
                         <div class="dashboard-card">
-                            <div class="card-header">Target Vs Ach %</div>
+                            <div class="card-header">
+                                <a href="{{ route('budget.report') }}" class="text-decoration-none text-dark d-flex justify-content-between align-items-center w-100">
+                                    Target Vs Ach % <i class="bi bi-box-arrow-up-right small text-muted"></i>
+                                </a>
+                            </div>
                             <div class="card-body">
                                 @forelse($statesData as $state)
                                     <div class="state-row">
@@ -298,7 +367,11 @@
                     <!-- Partywise Outstanding -->
                     <div class="col-lg-3 col-md-6">
                         <div class="dashboard-card">
-                            <div class="card-header">Partywise Outstanding</div>
+                            <div class="card-header">
+                                <a href="{{ route('party.opening.closing') }}" class="text-decoration-none text-dark d-flex justify-content-between align-items-center w-100">
+                                    Partywise Outstanding <i class="bi bi-box-arrow-up-right small text-muted"></i>
+                                </a>
+                            </div>
                             <div class="card-body">
                                 @forelse($statesData as $state)
                                     <div class="state-row">
@@ -315,7 +388,11 @@
                     <!-- TA-DA Info -->
                     <div class="col-lg-3 col-md-6">
                         <div class="dashboard-card">
-                            <div class="card-header">TA-DA Info</div>
+                            <div class="card-header">
+                                <a href="{{ url('admin/expense') }}" class="text-decoration-none text-dark d-flex justify-content-between align-items-center w-100">
+                                    TA-DA Info <i class="bi bi-box-arrow-up-right small text-muted"></i>
+                                </a>
+                            </div>
                             <div class="card-body">
                                 @forelse($statesData as $state)
                                     <div class="state-row">
@@ -332,7 +409,11 @@
                     <!-- Payment Credit -->
                     <div class="col-lg-3 col-md-6">
                         <div class="dashboard-card">
-                            <div class="card-header">Payment Credit</div>
+                            <div class="card-header">
+                                <a href="{{ route('party-payment') }}" class="text-decoration-none text-dark d-flex justify-content-between align-items-center w-100">
+                                    Payment Credit <i class="bi bi-box-arrow-up-right small text-muted"></i>
+                                </a>
+                            </div>
                             <div class="card-body">
                                 @forelse($statesData as $state)
                                     <div class="state-row">
