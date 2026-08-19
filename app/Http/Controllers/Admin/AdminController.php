@@ -68,7 +68,7 @@ class AdminController extends Controller
             }
 
             // 1. Top Cards: Daily Pulse
-        $todaysActiveTripCount = \App\Models\Trip::whereNotIn('status', ['completed', 'denied'])->whereNull('end_time')->count();
+        $todaysActiveTripCount = \App\Models\Trip::whereNotIn('status', ['completed', 'denied'])->whereNull('end_time')->whereDate('trip_date', today())->count();
         $todaysOrderCount = \App\Models\Order::whereDate('created_at', today())->count();
         $todaysPaymentCollection = \App\Models\PartyPayment::whereDate('payment_date', today())->sum('amount');
         $todaysPartyVisits = \App\Models\PartyVisit::whereDate('visited_date', today())->count();
