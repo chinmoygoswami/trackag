@@ -16,6 +16,8 @@ class AdminOrderReportController extends Controller
         $validated = $request->validate([
             'employee_id' => 'nullable|integer',
             'state_id' => 'nullable|integer',
+            'start_date' => 'nullable|date_format:Y-m-d',
+            'end_date' => 'nullable|date_format:Y-m-d|after_or_equal:start_date',
         ]);
 
         $user = $request->user();
@@ -47,6 +49,12 @@ class AdminOrderReportController extends Controller
             })
             ->when($validated['employee_id'] ?? null, function (Builder $query, int $employeeId) {
                 $query->where('user_id', $employeeId);
+            })
+            ->when($validated['start_date'] ?? null, function (Builder $query, string $startDate) {
+                $query->whereDate('created_at', '>=', $startDate);
+            })
+            ->when($validated['end_date'] ?? null, function (Builder $query, string $endDate) {
+                $query->whereDate('created_at', '<=', $endDate);
             })
             ->orderByDesc('created_at')
             ->orderByDesc('id')

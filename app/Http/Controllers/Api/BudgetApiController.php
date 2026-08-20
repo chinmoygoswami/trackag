@@ -5,7 +5,10 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Budget;
 use App\Models\OrderItem;
+use App\Models\State;
+use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -28,6 +31,13 @@ class BudgetApiController extends Controller
 
     public function annualBudget(Request $request)
     {
+        $validated = $request->validate([
+            'financial_year' => ['nullable', 'regex:/^\d{4}-\d{2}$/'],
+            'state_id' => 'nullable|integer',
+            'employee_id' => 'nullable|integer',
+            'month' => 'nullable|integer|between:1,12',
+        ]);
+
         $user = Auth::user();
 
         if (!$user) {
@@ -37,22 +47,36 @@ class BudgetApiController extends Controller
             ], 401);
         }
 
-        $financialYear = $request->input('financial_year', $this->currentFinancialYear());
+        $isAdmin = $user->hasAnyRole(['master_admin', 'sub_admin']);
+        $stateId = $isAdmin ? ($validated['state_id'] ?? null) : $user->state_id;
+        $employeeId = $isAdmin ? ($validated['employee_id'] ?? null) : $user->id;
+        $financialYear = $validated['financial_year'] ?? $this->currentFinancialYear();
         [$monthName, $monthNumber, $year] = $this->resolveMonth($request, $financialYear);
 
-        $budget = Budget::where('user_id', $user->id)
+        $scopeUserIds = $this->scopeUserIds($isAdmin, $user->id, $stateId, $employeeId);
+        $budgets = Budget::query()
             ->where('financial_year', $financialYear)
-            ->first();
+            ->when($stateId, fn (Builder $query, int $stateId) => $query->where('state_id', $stateId))
+            ->whereIn('user_id', $scopeUserIds)
+            ->get();
 
-        $target = $budget ? (float) ($budget->{$monthName} ?? 0) : 0;
-        $achievement = $this->getAchievement($user->id, $monthNumber, $year);
+        $target = (float) $budgets->sum($monthName);
+        $achievement = $this->getAchievement($scopeUserIds, $monthNumber, $year);
         $achievementPercentage = $target > 0 ? round(($achievement / $target) * 100, 2) : null;
 
         return response()->json([
             'status' => true,
             'data' => [
                 'financial_year' => $financialYear,
-                'financial_years' => $this->getFinancialYears($user->id, $financialYear),
+                'financial_years' => $this->getFinancialYears($scopeUserIds, $stateId, $financialYear),
+                'selected_filters' => [
+                    'state_id' => $stateId,
+                    'employee_id' => $employeeId,
+                ],
+                'filters' => [
+                    'states' => $this->states($isAdmin, $user->state_id),
+                    'employees' => $this->employees($isAdmin, $user->id, $stateId),
+                ],
                 'month' => [
                     'key' => $monthName,
                     'number' => $monthNumber,
@@ -111,19 +135,21 @@ class BudgetApiController extends Controller
         return $monthNumber >= 4 ? $startYear : $startYear + 1;
     }
 
-    private function getAchievement(int $userId, int $monthNumber, int $year): float
+    private function getAchievement(array $userIds, int $monthNumber, int $year): float
     {
-        return (float) OrderItem::whereHas('order', function ($query) use ($userId, $monthNumber, $year) {
-            $query->where('user_id', $userId)
+        return (float) OrderItem::whereHas('order', function ($query) use ($userIds, $monthNumber, $year) {
+            $query->whereIn('user_id', $userIds)
                 ->where('status', 'dispatched')
                 ->whereMonth('created_at', $monthNumber)
                 ->whereYear('created_at', $year);
         })->sum('grand_total');
     }
 
-    private function getFinancialYears(int $userId, string $selectedFinancialYear): array
+    private function getFinancialYears(array $userIds, ?int $stateId, string $selectedFinancialYear): array
     {
-        $years = Budget::where('user_id', $userId)
+        $years = Budget::query()
+            ->whereIn('user_id', $userIds)
+            ->when($stateId, fn (Builder $query, int $stateId) => $query->where('state_id', $stateId))
             ->distinct()
             ->orderByDesc('financial_year')
             ->pluck('financial_year')
@@ -136,6 +162,48 @@ class BudgetApiController extends Controller
         rsort($years);
 
         return array_values($years);
+    }
+
+    private function scopeUserIds(bool $isAdmin, int $userId, ?int $stateId, ?int $employeeId): array
+    {
+        if (! $isAdmin) {
+            return [$userId];
+        }
+
+        return User::query()
+            ->when($stateId, fn (Builder $query, int $stateId) => $query->where('state_id', $stateId))
+            ->when($employeeId, fn (Builder $query, int $employeeId) => $query->whereKey($employeeId))
+            ->where(function (Builder $query) {
+                $query->whereNull('user_level')
+                    ->orWhereNotIn('user_level', ['master_admin', 'sub_admin']);
+            })
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+    }
+
+    private function states(bool $isAdmin, ?int $userStateId)
+    {
+        return State::query()
+            ->where('status', 1)
+            ->when(! $isAdmin, fn (Builder $query) => $query->whereKey($userStateId))
+            ->orderBy('name')
+            ->get(['id', 'name']);
+    }
+
+    private function employees(bool $isAdmin, int $userId, ?int $stateId)
+    {
+        return User::query()
+            ->where('status', 'Active')
+            ->where('is_active', 1)
+            ->when(! $isAdmin, fn (Builder $query) => $query->whereKey($userId))
+            ->when($stateId, fn (Builder $query, int $stateId) => $query->where('state_id', $stateId))
+            ->where(function (Builder $query) {
+                $query->whereNull('user_level')
+                    ->orWhereNotIn('user_level', ['master_admin', 'sub_admin']);
+            })
+            ->orderBy('name')
+            ->get(['id', 'name', 'state_id']);
     }
 
     private function formatAmount(float $amount): string

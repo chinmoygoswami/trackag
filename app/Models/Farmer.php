@@ -59,4 +59,9 @@ class Farmer extends Model
     {
         return $this->hasMany(FarmerCropSowing::class, 'farmer_id');
     }
+
+    public function latestFarmVisit()
+    {
+        return $this->hasOne(FarmVisit::class, 'farmer_id')->latestOfMany();
+    }
 }

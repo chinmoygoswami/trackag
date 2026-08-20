@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\PartyVisit;
+use App\Models\State;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
@@ -14,6 +15,7 @@ class AdminPartyVisitReportController extends Controller
     public function index(Request $request)
     {
         $validated = $request->validate([
+            'state_id' => 'nullable|integer',
             'employee_id' => 'nullable|integer',
             'start_date' => 'nullable|date_format:Y-m-d',
             'end_date' => 'nullable|date_format:Y-m-d|after_or_equal:start_date',
@@ -40,9 +42,13 @@ class AdminPartyVisitReportController extends Controller
                 'customer:id,agro_name,contact_person_name,phone,state_id,city,address',
                 'customer.state:id,name',
                 'user:id,name,mobile,state_id',
+                'user.state:id,name',
             ])
             ->whereNotNull('check_in_time')
             ->whereNotNull('check_out_time')
+            ->when($validated['state_id'] ?? null, function (Builder $query, int $stateId) {
+                $query->whereHas('user', fn (Builder $userQuery) => $userQuery->where('state_id', $stateId));
+            })
             ->when($validated['employee_id'] ?? null, function (Builder $query, int $employeeId) {
                 $query->where('user_id', $employeeId);
             })
@@ -67,6 +73,8 @@ class AdminPartyVisitReportController extends Controller
                 'employee_id' => $visit->user_id,
                 'employee_name' => $visit->user?->name,
                 'employee_mobile' => $visit->user?->mobile,
+                'employee_state_id' => $visit->user?->state_id,
+                'employee_state_name' => $visit->user?->state?->name,
                 'customer_id' => $visit->customer_id,
                 'party_name' => $visit->customer?->agro_name,
                 'contact_person_name' => $visit->customer?->contact_person_name,
@@ -102,19 +110,17 @@ class AdminPartyVisitReportController extends Controller
             'success' => true,
             'data' => [
                 'selected_filters' => [
+                    'state_id' => $validated['state_id'] ?? null,
                     'employee_id' => $validated['employee_id'] ?? null,
                     'start_date' => $validated['start_date'] ?? null,
                     'end_date' => $validated['end_date'] ?? null,
                 ],
                 'filters' => [
-                    'employees' => User::query()
-                        ->where('status', 'Active')
-                        ->where(function (Builder $query) {
-                            $query->whereNull('user_level')
-                                ->orWhereNotIn('user_level', ['master_admin', 'sub_admin']);
-                        })
+                    'states' => State::query()
+                        ->where('status', 1)
                         ->orderBy('name')
                         ->get(['id', 'name']),
+                    'employees' => $this->employees($validated['state_id'] ?? null),
                 ],
                 'summary' => [
                     'total_visits' => $items->count(),
@@ -122,5 +128,20 @@ class AdminPartyVisitReportController extends Controller
                 'items' => $items,
             ],
         ]);
+    }
+
+    private function employees(?int $stateId)
+    {
+        return User::query()
+            ->with('state:id,name')
+            ->where('status', 'Active')
+            ->where('is_active', 1)
+            ->when($stateId, fn (Builder $query, int $stateId) => $query->where('state_id', $stateId))
+            ->where(function (Builder $query) {
+                $query->whereNull('user_level')
+                    ->orWhereNotIn('user_level', ['master_admin', 'sub_admin']);
+            })
+            ->orderBy('name')
+            ->get(['id', 'name', 'state_id']);
     }
 }
