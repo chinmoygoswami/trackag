@@ -43,6 +43,7 @@ class TenantAuthenticate
         DB::purge('tenant');
         DB::reconnect('tenant');
         tenancy()->initialize($tenant);
+        $request->attributes->set('company', $company);
 
         // 5️⃣ Get Bearer token
         $plainToken = $request->bearerToken();

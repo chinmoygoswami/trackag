@@ -19,9 +19,22 @@ class LocationApiController extends BaseController
         return $this->sendResponse($states, 'Location data fetched successfully.');
     }
 
-    public function getStates()
+    public function getStates(Request $request)
     {
-        $states = State::select('id', 'name')->where('status',1)->orderBy('name')->get();
+        $company = $request->attributes->get('company');
+        $companyStateIds = collect(explode(',', (string) ($company?->state ?? '')))
+            ->map(fn ($stateId) => (int) trim($stateId))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        $states = State::query()
+            ->select('id', 'name')
+            ->where('status', 1)
+            ->when($companyStateIds, fn ($query) => $query->whereIn('id', $companyStateIds))
+            ->orderBy('name')
+            ->get();
 
         return response()->json([
             'status' => true,
