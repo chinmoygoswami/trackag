@@ -64,6 +64,7 @@ Route::middleware([TenantAuthenticate::class])->group(function () {
     Route::get('/trips/{tripId}/view-map-webview', [ApiTripController::class, 'viewMapWebview']);
     Route::post('/trips/{tripId}/complete', [ApiTripController::class, 'completeTrip']);
     Route::get('/trip/active', [ApiTripController::class, 'lastActive']);
+    Route::get('/trip/punch-status', [ApiTripController::class, 'punchStatus']);
     Route::get('/trip/{tripId}/detail', [ApiTripController::class, 'showTrip']);
     Route::post('/trip/close', [ApiTripController::class, 'close']);
     Route::post('/trip/gps-store', [ApiTripController::class, 'gpsStore']);

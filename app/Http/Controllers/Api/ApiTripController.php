@@ -335,6 +335,28 @@ class ApiTripController extends BaseController
         }
         return $this->sendResponse($trip, "Trips fetched successfully");
     }
+
+    public function punchStatus()
+    {
+        $user = Auth::user();
+
+        $activeTrip = Trip::query()
+            ->where('user_id', $user->id)
+            ->whereNull('end_time')
+            ->where('status', '!=', 'completed')
+            ->latest('trip_date')
+            ->latest('start_time')
+            ->first(['id', 'trip_date', 'start_time', 'status']);
+
+        return $this->sendResponse([
+            'isPunchin' => $activeTrip ? 1 : 0,
+            'trip_id' => $activeTrip?->id,
+            'trip_date' => $activeTrip?->trip_date,
+            'start_time' => $activeTrip?->start_time,
+            'trip_status' => $activeTrip?->status,
+        ], $activeTrip ? 'User is punched in.' : 'User is punched out.');
+    }
+
     public function close(Request $request)
     {
         try {
