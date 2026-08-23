@@ -64,7 +64,7 @@ class AdminController extends Controller
 
         try {
             if ($user) {
-                $isMasterAdmin = $user->hasRole('master_admin');
+                $isMasterAdmin = $user->hasRole(['master_admin', 'sub_admin']);
             }
 
             // 1. Top Cards: Daily Pulse

@@ -624,7 +624,7 @@ class PartyController extends Controller
     {
         $user = auth()->user();
         $roleName = $user->getRoleNames()->first();
-        $isMasterAdmin = in_array($roleName, ['master_admin']);
+        $isMasterAdmin = in_array($roleName, ['master_admin', 'sub_admin']);
 
         $userIds = \App\Models\User::where('reporting_to', $user->id)->pluck('id')->toArray();
         $userIds[] = $user->id;
