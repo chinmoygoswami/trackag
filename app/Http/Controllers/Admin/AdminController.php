@@ -68,13 +68,31 @@ class AdminController extends Controller
             }
 
             // 1. Top Cards: Daily Pulse
-        $todaysActiveTripCount = \App\Models\Trip::whereNotIn('status', ['completed', 'denied'])->whereNull('end_time')->whereDate('trip_date', today())->count();
-        $todaysOrderCount = \App\Models\Order::whereDate('created_at', today())->count();
-        $todaysOrderValue = \App\Models\OrderItem::whereHas('order', function($q) {
+        $userIds = \App\Models\User::where('reporting_to', $user->id)->pluck('id')->toArray();
+        $userIds[] = $user->id;
+
+        $todaysActiveTripCount = \App\Models\Trip::when(!$isMasterAdmin, function ($q) use ($userIds) {
+            $q->whereIn('user_id', $userIds);
+        })->whereNotIn('status', ['completed', 'denied'])->whereNull('end_time')->whereDate('trip_date', today())->count();
+        
+        $todaysOrderCount = \App\Models\Order::when(!$isMasterAdmin, function ($q) use ($userIds) {
+            $q->whereIn('user_id', $userIds);
+        })->whereDate('created_at', today())->count();
+        
+        $todaysOrderValue = \App\Models\OrderItem::whereHas('order', function($q) use ($isMasterAdmin, $userIds) {
             $q->whereDate('created_at', today());
+            if (!$isMasterAdmin) {
+                $q->whereIn('user_id', $userIds);
+            }
         })->sum('total_price');
-        $todaysPaymentCollection = \App\Models\PartyPayment::whereDate('payment_date', today())->sum('amount');
-        $todaysPartyVisits = \App\Models\PartyVisit::whereDate('visited_date', today())->count();
+        
+        $todaysPaymentCollection = \App\Models\PartyPayment::when(!$isMasterAdmin, function ($q) use ($userIds) {
+            $q->whereIn('user_id', $userIds);
+        })->whereDate('payment_date', today())->sum('amount');
+        
+        $todaysPartyVisits = \App\Models\PartyVisit::when(!$isMasterAdmin, function ($q) use ($userIds) {
+            $q->whereIn('user_id', $userIds);
+        })->whereDate('visited_date', today())->count();
 
         // 2. Middle Cards: State-wise groupings
         $companyCount = \App\Models\Company::count();
@@ -253,6 +271,9 @@ class AdminController extends Controller
         $employees = \App\Models\User::where('is_active', 1)
             ->where('id', '!=', 1) // Skip master admin
             ->whereIn('id', $activeTripUserIds)
+            ->when(!$isMasterAdmin, function ($q) use ($userIds) {
+                $q->whereIn('id', $userIds);
+            })
             ->get();
 
         // Fetch today's sessions for employees
