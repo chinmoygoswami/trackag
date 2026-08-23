@@ -333,9 +333,42 @@ class AdminController extends Controller
                   ->whereColumn('customers.party_code', 'tally_party_syncs.master_id')
                   ->whereNotNull('customers.party_code');
         })->count();
-        $tallyTotalSalesAmount = \App\Models\TallySalesBill::sum('grand_total');
-        $tallyTotalClosingBalance = \App\Models\TallyOpeningClosing::sum('closing_balance_amt');
-        $tallyTotalCreditAmount = \App\Models\TallyPartywisePaymentCredit::sum('credit_amount');
+        $balances = \App\Models\TallyOpeningClosing::orderBy('date', 'desc')
+            ->get()
+            ->groupBy('party_name')
+            ->map(function($items) {
+                return $items->first();
+            });
+            
+        $customerQuery = \App\Models\Customer::where('type', 'web');
+        if (!$isMasterAdmin) {
+            $customerQuery->whereIn('user_id', $userIds);
+        }
+        $customersList = $customerQuery->get();
+        
+        $parties = \App\Models\TallyPartySync::get();
+        $partiesByCode = $parties->keyBy('master_id');
+        $partiesByName = $parties->keyBy('party_name');
+        
+        $performanceData = $customersList->map(function($customer) use ($partiesByCode, $partiesByName, $balances) {
+            $party = $customer->party_code ? $partiesByCode->get($customer->party_code) : null;
+            if (!$party) {
+                $party = $partiesByName->get($customer->agro_name);
+            }
+            
+            $tallyName = $party ? $party->party_name : null;
+            $b = $tallyName ? $balances->get($tallyName) : null;
+            
+            return (object) [
+                'credit_amt' => $b ? $b->credit_amt : 0,
+                'debit_amt' => $b ? $b->debit_amt : 0,
+                'closing_balance' => $b ? $b->closing_balance_amt : 0,
+            ];
+        });
+        
+        $tallyTotalSalesAmount = $performanceData->sum('debit_amt');
+        $tallyTotalCreditAmount = $performanceData->sum('credit_amt');
+        $tallyTotalClosingBalance = $performanceData->sum('closing_balance');
 
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::warning("Dashboard exception: " . $e->getMessage());

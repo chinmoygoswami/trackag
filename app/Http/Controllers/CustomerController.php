@@ -47,7 +47,10 @@ class CustomerController extends Controller
             } else {
                 $query->whereHas('user', function ($q) use ($user, $stateIds) {
                     $q->whereIn('state_id', $stateIds)
-                    ->where('reporting_to', $user->id);
+                      ->where(function($q2) use ($user) {
+                          $q2->where('reporting_to', $user->id)
+                             ->orWhere('id', $user->id);
+                      });
                 });
             }
         }

@@ -1,29 +1,54 @@
 <?php
-require __DIR__.'/vendor/autoload.php';
-$app = require_once __DIR__.'/bootstrap/app.php';
-$kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
-$kernel->bootstrap();
+require 'vendor/autoload.php';
+$app = require_once 'bootstrap/app.php';
+$kernel = $app->make(Illuminate\Contracts\Http\Kernel::class);
+$response = $kernel->handle(
+    $request = Illuminate\Http\Request::capture()
+);
 
-try {
-    $item = [
-        "financial_year" => "2023-24",
-        "invoice_date" => "2023-10-15",
-        "invoice_no" => "INV-1001",
-        "party_name" => "John Doe Enterprises",
-        "product_name_with_packing" => "Widget A (10kg)",
-        "bill_type" => "Tax Invoice",
-        "qty" => 10.500,
-        "amount" => 1050.00,
-        "gst_amount" => 189.00,
-        "grand_total" => 1239.00,
-        "voucher_type" => "Sales"
-    ];
-    $item['raw_payload'] = $item;
+$balances = \App\Models\TallyOpeningClosing::orderBy('date', 'desc')
+    ->get()
+    ->groupBy('party_name')
+    ->map(function($items) {
+        return $items->first();
+    });
     
-    // We mock the TallyController logic here
-    $item['gst_amount'] = $item['gst_amount'] ?? 0;
-    \App\Models\TallySalesBill::create($item);
-    echo "Created SalesBill successfully\n";
-} catch (\Throwable $e) {
-    echo "Error: " . $e->getMessage() . "\n";
+$customersList = \App\Models\Customer::where('type', 'web')->get();
+$parties = \App\Models\TallyPartySync::get();
+$partiesByCode = $parties->keyBy('master_id');
+$partiesByName = $parties->keyBy('party_name');
+
+$processedTallyNames = [];
+$t1 = 0; $t2 = 0; $t3 = 0;
+
+foreach ($customersList as $customer) {
+    $party = $customer->party_code ? $partiesByCode->get($customer->party_code) : null;
+    if (!$party) {
+        $party = $partiesByName->get($customer->agro_name);
+    }
+    $tallyName = $party ? $party->party_name : null;
+    if ($tallyName) {
+        $processedTallyNames[] = $tallyName;
+    }
+    $b = $tallyName ? $balances->get($tallyName) : null;
+    if ($b) {
+        $t1 += $b->debit_amt;
+        $t2 += $b->credit_amt;
+        $t3 += $b->closing_balance_amt;
+    }
 }
+
+foreach ($parties as $party) {
+    $tallyName = $party->party_name;
+    if (in_array($tallyName, $processedTallyNames)) {
+        continue;
+    }
+    $b = $balances->get($tallyName);
+    if ($b) {
+        $t1 += $b->debit_amt;
+        $t2 += $b->credit_amt;
+        $t3 += $b->closing_balance_amt;
+    }
+}
+
+var_dump(abs($t1), abs($t2), abs($t3));
