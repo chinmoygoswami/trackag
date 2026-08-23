@@ -629,17 +629,15 @@ class PartyController extends Controller
         $userIds = \App\Models\User::where('reporting_to', $user->id)->pluck('id')->toArray();
         $userIds[] = $user->id;
 
-        $customerQuery = \App\Models\Customer::with(['user', 'state'])->whereNotNull('party_code');
+        $customerQuery = \App\Models\Customer::with(['user', 'state'])->where('type', 'web');
         if (!$isMasterAdmin) {
             $customerQuery->whereIn('user_id', $userIds);
         }
-        $customers = $customerQuery->get()->keyBy('party_code');
+        $customers = $customerQuery->get();
 
-        $partiesQuery = \App\Models\TallyPartySync::orderBy('party_name');
-        if (!$isMasterAdmin) {
-            $partiesQuery->whereIn('master_id', $customers->keys());
-        }
-        $parties = $partiesQuery->get();
+        $parties = \App\Models\TallyPartySync::get();
+        $partiesByCode = $parties->keyBy('master_id');
+        $partiesByName = $parties->keyBy('party_name');
         
         $sales = \App\Models\TallySalesBill::selectRaw('party_name, YEAR(invoice_date) as year, MONTH(invoice_date) as month, SUM(grand_total) as total_amount, SUM(qty) as total_qty')
             ->groupBy('party_name', 'year', 'month')
@@ -687,15 +685,19 @@ class PartyController extends Controller
             return $items->keyBy(function($i) { return sprintf('%04d-%02d', $i->year, $i->month); });
         });
             
-        $performanceData = $parties->map(function($party) use ($customers, $balances, $salesGrouped, $paymentsGrouped, $uniqueMonths) {
-            $tallyName = $party->party_name;
-            $customer = $customers->get($party->master_id);
+        $performanceData = $customers->map(function($customer) use ($partiesByCode, $partiesByName, $balances, $salesGrouped, $paymentsGrouped, $uniqueMonths) {
+            $party = $customer->party_code ? $partiesByCode->get($customer->party_code) : null;
+            if (!$party) {
+                $party = $partiesByName->get($customer->agro_name);
+            }
             
-            $displayName = $customer ? $customer->agro_name : $tallyName;
-            $employeeName = $customer && $customer->user ? $customer->user->name : '-';
-            $stateName = $customer && $customer->state ? $customer->state->name : $party->state;
+            $tallyName = $party ? $party->party_name : null;
             
-            $b = $balances->get($tallyName);
+            $displayName = $customer->agro_name;
+            $employeeName = $customer->user ? $customer->user->name : '-';
+            $stateName = $customer->state ? $customer->state->name : '-';
+            
+            $b = $tallyName ? $balances->get($tallyName) : null;
             
             $monthlyData = [];
             $totalSales = 0;
@@ -703,9 +705,9 @@ class PartyController extends Controller
             $totalQty = 0;
 
             foreach ($uniqueMonths as $ym) {
-                $sAmt = isset($salesGrouped[$tallyName][$ym]) ? $salesGrouped[$tallyName][$ym]->total_amount : 0;
-                $sQty = isset($salesGrouped[$tallyName][$ym]) ? $salesGrouped[$tallyName][$ym]->total_qty : 0;
-                $pAmt = isset($paymentsGrouped[$tallyName][$ym]) ? $paymentsGrouped[$tallyName][$ym]->total_amount : 0;
+                $sAmt = ($tallyName && isset($salesGrouped[$tallyName][$ym])) ? $salesGrouped[$tallyName][$ym]->total_amount : 0;
+                $sQty = ($tallyName && isset($salesGrouped[$tallyName][$ym])) ? $salesGrouped[$tallyName][$ym]->total_qty : 0;
+                $pAmt = ($tallyName && isset($paymentsGrouped[$tallyName][$ym])) ? $paymentsGrouped[$tallyName][$ym]->total_amount : 0;
                 
                 $monthlyData[$ym] = [
                     'debit' => $sAmt,
@@ -718,7 +720,7 @@ class PartyController extends Controller
             }
             
             return (object) [
-                'master_id' => $party->master_id,
+                'master_id' => $customer->party_code ?? ($party ? $party->master_id : null),
                 'party_name' => $displayName,
                 'employee_name' => $employeeName,
                 'state' => $stateName,
