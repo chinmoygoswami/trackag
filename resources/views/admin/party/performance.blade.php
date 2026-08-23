@@ -49,7 +49,7 @@
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
                                     <h6 class="text-white-50 mb-1">Total Opening Balance</h6>
-                                    <h3 class="mb-0">₹{{ number_format(abs($totalOpening), 2) }} <span class="fs-5 text-white-50">{{ $totalOpening < 0 ? 'Cr' : 'Dr' }}</span></h3>
+                                    <h3 class="mb-0">₹{{ number_format(abs($totalOpening), 2) }}</h3>
                                 </div>
                                 <div class="fs-1 text-white-50"><i class="bi bi-wallet-fill"></i></div>
                             </div>
@@ -62,7 +62,7 @@
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
                                     <h6 class="text-white-50 mb-1">Total Credit (Payment)</h6>
-                                    <h3 class="mb-0">₹{{ number_format($totalCredit, 2) }} <span class="fs-5 text-white-50">Cr</span></h3>
+                                    <h3 class="mb-0">₹{{ number_format($totalCredit, 2) }}</h3>
                                 </div>
                                 <div class="fs-1 text-white-50"><i class="bi bi-cash-coin"></i></div>
                             </div>
@@ -75,7 +75,7 @@
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
                                     <h6 class="text-white-50 mb-1">Total Debit (Bill)</h6>
-                                    <h3 class="mb-0">₹{{ number_format($totalDebit, 2) }} <span class="fs-5 text-white-50">Dr</span></h3>
+                                    <h3 class="mb-0">₹{{ number_format($totalDebit, 2) }}</h3>
                                 </div>
                                 <div class="fs-1 text-white-50"><i class="bi bi-cart-check"></i></div>
                             </div>
@@ -88,7 +88,7 @@
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
                                     <h6 class="text-white-50 mb-1">Total Closing Balance</h6>
-                                    <h3 class="mb-0">₹{{ number_format(abs($totalClosing), 2) }} <span class="fs-5 text-white-50">{{ $totalClosing < 0 ? 'Cr' : 'Dr' }}</span></h3>
+                                    <h3 class="mb-0">₹{{ number_format(abs($totalClosing), 2) }}</h3>
                                 </div>
                                 <div class="fs-1 text-white-50"><i class="bi bi-wallet2"></i></div>
                             </div>
@@ -130,10 +130,10 @@
                                 <td class="text-start border-end fw-medium" style="background-color: #f8f9fa;">{{ $record->party_name }}</td>
                                 <td class="border-end fw-medium">{{ $record->employee_name }}</td>
                                 <td class="border-end">{{ $record->state ?? '-' }}</td>
-                                <td class="border-end text-nowrap">{{ number_format(abs($record->opening_balance), 2) }} <span class="text-muted small">{{ $record->opening_balance < 0 ? 'Cr' : 'Dr' }}</span></td>
-                                <td class="border-end text-nowrap">{{ number_format($record->credit_amt, 2) }} <span class="text-muted small">Cr</span></td>
-                                <td class="border-end text-nowrap">{{ number_format($record->debit_amt, 2) }} <span class="text-muted small">Dr</span></td>
-                                <td class="border-end text-nowrap">{{ number_format(abs($record->closing_balance), 2) }} <span class="text-muted small">{{ $record->closing_balance < 0 ? 'Cr' : 'Dr' }}</span></td>
+                                <td class="border-end text-nowrap">{{ number_format(abs($record->opening_balance), 2) }}</td>
+                                <td class="border-end text-nowrap">{{ number_format($record->credit_amt, 2) }}</td>
+                                <td class="border-end text-nowrap">{{ number_format($record->debit_amt, 2) }}</td>
+                                <td class="border-end text-nowrap">{{ number_format(abs($record->closing_balance), 2) }}</td>
                                 @foreach($uniqueMonths as $ym)
                                     <td class="border-end text-success">{{ number_format($record->monthly[$ym]['credit'], 2) }}</td>
                                     <td class="border-end text-danger">{{ number_format($record->monthly[$ym]['debit'], 2) }}</td>
