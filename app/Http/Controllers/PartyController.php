@@ -622,8 +622,24 @@ class PartyController extends Controller
 
     public function partyPerformance(Request $request)
     {
-        $customers = \App\Models\Customer::with('user')->whereNotNull('party_code')->get()->keyBy('party_code');
-        $parties = \App\Models\TallyPartySync::orderBy('party_name')->get();
+        $user = auth()->user();
+        $roleName = $user->getRoleNames()->first();
+        $isMasterAdmin = in_array($roleName, ['master_admin']);
+
+        $userIds = \App\Models\User::where('reporting_to', $user->id)->pluck('id')->toArray();
+        $userIds[] = $user->id;
+
+        $customerQuery = \App\Models\Customer::with(['user', 'state'])->whereNotNull('party_code');
+        if (!$isMasterAdmin) {
+            $customerQuery->whereIn('user_id', $userIds);
+        }
+        $customers = $customerQuery->get()->keyBy('party_code');
+
+        $partiesQuery = \App\Models\TallyPartySync::orderBy('party_name');
+        if (!$isMasterAdmin) {
+            $partiesQuery->whereIn('master_id', $customers->keys());
+        }
+        $parties = $partiesQuery->get();
         
         $sales = \App\Models\TallySalesBill::selectRaw('party_name, YEAR(invoice_date) as year, MONTH(invoice_date) as month, SUM(grand_total) as total_amount, SUM(qty) as total_qty')
             ->groupBy('party_name', 'year', 'month')
@@ -672,11 +688,14 @@ class PartyController extends Controller
         });
             
         $performanceData = $parties->map(function($party) use ($customers, $balances, $salesGrouped, $paymentsGrouped, $uniqueMonths) {
-            $name = $party->party_name;
+            $tallyName = $party->party_name;
             $customer = $customers->get($party->master_id);
-            $employeeName = $customer && $customer->user ? $customer->user->name : '-';
             
-            $b = $balances->get($name);
+            $displayName = $customer ? $customer->agro_name : $tallyName;
+            $employeeName = $customer && $customer->user ? $customer->user->name : '-';
+            $stateName = $customer && $customer->state ? $customer->state->name : $party->state;
+            
+            $b = $balances->get($tallyName);
             
             $monthlyData = [];
             $totalSales = 0;
@@ -684,9 +703,9 @@ class PartyController extends Controller
             $totalQty = 0;
 
             foreach ($uniqueMonths as $ym) {
-                $sAmt = isset($salesGrouped[$name][$ym]) ? $salesGrouped[$name][$ym]->total_amount : 0;
-                $sQty = isset($salesGrouped[$name][$ym]) ? $salesGrouped[$name][$ym]->total_qty : 0;
-                $pAmt = isset($paymentsGrouped[$name][$ym]) ? $paymentsGrouped[$name][$ym]->total_amount : 0;
+                $sAmt = isset($salesGrouped[$tallyName][$ym]) ? $salesGrouped[$tallyName][$ym]->total_amount : 0;
+                $sQty = isset($salesGrouped[$tallyName][$ym]) ? $salesGrouped[$tallyName][$ym]->total_qty : 0;
+                $pAmt = isset($paymentsGrouped[$tallyName][$ym]) ? $paymentsGrouped[$tallyName][$ym]->total_amount : 0;
                 
                 $monthlyData[$ym] = [
                     'debit' => $sAmt,
@@ -700,9 +719,9 @@ class PartyController extends Controller
             
             return (object) [
                 'master_id' => $party->master_id,
-                'party_name' => $name,
+                'party_name' => $displayName,
                 'employee_name' => $employeeName,
-                'state' => $party->state,
+                'state' => $stateName,
                 'opening_balance' => $b ? $b->opening_balance_amt : 0,
                 'credit_amt' => $b ? $b->credit_amt : 0,
                 'debit_amt' => $b ? $b->debit_amt : 0,
