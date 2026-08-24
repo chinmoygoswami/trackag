@@ -145,7 +145,6 @@ class PartyPerformanceController extends Controller
             $partyName = $tallyParty?->party_name ?: $party->agro_name;
             $joiningDate = $party->party_active_since ?? $tallyParty?->party_create_date;
             $partyBalances = $balanceRecords->get($partyName, collect());
-            $latestBalance = $partyBalances->last();
             $previousClosingRecord = $partyBalances
                 ->filter(fn (TallyOpeningClosing $balance) => $balance->date->lte($previousFinancialYearEnd))
                 ->last();
@@ -160,7 +159,6 @@ class PartyPerformanceController extends Controller
                 ->unique('id')
                 ->sortByDesc(fn (TallyPartywisePaymentCredit $payment) => $payment->payment_date?->timestamp)
                 ->values();
-            $totalReceived = (float) $partyPayments->sum('credit_amount');
             $currentYearReceived = (float) $partyPayments
                 ->filter(fn (TallyPartywisePaymentCredit $payment) => $payment->payment_date?->betweenIncluded($financialYearStart, $financialYearEnd))
                 ->sum('credit_amount');
@@ -181,20 +179,12 @@ class PartyPerformanceController extends Controller
                 'joining_date' => $joiningDate?->format('Y-m-d'),
                 'joining_year' => $joiningDate?->format('Y'),
                 'credit_limit' => (float) ($party->credit_limit ?: $tallyParty?->credit_limit ?: 0),
-                'receipt' => [
-                    'opening' => $this->balanceValue($latestBalance?->opening_balance_amt),
-                    'credit' => $this->balanceValue($totalReceived),
-                    'closing' => $this->balanceValue($latestBalance?->closing_balance_amt),
-                    'as_on_date' => $latestBalance?->date?->format('Y-m-d'),
-                    'total_received' => $totalReceived,
-                    'total_received_formatted' => $this->formatAmount($totalReceived),
-                    'transactions' => $partyPayments->map(fn (TallyPartywisePaymentCredit $payment) => [
-                        'payment_date' => $payment->payment_date?->format('Y-m-d'),
-                        'payment_mode' => $payment->payment_mode,
-                        'amount' => (float) $payment->credit_amount,
-                        'voucher_no' => $payment->voucher_no,
-                    ])->values(),
-                ],
+                'receipt' => $partyPayments->map(fn (TallyPartywisePaymentCredit $payment) => [
+                    'payment_date' => $payment->payment_date?->format('Y-m-d'),
+                    'payment_mode' => $payment->payment_mode,
+                    'amount' => (float) $payment->credit_amount,
+                    'voucher_no' => $payment->voucher_no,
+                ])->values(),
                 'performance' => [
                     'financial_year' => $financialYearStart->format('Y').'-'.substr($financialYearEnd->format('Y'), -2),
                     'count_type' => 'Monthly/Yearly',
