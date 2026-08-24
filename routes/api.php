@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\ExpenseController;
 use App\Http\Controllers\Api\AdminTaDaReportController;
 use App\Http\Controllers\Api\AdminExpenseReportController;
 use App\Http\Controllers\Api\AdminFarmerListController;
+use App\Http\Controllers\Api\AdminFarmVisitReportController;
 use App\Http\Controllers\Api\AdminPartyVisitReportController;
 use App\Http\Controllers\Api\AdminOrderReportController;
 use App\Http\Controllers\Api\MasterDataController;
@@ -79,6 +80,7 @@ Route::middleware([TenantAuthenticate::class])->group(function () {
     Route::get('/admin/ta-da-report', [AdminTaDaReportController::class, 'index']);
     Route::get('/admin/expense-report', [AdminExpenseReportController::class, 'index']);
     Route::get('/admin/farmer-list', [AdminFarmerListController::class, 'index']);
+    Route::get('/admin/farm-visit-report', [AdminFarmVisitReportController::class, 'index']);
     Route::get('/admin/party-visit-report', [AdminPartyVisitReportController::class, 'index']);
     Route::get('/admin/order-report', [AdminOrderReportController::class, 'index']);
     Route::get('/admin/party-performance', [PartyPerformanceController::class, 'index']);
