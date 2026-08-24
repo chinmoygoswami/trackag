@@ -177,14 +177,10 @@ class PartyPerformanceController extends Controller
                     'total_received' => $totalReceived,
                     'total_received_formatted' => $this->formatAmount($totalReceived),
                     'transactions' => $partyPayments->map(fn (TallyPartywisePaymentCredit $payment) => [
-                        'id' => $payment->id,
                         'payment_date' => $payment->payment_date?->format('Y-m-d'),
-                        'payment_date_formatted' => $payment->payment_date?->format('d M Y'),
                         'payment_mode' => $payment->payment_mode,
                         'amount' => (float) $payment->credit_amount,
-                        'amount_formatted' => $this->formatAmount((float) $payment->credit_amount),
                         'voucher_no' => $payment->voucher_no,
-                        'voucher_type' => $payment->voucher_type,
                     ])->values(),
                 ],
                 'performance' => [
