@@ -83,10 +83,8 @@ class CompanyController extends Controller
         $tenant = null;
 
         try {
-            DB::statement("CREATE DATABASE IF NOT EXISTS `$tenancyDbName` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+            // DB::statement("CREATE DATABASE IF NOT EXISTS `$tenancyDbName` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
 
-            DB::beginTransaction();
-            try {
                 $company = Company::create([
                     'name' => $validated['name'],
                     'code' => $validated['code'] ?? null,
@@ -124,12 +122,6 @@ class CompanyController extends Controller
 
                 $tenant->domains()->create(['domain' => $fullDomain]);
                 $company->update(['tenant_id' => $tenant->id]);
-
-                DB::commit();
-            } catch (\Exception $e) {
-                DB::rollBack();
-                throw $e;
-            }
 
             tenancy()->initialize($tenant);
 
