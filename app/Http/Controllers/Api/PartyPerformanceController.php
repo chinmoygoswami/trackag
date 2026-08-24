@@ -101,15 +101,20 @@ class PartyPerformanceController extends Controller
             ->get(['party_id', 'created_at'])
             ->groupBy('party_id');
 
-        $currentYearCredits = TallyPartywisePaymentCredit::query()
-            ->whereIn('party_name', $partyNames)
-            ->whereBetween('payment_date', [$financialYearStart->toDateString(), $financialYearEnd->toDateString()])
-            ->selectRaw('party_name, SUM(credit_amount) as total_credit')
-            ->groupBy('party_name')
-            ->pluck('total_credit', 'party_name');
+        $paymentKeysByParty = $parties->mapWithKeys(function (Customer $party) use ($tallyParties) {
+            $partyName = $tallyParties->get($party->party_code)?->party_name ?: $party->agro_name;
+            $partyCode = trim((string) $party->party_code);
+            $keys = collect([$partyName]);
+
+            if ($partyCode !== '' && strtoupper($partyCode) !== 'NA') {
+                $keys->prepend($partyCode);
+            }
+
+            return [$party->id => $keys->filter()->unique()->values()];
+        });
 
         $paymentCredits = TallyPartywisePaymentCredit::query()
-            ->whereIn('party_name', $partyNames)
+            ->whereIn('party_name', $paymentKeysByParty->flatten()->unique()->values())
             ->orderByDesc('payment_date')
             ->orderByDesc('id')
             ->get([
@@ -128,8 +133,8 @@ class PartyPerformanceController extends Controller
             $balanceRecords,
             $visits,
             $orders,
-            $currentYearCredits,
             $paymentCredits,
+            $paymentKeysByParty,
             $financialYearStart,
             $financialYearEnd,
             $previousFinancialYearEnd,
@@ -150,8 +155,15 @@ class PartyPerformanceController extends Controller
             $currentClosingRecord = $currentYearBalances->last();
             $partyVisits = $visits->get($party->id, collect());
             $partyOrders = $orders->get($party->id, collect());
-            $partyPayments = $paymentCredits->get($partyName, collect());
+            $partyPayments = $paymentKeysByParty->get($party->id, collect())
+                ->flatMap(fn (string $key) => $paymentCredits->get($key, collect()))
+                ->unique('id')
+                ->sortByDesc(fn (TallyPartywisePaymentCredit $payment) => $payment->payment_date?->timestamp)
+                ->values();
             $totalReceived = (float) $partyPayments->sum('credit_amount');
+            $currentYearReceived = (float) $partyPayments
+                ->filter(fn (TallyPartywisePaymentCredit $payment) => $payment->payment_date?->betweenIncluded($financialYearStart, $financialYearEnd))
+                ->sum('credit_amount');
 
             return [
                 'party_id' => $party->id,
@@ -196,7 +208,7 @@ class PartyPerformanceController extends Controller
                     ],
                     'previous_year_closing' => $this->balanceValue($previousClosingRecord?->closing_balance_amt),
                     'current_year_opening' => $this->balanceValue($currentOpeningRecord?->opening_balance_amt),
-                    'current_year_credit' => $this->balanceValue($currentYearCredits->get($partyName, 0)),
+                    'current_year_credit' => $this->balanceValue($currentYearReceived),
                     'current_year_closing' => $this->balanceValue($currentClosingRecord?->closing_balance_amt),
                 ],
             ];
