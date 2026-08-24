@@ -7,9 +7,6 @@ use App\Models\FarmVisit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Log;
-use FFMpeg;
 
 class FarmVisitController extends Controller
 {
@@ -126,23 +123,9 @@ class FarmVisitController extends Controller
             foreach ($request->file('videos') as $video) {
 
                 // original name
-                $fileName = time() . '_' . uniqid() . '.mp4';
+                $fileName = time() . '_' . uniqid() . '.' . strtolower($video->getClientOriginalExtension() ?: 'mp4');
 
-                // store temp
-                $tempPath = $video->store('temp', 'public');
-
-                $compressedPath = 'farm_visits/videos/' . $fileName;
-
-                // 🔥 Compress video
-                FFMpeg::fromDisk('public')
-                    ->open($tempPath)
-                    ->export()
-                    ->inFormat(new \FFMpeg\Format\Video\X264('aac', 'libx264'))
-                    ->resize(640, 480) // 👈 resolution reduce
-                    ->save($compressedPath);
-
-                // delete temp
-                Storage::disk('public')->delete($tempPath);
+                $compressedPath = $video->storeAs('farm_visits/videos', $fileName, 'public');
 
                 $videoPaths[] = $compressedPath;
             }
@@ -220,23 +203,9 @@ class FarmVisitController extends Controller
             foreach ($request->file('videos') as $video) {
 
                 // original name
-                $fileName = time() . '_' . uniqid() . '.mp4';
+                $fileName = time() . '_' . uniqid() . '.' . strtolower($video->getClientOriginalExtension() ?: 'mp4');
 
-                // store temp
-                $tempPath = $video->store('temp', 'public');
-
-                $compressedPath = 'farm_visits/videos/' . $fileName;
-
-                // 🔥 Compress video
-                FFMpeg::fromDisk('public')
-                    ->open($tempPath)
-                    ->export()
-                    ->inFormat(new \FFMpeg\Format\Video\X264('aac', 'libx264'))
-                    ->resize(640, 480) // 👈 resolution reduce
-                    ->save($compressedPath);
-
-                // delete temp
-                Storage::disk('public')->delete($tempPath);
+                $compressedPath = $video->storeAs('farm_visits/videos', $fileName, 'public');
 
                 $videoPaths[] = $compressedPath;
             }
