@@ -42,7 +42,12 @@ class AdminFarmerListController extends Controller
                 'state:id,name',
                 'district:id,name',
                 'taluka:id,name',
-                'latestFarmVisit:id,farmer_id,next_visit_date,created_at',
+                'latestFarmVisit' => fn (Builder $query) => $query->select([
+                    'farm_visits.id',
+                    'farm_visits.farmer_id',
+                    'farm_visits.next_visit_date',
+                    'farm_visits.created_at',
+                ]),
             ])
             ->when($validated['state_id'] ?? null, function (Builder $query, int $stateId) {
                 $query->where('state_id', $stateId);
