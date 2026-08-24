@@ -108,12 +108,28 @@ class PartyPerformanceController extends Controller
             ->groupBy('party_name')
             ->pluck('total_credit', 'party_name');
 
+        $paymentCredits = TallyPartywisePaymentCredit::query()
+            ->whereIn('party_name', $partyNames)
+            ->orderByDesc('payment_date')
+            ->orderByDesc('id')
+            ->get([
+                'id',
+                'party_name',
+                'payment_date',
+                'payment_mode',
+                'credit_amount',
+                'voucher_no',
+                'voucher_type',
+            ])
+            ->groupBy('party_name');
+
         $items = $parties->map(function (Customer $party) use (
             $tallyParties,
             $balanceRecords,
             $visits,
             $orders,
             $currentYearCredits,
+            $paymentCredits,
             $financialYearStart,
             $financialYearEnd,
             $previousFinancialYearEnd,
@@ -134,6 +150,8 @@ class PartyPerformanceController extends Controller
             $currentClosingRecord = $currentYearBalances->last();
             $partyVisits = $visits->get($party->id, collect());
             $partyOrders = $orders->get($party->id, collect());
+            $partyPayments = $paymentCredits->get($partyName, collect());
+            $totalReceived = (float) $partyPayments->sum('credit_amount');
 
             return [
                 'party_id' => $party->id,
@@ -153,9 +171,21 @@ class PartyPerformanceController extends Controller
                 'credit_limit' => (float) ($party->credit_limit ?: $tallyParty?->credit_limit ?: 0),
                 'receipt' => [
                     'opening' => $this->balanceValue($latestBalance?->opening_balance_amt),
-                    'credit' => $this->balanceValue($latestBalance?->credit_amt),
+                    'credit' => $this->balanceValue($totalReceived),
                     'closing' => $this->balanceValue($latestBalance?->closing_balance_amt),
                     'as_on_date' => $latestBalance?->date?->format('Y-m-d'),
+                    'total_received' => $totalReceived,
+                    'total_received_formatted' => $this->formatAmount($totalReceived),
+                    'transactions' => $partyPayments->map(fn (TallyPartywisePaymentCredit $payment) => [
+                        'id' => $payment->id,
+                        'payment_date' => $payment->payment_date?->format('Y-m-d'),
+                        'payment_date_formatted' => $payment->payment_date?->format('d M Y'),
+                        'payment_mode' => $payment->payment_mode,
+                        'amount' => (float) $payment->credit_amount,
+                        'amount_formatted' => $this->formatAmount((float) $payment->credit_amount),
+                        'voucher_no' => $payment->voucher_no,
+                        'voucher_type' => $payment->voucher_type,
+                    ])->values(),
                 ],
                 'performance' => [
                     'financial_year' => $financialYearStart->format('Y').'-'.substr($financialYearEnd->format('Y'), -2),
