@@ -42,7 +42,7 @@ class AdminFarmerListController extends Controller
                 'state:id,name',
                 'district:id,name',
                 'taluka:id,name',
-                'latestFarmVisit' => fn (Builder $query) => $query->select([
+                'latestFarmVisit' => fn ($query) => $query->select([
                     'farm_visits.id',
                     'farm_visits.farmer_id',
                     'farm_visits.next_visit_date',
