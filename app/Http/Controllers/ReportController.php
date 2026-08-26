@@ -14,6 +14,7 @@ class ReportController extends Controller
         $filter = $request->input('filter', 'daily');
         
         $query = User::with([
+            'reportingManager',
             'trips' => function($q) use ($filter) {
                 $this->applyDateFilter($q, $filter, 'trip_date');
             },
@@ -50,7 +51,7 @@ class ReportController extends Controller
                 'date' => Carbon::now()->format('d/m/Y'), // Simplify for now, depends on filter
                 'state' => $user->state ? $user->state->name : 'N/A',
                 'employee_name' => $user->name,
-                'reporting_to' => $user->reporting_to ?? 'N/A',
+                'reporting_to' => $user->reportingManager->name ?? 'N/A',
                 'punch_in' => $trip ? $trip->start_time : 'N/A',
                 'punch_out' => $trip ? $trip->end_time : 'N/A',
                 'working_hrs' => $workingHrs,
