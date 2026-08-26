@@ -94,11 +94,22 @@
                                 {{ $data['order_count'] }} 
                                 @if($data['order_count'] > 0)
                                     <br><span class="text-success fw-bold">(₹{{ number_format($data['order_amount'], 2) }})</span>
+                                    <button class="btn btn-sm btn-view mt-1" onclick="showOrders({{ json_encode($data['orders_list']) }})">VIEW</button>
                                 @endif
                             </td>
-                            <td class="text-success fw-bold">₹{{ number_format($data['payment_collection'], 2) }}</td>
+                            <td>
+                                <span class="text-success fw-bold">₹{{ number_format($data['payment_collection'], 2) }}</span>
+                                @if($data['payment_collection'] > 0)
+                                    <button class="btn btn-sm btn-view ms-2" onclick="showPayments({{ json_encode($data['payments_list']) }})">VIEW</button>
+                                @endif
+                            </td>
                             <td>{{ $data['farmer_download'] }}</td>
-                            <td>{{ $data['field_demo'] }}</td>
+                            <td>
+                                {{ $data['field_demo'] }}
+                                @if($data['field_demo'] > 0)
+                                    <button class="btn btn-sm btn-view ms-2" onclick="showFarmVisits({{ json_encode($data['farm_visits_list']) }})">VIEW</button>
+                                @endif
+                            </td>
                         </tr>
                         @empty
                         <tr>
@@ -114,6 +125,9 @@
 
     @include('admin.reports.partials.visited-parties-modal')
     @include('admin.reports.partials.new-parties-modal')
+    @include('admin.reports.partials.orders-modal')
+    @include('admin.reports.partials.payments-modal')
+    @include('admin.reports.partials.farm-visits-modal')
 </main>
 @endsection
 
@@ -182,6 +196,107 @@
         document.getElementById('newPartiesContent').innerHTML = content;
         
         var modalElement = document.getElementById('newPartiesModal');
+        if (typeof bootstrap !== 'undefined') {
+            var modal = new bootstrap.Modal(modalElement);
+            modal.show();
+        } else {
+            $(modalElement).modal('show');
+        }
+    }
+
+    function showOrders(orders) {
+        let content = '';
+        if(orders.length === 0) {
+            content = '<p class="text-center text-muted">No orders found.</p>';
+        } else {
+            content = '<ul class="list-group list-group-flush">';
+            orders.forEach(order => {
+                let partyName = (order.customer && order.customer.agro_name) ? order.customer.agro_name : 'Party ID: ' + (order.party_id || 'Unknown');
+                let orderNo = order.order_no || 'N/A';
+                
+                let amount = 0;
+                if(order.items && order.items.length > 0) {
+                    amount = order.items.reduce((sum, item) => sum + parseFloat(item.grand_total || 0), 0);
+                }
+                
+                content += `<li class="list-group-item d-flex justify-content-between align-items-start">
+                                <div>
+                                    <div class="fw-bold"><i class="fas fa-shopping-cart me-2 text-primary"></i> ${partyName}</div>
+                                    <small class="text-muted">Order No: ${orderNo}</small>
+                                </div>
+                                <span class="badge bg-success text-white rounded-pill">₹${amount.toFixed(2)}</span>
+                            </li>`;
+            });
+            content += '</ul>';
+        }
+        
+        document.getElementById('ordersContent').innerHTML = content;
+        
+        var modalElement = document.getElementById('ordersModal');
+        if (typeof bootstrap !== 'undefined') {
+            var modal = new bootstrap.Modal(modalElement);
+            modal.show();
+        } else {
+            $(modalElement).modal('show');
+        }
+    }
+
+    function showPayments(payments) {
+        let content = '';
+        if(payments.length === 0) {
+            content = '<p class="text-center text-muted">No payments found.</p>';
+        } else {
+            content = '<ul class="list-group list-group-flush">';
+            payments.forEach(payment => {
+                let partyName = (payment.customer && payment.customer.agro_name) ? payment.customer.agro_name : 'Party ID: ' + (payment.customer_id || 'Unknown');
+                let mode = payment.payment_mode || 'N/A';
+                let amount = payment.amount ? parseFloat(payment.amount).toFixed(2) : '0.00';
+                
+                content += `<li class="list-group-item d-flex justify-content-between align-items-start">
+                                <div>
+                                    <div class="fw-bold"><i class="fas fa-building me-2 text-success"></i> ${partyName}</div>
+                                    <small class="text-muted">Mode: ${mode}</small>
+                                </div>
+                                <span class="badge bg-success text-white rounded-pill">₹${amount}</span>
+                            </li>`;
+            });
+            content += '</ul>';
+        }
+        
+        document.getElementById('paymentsContent').innerHTML = content;
+        
+        var modalElement = document.getElementById('paymentsModal');
+        if (typeof bootstrap !== 'undefined') {
+            var modal = new bootstrap.Modal(modalElement);
+            modal.show();
+        } else {
+            $(modalElement).modal('show');
+        }
+    }
+
+    function showFarmVisits(visits) {
+        let content = '';
+        if(visits.length === 0) {
+            content = '<p class="text-center text-muted">No field demos found.</p>';
+        } else {
+            content = '<ul class="list-group list-group-flush">';
+            visits.forEach(visit => {
+                let farmerName = (visit.farmer && visit.farmer.name) ? visit.farmer.name : 'Farmer ID: ' + (visit.farmer_id || 'Unknown');
+                let cropName = (visit.crop && visit.crop.name) ? visit.crop.name : 'N/A';
+                
+                content += `<li class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <div class="fw-bold"><i class="fas fa-user-tag me-2 text-warning"></i> ${farmerName}</div>
+                                    <small class="text-muted">Crop: ${cropName}</small>
+                                </div>
+                            </li>`;
+            });
+            content += '</ul>';
+        }
+        
+        document.getElementById('farmVisitsContent').innerHTML = content;
+        
+        var modalElement = document.getElementById('farmVisitsModal');
         if (typeof bootstrap !== 'undefined') {
             var modal = new bootstrap.Modal(modalElement);
             modal.show();

@@ -26,13 +26,15 @@ class ReportController extends Controller
                 $this->applyDateFilter($q, $filter, 'created_at');
             },
             'orders' => function($q) use ($filter) {
-                $q->with('items');
+                $q->with(['items', 'customer']);
                 $this->applyDateFilter($q, $filter, 'created_at');
             },
             'partyPayments' => function($q) use ($filter) {
+                $q->with('customer');
                 $this->applyDateFilter($q, $filter, 'payment_date');
             },
             'farmVisits' => function($q) use ($filter) {
+                $q->with(['farmer', 'crop']);
                 $this->applyDateFilter($q, $filter, 'created_at');
             }
         ])->where('user_level', '!=', 'master_admin');
@@ -67,7 +69,10 @@ class ReportController extends Controller
                 'payment_collection' => $user->partyPayments->sum('amount'),
                 'farmer_download' => 0, // Placeholder
                 'field_demo' => $user->farmVisits->count(),
-                'visited_parties' => $user->partyVisits // For the modal
+                'visited_parties' => $user->partyVisits, // For the modal
+                'orders_list' => $user->orders, // For the modal
+                'payments_list' => $user->partyPayments, // For the modal
+                'farm_visits_list' => $user->farmVisits // For the modal
             ];
         });
 
