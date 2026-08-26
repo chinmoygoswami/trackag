@@ -84,8 +84,18 @@
                                     <button class="btn btn-sm btn-view ms-2" onclick="showVisitedParties({{ json_encode($data['visited_parties']) }})">VIEW</button>
                                 @endif
                             </td>
-                            <td>{{ $data['new_party_count'] }}</td>
-                            <td>{{ $data['order_count'] }}</td>
+                            <td>
+                                {{ $data['new_party_count'] }}
+                                @if($data['new_party_count'] > 0)
+                                    <button class="btn btn-sm btn-view ms-2" onclick="showNewParties({{ json_encode($data['new_parties']) }})">VIEW</button>
+                                @endif
+                            </td>
+                            <td>
+                                {{ $data['order_count'] }} 
+                                @if($data['order_count'] > 0)
+                                    <br><span class="text-success fw-bold">(₹{{ number_format($data['order_amount'], 2) }})</span>
+                                @endif
+                            </td>
                             <td class="text-success fw-bold">₹{{ number_format($data['payment_collection'], 2) }}</td>
                             <td>{{ $data['farmer_download'] }}</td>
                             <td>{{ $data['field_demo'] }}</td>
@@ -103,6 +113,7 @@
     </div>
 
     @include('admin.reports.partials.visited-parties-modal')
+    @include('admin.reports.partials.new-parties-modal')
 </main>
 @endsection
 
@@ -136,6 +147,41 @@
         document.getElementById('visitedPartiesContent').innerHTML = content;
         
         var modalElement = document.getElementById('visitedPartiesModal');
+        if (typeof bootstrap !== 'undefined') {
+            var modal = new bootstrap.Modal(modalElement);
+            modal.show();
+        } else {
+            $(modalElement).modal('show');
+        }
+    }
+    function showNewParties(parties) {
+        let content = '';
+        if(parties.length === 0) {
+            content = '<p class="text-center text-muted">No new parties.</p>';
+        } else {
+            content = '<ul class="list-group list-group-flush">';
+            parties.forEach(party => {
+                let partyName = party.agro_name || 'Unknown Name';
+                let checkIn = 'N/A';
+                if (party.created_at) {
+                    let date = new Date(party.created_at);
+                    checkIn = date.toLocaleString('en-IN', {
+                        day: '2-digit', month: 'short', year: 'numeric',
+                        hour: '2-digit', minute: '2-digit', hour12: true
+                    });
+                }
+                
+                content += `<li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span><i class="fas fa-building me-2 text-primary"></i> ${partyName}</span>
+                                <span class="badge bg-light text-dark">Added On: ${checkIn}</span>
+                            </li>`;
+            });
+            content += '</ul>';
+        }
+        
+        document.getElementById('newPartiesContent').innerHTML = content;
+        
+        var modalElement = document.getElementById('newPartiesModal');
         if (typeof bootstrap !== 'undefined') {
             var modal = new bootstrap.Modal(modalElement);
             modal.show();

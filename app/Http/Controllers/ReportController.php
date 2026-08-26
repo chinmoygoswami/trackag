@@ -26,6 +26,7 @@ class ReportController extends Controller
                 $this->applyDateFilter($q, $filter, 'created_at');
             },
             'orders' => function($q) use ($filter) {
+                $q->with('items');
                 $this->applyDateFilter($q, $filter, 'created_at');
             },
             'partyPayments' => function($q) use ($filter) {
@@ -60,7 +61,9 @@ class ReportController extends Controller
                 'travel_km' => $user->trips->sum('total_distance_km'),
                 'visit_party_count' => $user->partyVisits->count(),
                 'new_party_count' => $user->customers->count(),
+                'new_parties' => $user->customers, // For the modal
                 'order_count' => $user->orders->count(),
+                'order_amount' => $user->orders->flatMap->items->sum('grand_total'),
                 'payment_collection' => $user->partyPayments->sum('amount'),
                 'farmer_download' => 0, // Placeholder
                 'field_demo' => $user->farmVisits->count(),
