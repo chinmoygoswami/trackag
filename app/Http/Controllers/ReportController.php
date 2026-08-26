@@ -47,7 +47,9 @@ class ReportController extends Controller
             if ($trip && $trip->start_time && $trip->end_time) {
                 $start = Carbon::parse($trip->start_time);
                 $end = Carbon::parse($trip->end_time);
-                $workingHrs = round($end->diffInMinutes($start) / 60, 2);
+                
+                // Use absolute value to prevent negative hours if start/end are parsed incorrectly
+                $workingHrs = round(abs($start->diffInMinutes($end)) / 60, 2);
             }
 
             return [
@@ -75,6 +77,51 @@ class ReportController extends Controller
                 'farm_visits_list' => $user->farmVisits // For the modal
             ];
         });
+
+        if (request()->has('export') && request('export') == 'csv') {
+            $headers = [
+                "Content-type"        => "text/csv",
+                "Content-Disposition" => "attachment; filename=employee_activity_report.csv",
+                "Pragma"              => "no-cache",
+                "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
+                "Expires"             => "0"
+            ];
+
+            $columns = [
+                'Date', 'State', 'Employee Name', 'Reporting To', 'Punch In', 'Punch Out', 
+                'Working Hrs', 'Tour Plan', 'Travel KM', 'Visit Party Count', 'New Party Count', 
+                'Order Count', 'Order Amount (Rs)', 'Payment Collection (Rs)', 'Farmer Download', 'Field Demo'
+            ];
+
+            $callback = function() use($reportData, $columns) {
+                $file = fopen('php://output', 'w');
+                fputcsv($file, $columns);
+
+                foreach ($reportData as $data) {
+                    fputcsv($file, [
+                        $data['date'],
+                        $data['state'],
+                        $data['employee_name'],
+                        $data['reporting_to'],
+                        $data['punch_in'],
+                        $data['punch_out'],
+                        $data['working_hrs'],
+                        $data['tour_plan'],
+                        $data['travel_km'],
+                        $data['visit_party_count'],
+                        $data['new_party_count'],
+                        $data['order_count'],
+                        $data['order_amount'],
+                        $data['payment_collection'],
+                        $data['farmer_download'],
+                        $data['field_demo']
+                    ]);
+                }
+                fclose($file);
+            };
+
+            return response()->stream($callback, 200, $headers);
+        }
 
         return view('admin.reports.index', compact('reportData', 'filter'));
     }

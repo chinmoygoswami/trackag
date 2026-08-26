@@ -36,9 +36,12 @@
                             <option value="yearly" {{ $filter == 'yearly' ? 'selected' : '' }}>Yearly Report</option>
                         </select>
                     </div>
-                    <div class="col-md-2">
+                    <div class="col-md-4 d-flex gap-2">
                         <button type="submit" class="btn btn-primary w-100">
                             <i class="fas fa-filter me-2"></i> Apply Filter
+                        </button>
+                        <button type="submit" name="export" value="csv" class="btn btn-success w-100">
+                            <i class="fas fa-file-csv me-2"></i> Export CSV
                         </button>
                     </div>
                 </form>
@@ -305,7 +308,8 @@
         } else {
             content = '<ul class="list-group list-group-flush">';
             visits.forEach(visit => {
-                let farmerName = (visit.farmer && visit.farmer.name) ? visit.farmer.name : 'Farmer ID: ' + (visit.farmer_id || 'Unknown');
+                let f = visit.farmer;
+                let farmerName = f ? (f.farmer_name || f.name || 'Unnamed Farmer') : 'Farmer ID: ' + (visit.farmer_id || 'Unknown');
                 let cropName = (visit.crop && visit.crop.name) ? visit.crop.name : 'N/A';
                 let visitDate = 'N/A';
                 if (visit.created_at) {
