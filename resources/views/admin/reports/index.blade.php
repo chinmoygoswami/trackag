@@ -4,11 +4,11 @@
 <style>
     .reports-page { background-color: #f8fafc; min-height: calc(100vh - 57px); }
     .table-responsive { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 1rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); overflow: hidden; }
-    .dashboard-table thead th { background: #f8fafc; border-bottom: 1px solid #e2e8f0; color: #64748b; font-size: 0.75rem; letter-spacing: 0.05em; padding: 1rem 1.5rem; text-transform: uppercase; font-weight: 700; white-space: nowrap;}
-    .dashboard-table tbody td { border-bottom: 1px solid #f1f5f9; color: #334155; padding: 1rem 1.5rem; vertical-align: middle; font-weight: 500; white-space: nowrap;}
+    .dashboard-table thead th { background: #f8fafc; border-bottom: 1px solid #e2e8f0; color: #64748b; font-size: 0.75rem; letter-spacing: 0.05em; padding: 0.75rem 1rem; text-transform: uppercase; font-weight: 700; white-space: nowrap;}
+    .dashboard-table tbody td { border-bottom: 1px solid #f1f5f9; color: #334155; padding: 0.75rem 1rem; vertical-align: middle; font-weight: 500; white-space: nowrap;}
     .dashboard-table tbody tr:hover { background: #f8fafc; }
     .filter-card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 1rem; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
-    .btn-view { background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; font-weight: 600; font-size: 0.8125rem; padding: 0.4rem 0.875rem; border-radius: 0.5rem; transition: all 0.2s; }
+    .btn-view { background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; font-weight: 600; font-size: 0.75rem; padding: 0.25rem 0.5rem; border-radius: 0.4rem; transition: all 0.2s; }
     .btn-view:hover { background: #dbeafe; color: #1d4ed8; }
 </style>
 @endpush
@@ -50,19 +50,14 @@
                     <thead>
                         <tr>
                             <th>Date</th>
-                            <th>State</th>
-                            <th>Employee Name</th>
-                            <th>Reporting To</th>
-                            <th>Punch In</th>
-                            <th>Punch Out</th>
-                            <th>Working Hrs</th>
-                            <th>Tour Plan</th>
+                            <th>Location / Tour</th>
+                            <th>Employee / Manager</th>
+                            <th>Attendance (In / Out / Hrs)</th>
                             <th>Travel KM</th>
-                            <th>Visit Party Name (Count)</th>
-                            <th>New Party Name (Count)</th>
-                            <th>Order Count</th>
-                            <th>Payment Collection</th>
-                            <th>Farmer Download</th>
+                            <th>Parties (Visit / New)</th>
+                            <th>Orders</th>
+                            <th>Payments</th>
+                            <th>Farmer App</th>
                             <th>Field Demo</th>
                         </tr>
                     </thead>
@@ -70,50 +65,58 @@
                         @forelse($reportData as $data)
                         <tr>
                             <td>{{ $data['date'] }}</td>
-                            <td>{{ $data['state'] }}</td>
-                            <td class="fw-bold text-dark">{{ $data['employee_name'] }}</td>
-                            <td>{{ $data['reporting_to'] }}</td>
-                            <td><span class="text-success fw-bold">{{ $data['punch_in'] }}</span></td>
-                            <td><span class="text-danger fw-bold">{{ $data['punch_out'] }}</span></td>
-                            <td><span class="badge bg-light text-dark border">{{ $data['working_hrs'] }} Hrs</span></td>
-                            <td>{{ $data['tour_plan'] }}</td>
+                            <td>
+                                {{ $data['state'] }}<br>
+                                <small class="text-muted">Tour: {{ $data['tour_plan'] }}</small>
+                            </td>
+                            <td>
+                                <span class="fw-bold text-dark">{{ $data['employee_name'] }}</span><br>
+                                <small class="text-muted">Mgr: {{ $data['reporting_to'] }}</small>
+                            </td>
+                            <td>
+                                <span class="text-success fw-bold" title="Punch In">{{ $data['punch_in'] }}</span> - 
+                                <span class="text-danger fw-bold" title="Punch Out">{{ $data['punch_out'] }}</span><br>
+                                <span class="badge bg-light text-dark border mt-1"><i class="fas fa-clock me-1"></i>{{ $data['working_hrs'] }} Hrs</span>
+                            </td>
                             <td>{{ $data['travel_km'] }} KM</td>
                             <td>
-                                {{ $data['visit_party_count'] }}
-                                @if($data['visit_party_count'] > 0)
-                                    <button class="btn btn-sm btn-view ms-2" onclick="showVisitedParties({{ json_encode($data['visited_parties']) }})">VIEW</button>
-                                @endif
+                                <div>
+                                    <span class="text-muted small">Visit:</span> <span class="fw-bold">{{ $data['visit_party_count'] }}</span>
+                                    @if($data['visit_party_count'] > 0)
+                                        <button class="btn btn-sm btn-view ms-1 py-0 px-2" onclick="showVisitedParties({{ json_encode($data['visited_parties']) }})">VIEW</button>
+                                    @endif
+                                </div>
+                                <div class="mt-1">
+                                    <span class="text-muted small">New:</span> <span class="fw-bold">{{ $data['new_party_count'] }}</span>
+                                    @if($data['new_party_count'] > 0)
+                                        <button class="btn btn-sm btn-view ms-1 py-0 px-2" onclick="showNewParties({{ json_encode($data['new_parties']) }})">VIEW</button>
+                                    @endif
+                                </div>
                             </td>
                             <td>
-                                {{ $data['new_party_count'] }}
-                                @if($data['new_party_count'] > 0)
-                                    <button class="btn btn-sm btn-view ms-2" onclick="showNewParties({{ json_encode($data['new_parties']) }})">VIEW</button>
-                                @endif
-                            </td>
-                            <td>
-                                {{ $data['order_count'] }} 
+                                <span class="fw-bold">{{ $data['order_count'] }}</span>
                                 @if($data['order_count'] > 0)
-                                    <br><span class="text-success fw-bold">(₹{{ number_format($data['order_amount'], 2) }})</span>
-                                    <button class="btn btn-sm btn-view mt-1" onclick="showOrders({{ json_encode($data['orders_list']) }})">VIEW</button>
+                                    <br><span class="text-success fw-bold small">(₹{{ number_format($data['order_amount'], 2) }})</span>
+                                    <button class="btn btn-sm btn-view mt-1 py-0 px-2 d-block" onclick="showOrders({{ json_encode($data['orders_list']) }})">VIEW</button>
                                 @endif
                             </td>
                             <td>
                                 <span class="text-success fw-bold">₹{{ number_format($data['payment_collection'], 2) }}</span>
                                 @if($data['payment_collection'] > 0)
-                                    <button class="btn btn-sm btn-view ms-2" onclick="showPayments({{ json_encode($data['payments_list']) }})">VIEW</button>
+                                    <br><button class="btn btn-sm btn-view mt-1 py-0 px-2" onclick="showPayments({{ json_encode($data['payments_list']) }})">VIEW</button>
                                 @endif
                             </td>
                             <td>{{ $data['farmer_download'] }}</td>
                             <td>
-                                {{ $data['field_demo'] }}
+                                <span class="fw-bold">{{ $data['field_demo'] }}</span>
                                 @if($data['field_demo'] > 0)
-                                    <button class="btn btn-sm btn-view ms-2" onclick="showFarmVisits({{ json_encode($data['farm_visits_list']) }})">VIEW</button>
+                                    <button class="btn btn-sm btn-view ms-1 py-0 px-2" onclick="showFarmVisits({{ json_encode($data['farm_visits_list']) }})">VIEW</button>
                                 @endif
                             </td>
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="15" class="text-center py-4 text-muted">No report data found for this filter.</td>
+                            <td colspan="10" class="text-center py-4 text-muted">No report data found for this filter.</td>
                         </tr>
                         @endforelse
                     </tbody>
@@ -213,6 +216,13 @@
             orders.forEach(order => {
                 let partyName = (order.customer && order.customer.agro_name) ? order.customer.agro_name : 'Party ID: ' + (order.party_id || 'Unknown');
                 let orderNo = order.order_no || 'N/A';
+                let orderDate = 'N/A';
+                if (order.created_at) {
+                    let date = new Date(order.created_at);
+                    orderDate = date.toLocaleString('en-IN', {
+                        day: '2-digit', month: 'short', year: 'numeric'
+                    });
+                }
                 
                 let amount = 0;
                 if(order.items && order.items.length > 0) {
@@ -222,7 +232,7 @@
                 content += `<li class="list-group-item d-flex justify-content-between align-items-start">
                                 <div>
                                     <div class="fw-bold"><i class="fas fa-shopping-cart me-2 text-primary"></i> ${partyName}</div>
-                                    <small class="text-muted">Order No: ${orderNo}</small>
+                                    <small class="text-muted">Order No: ${orderNo} &bull; ${orderDate}</small>
                                 </div>
                                 <span class="badge bg-success text-white rounded-pill">₹${amount.toFixed(2)}</span>
                             </li>`;
@@ -251,11 +261,18 @@
                 let partyName = (payment.customer && payment.customer.agro_name) ? payment.customer.agro_name : 'Party ID: ' + (payment.customer_id || 'Unknown');
                 let mode = payment.payment_mode || 'N/A';
                 let amount = payment.amount ? parseFloat(payment.amount).toFixed(2) : '0.00';
+                let paymentDate = 'N/A';
+                if (payment.payment_date) {
+                    let date = new Date(payment.payment_date);
+                    paymentDate = date.toLocaleString('en-IN', {
+                        day: '2-digit', month: 'short', year: 'numeric'
+                    });
+                }
                 
                 content += `<li class="list-group-item d-flex justify-content-between align-items-start">
                                 <div>
                                     <div class="fw-bold"><i class="fas fa-building me-2 text-success"></i> ${partyName}</div>
-                                    <small class="text-muted">Mode: ${mode}</small>
+                                    <small class="text-muted">Mode: ${mode} &bull; ${paymentDate}</small>
                                 </div>
                                 <span class="badge bg-success text-white rounded-pill">₹${amount}</span>
                             </li>`;
@@ -283,11 +300,18 @@
             visits.forEach(visit => {
                 let farmerName = (visit.farmer && visit.farmer.name) ? visit.farmer.name : 'Farmer ID: ' + (visit.farmer_id || 'Unknown');
                 let cropName = (visit.crop && visit.crop.name) ? visit.crop.name : 'N/A';
+                let visitDate = 'N/A';
+                if (visit.created_at) {
+                    let date = new Date(visit.created_at);
+                    visitDate = date.toLocaleString('en-IN', {
+                        day: '2-digit', month: 'short', year: 'numeric'
+                    });
+                }
                 
                 content += `<li class="list-group-item d-flex justify-content-between align-items-center">
                                 <div>
                                     <div class="fw-bold"><i class="fas fa-user-tag me-2 text-warning"></i> ${farmerName}</div>
-                                    <small class="text-muted">Crop: ${cropName}</small>
+                                    <small class="text-muted">Crop: ${cropName} &bull; ${visitDate}</small>
                                 </div>
                             </li>`;
             });
