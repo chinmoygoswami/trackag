@@ -136,6 +136,13 @@
 
 @push('scripts')
 <script>
+    function getPartyName(customer, defaultId) {
+        if (customer) {
+            return customer.agro_name || customer.name || customer.contact_person_name || 'Unnamed Party';
+        }
+        return 'Party ID: ' + (defaultId || 'Unknown');
+    }
+
     function showVisitedParties(parties) {
         let content = '';
         if(parties.length === 0) {
@@ -143,7 +150,7 @@
         } else {
             content = '<ul class="list-group list-group-flush">';
             parties.forEach(party => {
-                let partyName = (party.customer && party.customer.agro_name) ? party.customer.agro_name : 'Party ID: ' + (party.customer_id || 'Unknown');
+                let partyName = getPartyName(party.customer, party.customer_id);
                 let checkIn = 'N/A';
                 if (party.check_in_time) {
                     let date = new Date(party.check_in_time);
@@ -178,7 +185,7 @@
         } else {
             content = '<ul class="list-group list-group-flush">';
             parties.forEach(party => {
-                let partyName = party.agro_name || 'Unknown Name';
+                let partyName = party.agro_name || party.name || party.contact_person_name || 'Unnamed Party';
                 let checkIn = 'N/A';
                 if (party.created_at) {
                     let date = new Date(party.created_at);
@@ -214,7 +221,7 @@
         } else {
             content = '<ul class="list-group list-group-flush">';
             orders.forEach(order => {
-                let partyName = (order.customer && order.customer.agro_name) ? order.customer.agro_name : 'Party ID: ' + (order.party_id || 'Unknown');
+                let partyName = getPartyName(order.customer, order.party_id);
                 let orderNo = order.order_no || 'N/A';
                 let orderDate = 'N/A';
                 if (order.created_at) {
@@ -258,7 +265,7 @@
         } else {
             content = '<ul class="list-group list-group-flush">';
             payments.forEach(payment => {
-                let partyName = (payment.customer && payment.customer.agro_name) ? payment.customer.agro_name : 'Party ID: ' + (payment.customer_id || 'Unknown');
+                let partyName = getPartyName(payment.customer, payment.customer_id);
                 let mode = payment.payment_mode || 'N/A';
                 let amount = payment.amount ? parseFloat(payment.amount).toFixed(2) : '0.00';
                 let paymentDate = 'N/A';
