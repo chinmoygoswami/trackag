@@ -213,6 +213,11 @@ Route::middleware(['web'])->group(function () {
                 \App\Models\TallySalesBill::whereIn('id', $request->ids ?? [])->delete();
                 return response()->json(['success' => true]);
             })->name('tally.bulkDelete.salesBill');
+
+            Route::post('tally/bulk-delete/party-sync', function (\Illuminate\Http\Request $request) {
+                \App\Models\TallyPartySync::whereIn('id', $request->ids ?? [])->delete();
+                return response()->json(['success' => true]);
+            })->name('tally.bulkDelete.partySync');
             
             Route::post('tally/bulk-delete/opening-closing', function (\Illuminate\Http\Request $request) {
                 \App\Models\TallyOpeningClosing::whereIn('id', $request->ids ?? [])->delete();

@@ -133,6 +133,17 @@ $(document).ready(function() {
             autoWidth: false,
             pageLength: 50,
             lengthMenu: [15, 25, 50, 100],
+            dom: '<"row"<"col-sm-12 col-md-6"B><"col-sm-12 col-md-6"f>>rt<"row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
+            buttons: [
+                {
+                    extend: 'csvHtml5',
+                    text: '<i class="fas fa-file-csv"></i> Export CSV',
+                    className: 'btn btn-success btn-sm mb-2'
+                }
+            ],
+            columnDefs: [
+                { orderable: false, targets: 0 }
+            ]
         });
 
         $('#min-date, #max-date').on('change', function () {

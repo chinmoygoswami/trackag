@@ -36,7 +36,8 @@
                             <input type="date" id="max-date" class="form-control form-control-sm">
                         </div>
                         <div class="col-md-8 text-end align-self-end">
-                            <button id="btnAssignModal" class="btn btn-primary btn-sm" style="display:none;" data-bs-toggle="modal" data-bs-target="#assignModal">Assign to Customer</button>
+                            <button id="btnBulkDelete" class="btn btn-danger btn-sm" style="display:none;"><i class="fas fa-trash me-1"></i> Bulk Delete</button>
+                            <button id="btnAssignModal" class="btn btn-primary btn-sm ms-2" style="display:none;" data-bs-toggle="modal" data-bs-target="#assignModal">Assign to Customer</button>
                         </div>
                     </div>
                     <table id="data-table" class="table table-bordered table-hover table-striped align-middle">
@@ -175,6 +176,14 @@ $(document).ready(function() {
             autoWidth: false,
             pageLength: 50,
             lengthMenu: [15, 25, 50, 100],
+            dom: '<"row"<"col-sm-12 col-md-6"B><"col-sm-12 col-md-6"f>>rt<"row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
+            buttons: [
+                {
+                    extend: 'csvHtml5',
+                    text: '<i class="fas fa-file-csv"></i> Export CSV',
+                    className: 'btn btn-success btn-sm mb-2'
+                }
+            ],
             columnDefs: [
                 { orderable: false, targets: 0 }
             ]
@@ -202,11 +211,39 @@ $(document).ready(function() {
 
         function toggleAssignButton() {
             if ($('input[type="checkbox"].row-checkbox:checked').length > 0) {
-                $('#btnAssignModal').show();
+                $('#btnAssignModal, #btnBulkDelete').show();
             } else {
-                $('#btnAssignModal').hide();
+                $('#btnAssignModal, #btnBulkDelete').hide();
             }
         }
+
+        $('#btnBulkDelete').click(function() {
+            if (!confirm('Are you sure you want to delete the selected parties?')) return;
+            var selectedIds = $('input[type="checkbox"].row-checkbox:checked').map(function(){
+                return $(this).val();
+            }).get();
+
+            $(this).prop('disabled', true).text('Deleting...');
+
+            $.ajax({
+                url: '{{ route("tally.bulkDelete.partySync") }}',
+                type: 'POST',
+                data: {
+                    _token: '{{ csrf_token() }}',
+                    ids: selectedIds
+                },
+                success: function(response) {
+                    if(response.success) {
+                        alert('Parties deleted successfully!');
+                        location.reload();
+                    }
+                },
+                error: function(xhr) {
+                    alert('An error occurred while deleting parties.');
+                    $('#btnBulkDelete').prop('disabled', false).html('<i class="fas fa-trash me-1"></i> Bulk Delete');
+                }
+            });
+        });
 
         $('#btnConfirmAssign').click(function() {
             var selectedIds = $('input[type="checkbox"].row-checkbox:checked').map(function(){
