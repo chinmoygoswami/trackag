@@ -161,4 +161,34 @@ class User extends Authenticatable
         return $this->belongsTo(Depo::class, 'depo_id', 'id');
     }
 
+    public function trips()
+    {
+        return $this->hasMany(Trip::class);
+    }
+
+    public function partyVisits()
+    {
+        return $this->hasMany(PartyVisit::class);
+    }
+
+    public function customers()
+    {
+        return $this->hasMany(Customer::class);
+    }
+
+    public function orders()
+    {
+        return $this->hasMany(Order::class);
+    }
+
+    public function partyPayments()
+    {
+        return $this->hasMany(PartyPayment::class);
+    }
+
+    public function farmVisits()
+    {
+        return $this->hasMany(FarmVisit::class);
+    }
+
 }

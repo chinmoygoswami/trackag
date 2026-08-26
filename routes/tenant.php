@@ -108,6 +108,9 @@ Route::prefix('admin')->group(function () {
         Route::resource('stock', StockController::class);
         // Route::resource('tracking', TrackingController::class);
         Route::resource('expense', ExpenseController::class);
+        
+        // Reports
+        Route::get('reports', [\App\Http\Controllers\ReportController::class, 'index'])->name('reports.index');
 
         // Location management (tenant database)
         Route::resource('states', StateController::class);
