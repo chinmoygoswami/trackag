@@ -90,7 +90,8 @@ class ReportController extends Controller
             $columns = [
                 'Date', 'State', 'Employee Name', 'Reporting To', 'Punch In', 'Punch Out', 
                 'Working Hrs', 'Tour Plan', 'Travel KM', 'Visit Party Count', 'New Party Count', 
-                'Order Count', 'Order Amount (Rs)', 'Payment Collection (Rs)', 'Farmer Download', 'Field Demo'
+                'Order Count', 'Order Amount (Rs)', 'Payment Collection (Rs)', 'Farmer Download', 'Field Demo',
+                'Visited Parties Details', 'New Parties Details', 'Orders Details', 'Payments Details', 'Field Demo Details'
             ];
 
             $callback = function() use($reportData, $columns) {
@@ -98,6 +99,37 @@ class ReportController extends Controller
                 fputcsv($file, $columns);
 
                 foreach ($reportData as $data) {
+                    $visitedPartiesText = $data['visited_parties']->map(function($p) {
+                        $name = $p->customer ? ($p->customer->agro_name ?: ($p->customer->name ?: ($p->customer->contact_person_name ?: 'Unnamed'))) : 'Party ID: ' . $p->customer_id;
+                        $date = $p->check_in_time ? \Carbon\Carbon::parse($p->check_in_time)->format('d M Y, h:i A') : 'N/A';
+                        return "$name (Check In: $date)";
+                    })->implode("\n");
+
+                    $newPartiesText = $data['new_parties']->map(function($p) {
+                        $name = $p->agro_name ?: ($p->name ?: ($p->contact_person_name ?: 'Unnamed'));
+                        $date = $p->created_at ? \Carbon\Carbon::parse($p->created_at)->format('d M Y, h:i A') : 'N/A';
+                        return "$name (Added: $date)";
+                    })->implode("\n");
+
+                    $ordersText = $data['orders_list']->map(function($o) {
+                        $name = $o->customer ? ($o->customer->agro_name ?: ($o->customer->name ?: ($o->customer->contact_person_name ?: 'Unnamed'))) : 'Party ID: ' . $o->party_id;
+                        $no = $o->order_no ?: 'N/A';
+                        $amt = $o->items ? $o->items->sum('grand_total') : 0;
+                        return "$name (Order No: $no, Rs $amt)";
+                    })->implode("\n");
+
+                    $paymentsText = $data['payments_list']->map(function($p) {
+                        $name = $p->customer ? ($p->customer->agro_name ?: ($p->customer->name ?: ($p->customer->contact_person_name ?: 'Unnamed'))) : 'Party ID: ' . $p->customer_id;
+                        $mode = $p->payment_mode ?: 'N/A';
+                        return "$name (Mode: $mode, Rs {$p->amount})";
+                    })->implode("\n");
+
+                    $farmVisitsText = $data['farm_visits_list']->map(function($v) {
+                        $name = $v->farmer ? ($v->farmer->farmer_name ?: ($v->farmer->name ?: 'Unnamed')) : 'Farmer ID: ' . $v->farmer_id;
+                        $crop = $v->crop ? $v->crop->name : 'N/A';
+                        return "$name (Crop: $crop)";
+                    })->implode("\n");
+
                     fputcsv($file, [
                         $data['date'],
                         $data['state'],
@@ -114,7 +146,12 @@ class ReportController extends Controller
                         $data['order_amount'],
                         $data['payment_collection'],
                         $data['farmer_download'],
-                        $data['field_demo']
+                        $data['field_demo'],
+                        $visitedPartiesText,
+                        $newPartiesText,
+                        $ordersText,
+                        $paymentsText,
+                        $farmVisitsText
                     ]);
                 }
                 fclose($file);
