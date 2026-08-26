@@ -125,7 +125,7 @@ $(document).ready(function() {
             autoWidth: false,
             pageLength: 50,
             lengthMenu: [15, 25, 50, 100],
-            dom: '<"row"<"col-sm-12 col-md-6"B><"col-sm-12 col-md-6"f>>rt<"row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
+            dom: '<"row align-items-center mb-3"<"col-sm-12 col-md-4"l><"col-sm-12 col-md-4 text-center"B><"col-sm-12 col-md-4 text-end"f>>rt<"row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
             buttons: [
                 {
                     extend: 'csvHtml5',
