@@ -115,11 +115,18 @@
         } else {
             content = '<ul class="list-group list-group-flush">';
             parties.forEach(party => {
-                // Assuming PartyVisit has a relationship to Customer/Party, this is a placeholder display.
-                let partyId = party.customer_id || 'Unknown ID';
-                let checkIn = party.check_in_time || 'N/A';
+                let partyName = (party.customer && party.customer.agro_name) ? party.customer.agro_name : 'Party ID: ' + (party.customer_id || 'Unknown');
+                let checkIn = 'N/A';
+                if (party.check_in_time) {
+                    let date = new Date(party.check_in_time);
+                    checkIn = date.toLocaleString('en-IN', {
+                        day: '2-digit', month: 'short', year: 'numeric',
+                        hour: '2-digit', minute: '2-digit', hour12: true
+                    });
+                }
+                
                 content += `<li class="list-group-item d-flex justify-content-between align-items-center">
-                                <span><i class="fas fa-building me-2 text-primary"></i> Party ID: ${partyId}</span>
+                                <span><i class="fas fa-building me-2 text-primary"></i> ${partyName}</span>
                                 <span class="badge bg-light text-dark">Checked In: ${checkIn}</span>
                             </li>`;
             });

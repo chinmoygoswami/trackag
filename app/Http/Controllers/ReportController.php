@@ -19,6 +19,7 @@ class ReportController extends Controller
                 $this->applyDateFilter($q, $filter, 'trip_date');
             },
             'partyVisits' => function($q) use ($filter) {
+                $q->with('customer');
                 $this->applyDateFilter($q, $filter, 'visited_date');
             },
             'customers' => function($q) use ($filter) {
