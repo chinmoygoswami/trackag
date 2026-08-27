@@ -148,10 +148,9 @@ class PartyPerformanceController extends Controller
             $previousClosingRecord = $partyBalances
                 ->filter(fn (TallyOpeningClosing $balance) => $balance->date->lte($previousFinancialYearEnd))
                 ->last();
-            $currentYearBalances = $partyBalances
-                ->filter(fn (TallyOpeningClosing $balance) => $balance->date->betweenIncluded($financialYearStart, $financialYearEnd));
-            $currentOpeningRecord = $currentYearBalances->first();
-            $currentClosingRecord = $currentYearBalances->last();
+            // Keep the API aligned with the web Party Performance page: it displays
+            // the latest Tally opening/closing snapshot for the party.
+            $latestBalanceRecord = $partyBalances->last();
             $partyVisits = $visits->get($party->id, collect());
             $partyOrders = $orders->get($party->id, collect());
             $partyPayments = $paymentKeysByParty->get($party->id, collect())
@@ -159,10 +158,6 @@ class PartyPerformanceController extends Controller
                 ->unique('id')
                 ->sortByDesc(fn (TallyPartywisePaymentCredit $payment) => $payment->payment_date?->timestamp)
                 ->values();
-            $currentYearReceived = (float) $partyPayments
-                ->filter(fn (TallyPartywisePaymentCredit $payment) => $payment->payment_date?->betweenIncluded($financialYearStart, $financialYearEnd))
-                ->sum('credit_amount');
-
             return [
                 'party_id' => $party->id,
                 'party_code' => $party->party_code,
@@ -197,9 +192,9 @@ class PartyPerformanceController extends Controller
                         'yearly' => $partyOrders->count(),
                     ],
                     'previous_year_closing' => $this->balanceValue($previousClosingRecord?->closing_balance_amt),
-                    'current_year_opening' => $this->balanceValue($currentOpeningRecord?->opening_balance_amt),
-                    'current_year_credit' => $this->balanceValue($currentYearReceived),
-                    'current_year_closing' => $this->balanceValue($currentClosingRecord?->closing_balance_amt),
+                    'current_year_opening' => $this->balanceValue($latestBalanceRecord?->opening_balance_amt),
+                    'current_year_credit' => $this->balanceValue($latestBalanceRecord?->credit_amt),
+                    'current_year_closing' => $this->balanceValue($latestBalanceRecord?->closing_balance_amt),
                 ],
             ];
         })->values();
