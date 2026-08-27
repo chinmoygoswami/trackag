@@ -193,7 +193,7 @@ class PartyPerformanceController extends Controller
                     ],
                     'previous_year_closing' => $this->balanceValue($previousClosingRecord?->closing_balance_amt),
                     'current_year_opening' => $this->balanceValue($latestBalanceRecord?->opening_balance_amt),
-                    'current_year_credit' => $this->balanceValue($latestBalanceRecord?->credit_amt),
+                    'current_year_credit' => $this->creditValue($latestBalanceRecord?->credit_amt),
                     'current_year_closing' => $this->balanceValue($latestBalanceRecord?->closing_balance_amt),
                 ],
             ];
@@ -276,6 +276,17 @@ class PartyPerformanceController extends Controller
             'amount' => abs($amount),
             'type' => $amount < 0 ? 'Cr' : 'Dr',
             'formatted' => $this->formatAmount(abs($amount)).' '.($amount < 0 ? 'Cr' : 'Dr'),
+        ];
+    }
+
+    private function creditValue($value): array
+    {
+        $amount = abs((float) ($value ?? 0));
+
+        return [
+            'amount' => $amount,
+            'type' => 'Cr',
+            'formatted' => $this->formatAmount($amount).' Cr',
         ];
     }
 
