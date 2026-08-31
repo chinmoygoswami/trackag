@@ -12,6 +12,8 @@ class ReportController extends Controller
     public function index(Request $request)
     {
         $filter = $request->input('filter', 'daily');
+        $startDate = $request->input('start_date');
+        $endDate = $request->input('end_date');
         
         $query = User::with([
             'reportingManager',
@@ -37,7 +39,11 @@ class ReportController extends Controller
                 $q->with(['farmer', 'crop']);
                 $this->applyDateFilter($q, $filter, 'created_at');
             }
-        ])->where('user_level', '!=', 'master_admin');
+        ])
+        ->where('user_level', '!=', 'master_admin')
+        ->whereHas('trips', function($q) use ($filter) {
+            $this->applyDateFilter($q, $filter, 'trip_date');
+        });
 
         $users = $query->get();
 
@@ -160,7 +166,7 @@ class ReportController extends Controller
             return response()->stream($callback, 200, $headers);
         }
 
-        return view('admin.reports.index', compact('reportData', 'filter'));
+        return view('admin.reports.index', compact('reportData', 'filter', 'startDate', 'endDate'));
     }
 
     private function applyDateFilter($query, $filter, $column)
@@ -179,6 +185,13 @@ class ReportController extends Controller
                 break;
             case 'yearly':
                 $query->whereYear($column, $now->year);
+                break;
+            case 'custom':
+                if (request()->has('start_date') && request()->has('end_date') && request()->input('start_date') != '' && request()->input('end_date') != '') {
+                    $start = Carbon::parse(request()->input('start_date'))->startOfDay();
+                    $end = Carbon::parse(request()->input('end_date'))->endOfDay();
+                    $query->whereBetween($column, [$start, $end]);
+                }
                 break;
         }
     }
