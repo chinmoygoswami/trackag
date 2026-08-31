@@ -43,7 +43,7 @@ class UnifiedReportController extends Controller
         ->where('user_level', '!=', 'master_admin')
         ->get();
 
-        $reportData = $users->map(function($user) use ($date) {
+        $reportData = $users->map(function($user) use ($date, $month, $year) {
             $workingHrs = 0;
             $presentDays = 0;
             $travelKm = 0;
