@@ -78,6 +78,35 @@
                 </div>
             </div>
 
+            <div class="row mb-2">
+                @foreach($stateReport as $stateId => $data)
+                    @php
+                        $stateTarget = $data['total_target'];
+                        $stateAchieve = array_sum($data['monthly_achievements']);
+                        $statePercent = $stateTarget > 0 ? ($stateAchieve / $stateTarget) * 100 : ($stateAchieve > 0 ? 100 : 0);
+                    @endphp
+                    <div class="col-md-3 mb-3">
+                        <div class="card card-premium shadow-sm h-100 border-top border-3 {{ $statePercent >= 100 ? 'border-success' : 'border-warning' }}">
+                            <div class="card-body py-3">
+                                <h6 class="card-title fw-bold text-dark mb-3"><i class="fas fa-map-marker-alt text-primary me-2"></i>{{ $data['name'] }}</h6>
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="text-muted small fw-bold">TARGET</span>
+                                    <span class="fw-bold text-dark small">₹{{ number_format($stateTarget, 2) }}</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="text-muted small fw-bold">ACHIEVE</span>
+                                    <span class="fw-bold text-success small">₹{{ number_format($stateAchieve, 2) }}</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="text-muted small fw-bold">ACHIEVE %</span>
+                                    <span class="fw-bold badge {{ $statePercent >= 100 ? 'bg-success' : 'bg-warning text-dark' }}">{{ number_format($statePercent, 1) }}%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+
             <!-- Report Table -->
             <div class="card card-premium mb-4">
                 <div class="card-header bg-dark text-white">
