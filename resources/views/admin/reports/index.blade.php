@@ -30,11 +30,22 @@
                     <div class="col-md-3">
                         <label for="filter" class="form-label fw-bold">Report Type</label>
                         <select name="filter" id="filter" class="form-select">
-                            <option value="daily" {{ $filter == 'daily' ? 'selected' : '' }}>Daily Report</option>
-                            <option value="weekly" {{ $filter == 'weekly' ? 'selected' : '' }}>Weekly Report</option>
-                            <option value="monthly" {{ $filter == 'monthly' ? 'selected' : '' }}>Monthly Report</option>
-                            <option value="yearly" {{ $filter == 'yearly' ? 'selected' : '' }}>Yearly Report</option>
+                            <option value="daily" {{ $filter == 'daily' ? 'selected' : '' }}>Today</option>
+                            <option value="weekly" {{ $filter == 'weekly' ? 'selected' : '' }}>Weekly</option>
+                            <option value="monthly" {{ $filter == 'monthly' ? 'selected' : '' }}>Monthly</option>
+                            <option value="yearly" {{ $filter == 'yearly' ? 'selected' : '' }}>Yearly</option>
+                            <option value="custom" {{ $filter == 'custom' ? 'selected' : '' }}>Custom</option>
                         </select>
+                    </div>
+                    <div class="col-md-4 custom-date-fields" style="display: {{ $filter == 'custom' ? 'flex' : 'none' }}; gap: 10px;">
+                        <div class="w-50">
+                            <label for="start_date" class="form-label fw-bold">Start Date</label>
+                            <input type="date" name="start_date" id="start_date" class="form-control" value="{{ request('start_date') }}">
+                        </div>
+                        <div class="w-50">
+                            <label for="end_date" class="form-label fw-bold">End Date</label>
+                            <input type="date" name="end_date" id="end_date" class="form-control" value="{{ request('end_date') }}">
+                        </div>
                     </div>
                     <div class="col-md-4 d-flex gap-2">
                         <button type="submit" class="btn btn-primary w-100">
@@ -139,6 +150,14 @@
 
 @push('scripts')
 <script>
+    document.getElementById('filter').addEventListener('change', function() {
+        if(this.value === 'custom') {
+            document.querySelector('.custom-date-fields').style.display = 'flex';
+        } else {
+            document.querySelector('.custom-date-fields').style.display = 'none';
+        }
+    });
+
     function getPartyName(customer, defaultId) {
         if (customer) {
             return customer.agro_name || customer.name || customer.contact_person_name || 'Unnamed Party';
