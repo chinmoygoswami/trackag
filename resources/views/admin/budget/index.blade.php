@@ -196,6 +196,9 @@
                                 <tr class="bg-light text-nowrap">
                                     <th rowspan="2" class="align-middle sticky-col-1">Action</th>
                                     <th rowspan="2" class="align-middle sticky-col-2">Emp Name</th>
+                                    <th rowspan="2" class="align-middle">Total Target</th>
+                                    <th rowspan="2" class="align-middle">Total Achive</th>
+                                    <th rowspan="2" class="align-middle">Total Ach %</th>
                                     @foreach($months as $monthName => $monthNum)
                                         <th colspan="3">{{ ucfirst($monthName) }}</th>
                                     @endforeach
@@ -212,10 +215,14 @@
                                 @forelse($budgets as $budget)
                                     @php
                                         $targetData = [];
+                                        $total_achive = 0;
                                         foreach($monthList as $m) {
                                             $targetData[$m] = $budget->$m ?? 0;
+                                            $total_achive += $budget->achievements[$m] ?? 0;
                                         }
                                         $targetDataJson = json_encode($targetData);
+                                        $total_target = $budget->total_target ?? 0;
+                                        $total_percent = $total_target > 0 ? ($total_achive / $total_target) * 100 : ($total_achive > 0 ? 100 : 0);
                                     @endphp
                                     <tr>
                                         <td class="align-middle sticky-col-1">
@@ -239,13 +246,15 @@
                                         </td>
                                         <td class="text-start align-middle sticky-col-2">
                                             <div class="fw-bold">{{ $budget->user->name }}</div>
-                                            <small class="text-muted">Target: {{ number_format($budget->total_target, 2) }}</small>
                                         </td>
+                                        <td class="align-middle fw-bold">{{ number_format($total_target, 2) }}</td>
+                                        <td class="align-middle fw-bold">{{ number_format($total_achive, 2) }}</td>
+                                        <td class="align-middle fw-bold {{ $total_percent >= 100 ? 'text-success' : 'text-danger' }}">{{ number_format($total_percent, 1) }}%</td>
                                         @foreach($months as $monthName => $monthNum)
                                             @php
                                                 $target = $budget->$monthName ?? 0;
                                                 $achive = $budget->achievements[$monthName] ?? 0;
-                                                $percent = $target > 0 ? ($achive / $target) * 100 : 0;
+                                                $percent = $target > 0 ? ($achive / $target) * 100 : ($achive > 0 ? 100 : 0);
                                             @endphp
                                             <td class="align-middle">{{ number_format($target, 0) }}</td>
                                             <td class="align-middle">{{ number_format($achive, 0) }}</td>
@@ -256,7 +265,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="{{ count($months) * 3 + 2 }}" class="py-4 text-muted">No budget records found for selected filters.</td>
+                                        <td colspan="{{ count($months) * 3 + 5 }}" class="py-4 text-muted">No budget records found for selected filters.</td>
                                     </tr>
                                 @endforelse
                             </tbody>

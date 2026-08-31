@@ -90,6 +90,8 @@
                                 <tr class="bg-light text-nowrap">
                                     <th rowspan="2" class="align-middle sticky-col-1">State Name</th>
                                     <th rowspan="2" class="align-middle">Total Target</th>
+                                    <th rowspan="2" class="align-middle">Total Achive</th>
+                                    <th rowspan="2" class="align-middle">Total Ach %</th>
                                     @foreach($months as $monthName => $monthNum)
                                         <th colspan="3">{{ ucfirst($monthName) }}</th>
                                     @endforeach
@@ -107,11 +109,17 @@
                                     <tr>
                                         <td class="text-start align-middle fw-bold sticky-col-1">{{ $data['name'] }}</td>
                                         <td class="align-middle fw-bold">{{ number_format($data['total_target'], 2) }}</td>
+                                        @php
+                                            $total_achive = array_sum($data['monthly_achievements']);
+                                            $total_percent = $data['total_target'] > 0 ? ($total_achive / $data['total_target']) * 100 : ($total_achive > 0 ? 100 : 0);
+                                        @endphp
+                                        <td class="align-middle fw-bold">{{ number_format($total_achive, 2) }}</td>
+                                        <td class="align-middle fw-bold {{ $total_percent >= 100 ? 'text-success' : 'text-danger' }}">{{ number_format($total_percent, 1) }}%</td>
                                         @foreach($months as $monthName => $monthNum)
                                             @php
                                                 $target = $data['monthly_targets'][$monthName] ?? 0;
                                                 $achive = $data['monthly_achievements'][$monthName] ?? 0;
-                                                $percent = $target > 0 ? ($achive / $target) * 100 : 0;
+                                                $percent = $target > 0 ? ($achive / $target) * 100 : ($achive > 0 ? 100 : 0);
                                             @endphp
                                             <td class="align-middle">{{ number_format($target, 0) }}</td>
                                             <td class="align-middle">{{ number_format($achive, 0) }}</td>
@@ -122,7 +130,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="{{ count($months) * 3 + 2 }}" class="py-4 text-muted">No budget data available for this financial year.</td>
+                                        <td colspan="{{ count($months) * 3 + 4 }}" class="py-4 text-muted">No budget data available for this financial year.</td>
                                     </tr>
                                 @endforelse
                             </tbody>
