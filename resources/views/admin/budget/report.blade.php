@@ -49,35 +49,6 @@
 
     <div class="app-content">
         <div class="container-fluid">
-            <!-- Filter Section -->
-            <div class="card mb-4">
-                <div class="card-body">
-                    <form action="{{ route('budget.report') }}" method="GET">
-                        <div class="row align-items-end">
-                            <div class="col-md-3">
-                                <label>FY Year</label>
-                                <select name="financial_year" class="form-control select2">
-                                    @php
-                                        $currentYear = date('Y');
-                                        $years = [];
-                                        for($i = -1; $i <= 2; $i++) {
-                                            $y = $currentYear + $i;
-                                            $years[] = $y . '-' . substr($y + 1, 2);
-                                        }
-                                    @endphp
-                                    @foreach($years as $fy)
-                                        <option value="{{ $fy }}" {{ $financial_year == $fy ? 'selected' : '' }}>{{ $fy }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div class="col-md-2">
-                                <button type="submit" class="btn btn-warning">GO</button>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-            </div>
-
             <div class="row mb-2">
                 @foreach($stateReport as $stateId => $data)
                     @php
@@ -113,6 +84,35 @@
                         </div>
                     </div>
                 @endforeach
+            </div>
+
+            <!-- Filter Section -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <form action="{{ route('budget.report') }}" method="GET">
+                        <div class="row align-items-end">
+                            <div class="col-md-3">
+                                <label>FY Year</label>
+                                <select name="financial_year" class="form-control select2">
+                                    @php
+                                        $currentYear = date('Y');
+                                        $years = [];
+                                        for($i = -1; $i <= 2; $i++) {
+                                            $y = $currentYear + $i;
+                                            $years[] = $y . '-' . substr($y + 1, 2);
+                                        }
+                                    @endphp
+                                    @foreach($years as $fy)
+                                        <option value="{{ $fy }}" {{ $financial_year == $fy ? 'selected' : '' }}>{{ $fy }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <button type="submit" class="btn btn-warning">GO</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
             </div>
 
             <!-- Report Table -->
