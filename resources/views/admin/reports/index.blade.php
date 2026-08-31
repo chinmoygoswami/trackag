@@ -3,10 +3,6 @@
 @push('styles')
 <style>
     .reports-page { background-color: #f8fafc; min-height: calc(100vh - 57px); }
-    .table-responsive { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 1rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); overflow: hidden; }
-    .dashboard-table thead th { background: #f8fafc; border-bottom: 1px solid #e2e8f0; color: #64748b; font-size: 0.75rem; letter-spacing: 0.05em; padding: 0.75rem 1rem; text-transform: uppercase; font-weight: 700; white-space: nowrap;}
-    .dashboard-table tbody td { border-bottom: 1px solid #f1f5f9; color: #334155; padding: 0.75rem 1rem; vertical-align: middle; font-weight: 500; white-space: nowrap;}
-    .dashboard-table tbody tr:hover { background: #f8fafc; }
     .filter-card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 1rem; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
     .btn-view { background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; font-weight: 600; font-size: 0.75rem; padding: 0.25rem 0.5rem; border-radius: 0.4rem; transition: all 0.2s; }
     .btn-view:hover { background: #dbeafe; color: #1d4ed8; }
@@ -31,9 +27,6 @@
                         <label for="filter" class="form-label fw-bold">Report Type</label>
                         <select name="filter" id="filter" class="form-select">
                             <option value="daily" {{ $filter == 'daily' ? 'selected' : '' }}>Today</option>
-                            <option value="weekly" {{ $filter == 'weekly' ? 'selected' : '' }}>Weekly</option>
-                            <option value="monthly" {{ $filter == 'monthly' ? 'selected' : '' }}>Monthly</option>
-                            <option value="yearly" {{ $filter == 'yearly' ? 'selected' : '' }}>Yearly</option>
                             <option value="custom" {{ $filter == 'custom' ? 'selected' : '' }}>Custom</option>
                         </select>
                     </div>
@@ -60,8 +53,8 @@
 
             <!-- Table Section -->
             <div class="table-responsive">
-                <table class="table dashboard-table">
-                    <thead>
+                <table id="reports-table" class="table table-bordered table-striped align-middle">
+                    <thead class="table-light">
                         <tr>
                             <th>Date</th>
                             <th>Location / Tour</th>
@@ -358,5 +351,17 @@
             $(modalElement).modal('show');
         }
     }
+
+    $(document).ready(function() {
+        var reportsCount = @json(count($reportData));
+        if (reportsCount > 0) {
+            $('#reports-table').DataTable({
+                responsive: true,
+                autoWidth: false,
+                pageLength: 10,
+                lengthMenu: [10, 25, 50, 100]
+            });
+        }
+    });
 </script>
 @endpush
