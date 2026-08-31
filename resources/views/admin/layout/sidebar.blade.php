@@ -408,9 +408,9 @@
                 </li>
 
                 {{-- Daily Activity --}}
-                <li class="nav-item {{ request()->is('admin/trips*') || request()->is('admin/party*') || request()->is('admin/new-party*') || request()->is('admin/expense*') || request()->is('admin/hr/attendance*') || request()->routeIs('reports.index') ? 'menu-open' : '' }}">
+                <li class="nav-item {{ request()->is('admin/trips*') || request()->is('admin/party*') || request()->is('admin/new-party*') || request()->is('admin/expense*') || request()->is('admin/hr/attendance*') || request()->routeIs('reports.index') || request()->routeIs('reports.unified') ? 'menu-open' : '' }}">
                     {{-- Parent --}}
-                    <a href="#" class="nav-link {{ request()->is('admin/trips*') || request()->is('admin/party*') || request()->is('admin/new-party*') || request()->is('admin/expense*') || request()->is('admin/hr/attendance*') || request()->routeIs('reports.index') ? 'active' : '' }}">
+                    <a href="#" class="nav-link {{ request()->is('admin/trips*') || request()->is('admin/party*') || request()->is('admin/new-party*') || request()->is('admin/expense*') || request()->is('admin/hr/attendance*') || request()->routeIs('reports.index') || request()->routeIs('reports.unified') ? 'active' : '' }}">
                         <i class="bi bi-activity me-2"></i>
                         <p>Daily Activity<i class="bi bi-chevron-right ms-auto"></i></p>
                     </a>
@@ -470,6 +470,14 @@
                             <a href="{{ route('reports.index') }}"
                             class="nav-link {{ request()->routeIs('reports.index') ? 'active' : '' }}">
                                 <i class="bi bi-file-earmark-bar-graph me-2"></i><p>Activity Reports</p>
+                            </a>
+                        </li>
+
+                        {{-- Unified Monthly Report --}}
+                        <li class="nav-item">
+                            <a href="{{ route('reports.unified') }}"
+                            class="nav-link {{ request()->routeIs('reports.unified') ? 'active' : '' }}">
+                                <i class="bi bi-clipboard-data me-2"></i><p>Unified Monthly Report</p>
                             </a>
                         </li>
 

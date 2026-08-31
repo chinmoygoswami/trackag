@@ -111,6 +111,7 @@ Route::prefix('admin')->group(function () {
         
         // Reports
         Route::get('reports', [\App\Http\Controllers\ReportController::class, 'index'])->name('reports.index');
+        Route::get('unified-report', [\App\Http\Controllers\UnifiedReportController::class, 'index'])->name('reports.unified');
 
         // Location management (tenant database)
         Route::resource('states', StateController::class);
