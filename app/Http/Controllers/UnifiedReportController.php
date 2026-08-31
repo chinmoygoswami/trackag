@@ -37,7 +37,7 @@ class UnifiedReportController extends Controller
                 $q->whereMonth('created_at', $month)->whereYear('created_at', $year);
             },
             'expenses' => function($q) use ($month, $year) {
-                $q->whereMonth('expense_date', $month)->whereYear('expense_date', $year);
+                $q->whereMonth('bill_date', $month)->whereYear('bill_date', $year);
             }
         ])
         ->where('user_level', '!=', 'master_admin')
@@ -63,9 +63,9 @@ class UnifiedReportController extends Controller
             $orderCount = $user->orders->count();
             $paymentCollection = $user->partyPayments->sum('amount');
             
-            $ta = $user->expenses->where('expense_type', 'TA')->sum('amount');
-            $da = $user->expenses->where('expense_type', 'DA')->sum('amount');
-            $other = $user->expenses->whereNotIn('expense_type', ['TA', 'DA'])->sum('amount');
+            $ta = $user->expenses->where('bill_type', 'TA')->sum('amount');
+            $da = $user->expenses->where('bill_type', 'DA')->sum('amount');
+            $other = $user->expenses->whereNotIn('bill_type', ['TA', 'DA'])->sum('amount');
             $totalExpense = $ta + $da + $other;
 
             return [
