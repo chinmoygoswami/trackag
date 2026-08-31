@@ -40,12 +40,9 @@
                             <input type="date" name="end_date" id="end_date" class="form-control" value="{{ request('end_date') }}">
                         </div>
                     </div>
-                    <div class="col-md-4 d-flex gap-2">
+                    <div class="col-md-4">
                         <button type="submit" class="btn btn-primary w-100">
                             <i class="fas fa-filter me-2"></i> Apply Filter
-                        </button>
-                        <button type="submit" name="export" value="csv" class="btn btn-success w-100">
-                            <i class="fas fa-file-csv me-2"></i> Export CSV
                         </button>
                     </div>
                 </form>
