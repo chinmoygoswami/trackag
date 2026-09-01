@@ -48,13 +48,53 @@ class UnifiedReportController extends Controller
             $presentDays = 0;
             $travelKm = 0;
 
+            $ta = 0;
+            $da = 0;
+            $isIndividual = $user->slab === 'Individual';
+            $slab = \App\Models\TaDaSlab::query()
+                ->when($isIndividual,
+                    fn ($q) => $q->where('user_id', $user->id),
+                    fn ($q) => $q->whereNull('user_id')
+                )->first();
+
             foreach ($user->trips as $trip) {
-                $travelKm += $trip->total_distance_km;
+                $tripKm = max(0, (float) $trip->end_km - (float) $trip->starting_km);
+                $travelKm += $tripKm;
                 $presentDays++;
                 if ($trip->start_time && $trip->end_time) {
                     $start = Carbon::parse($trip->start_time);
                     $end = Carbon::parse($trip->end_time);
                     $workingHrs += round(abs($start->diffInMinutes($end)) / 60, 2);
+                }
+                
+                if (strtolower($trip->approval_status) === 'approved') {
+                    $tourSlab = \App\Models\TaDaTourSlab::query()
+                        ->where('tour_type_id', $trip->tour_type)
+                        ->when($isIndividual,
+                            fn ($q) => $q->where('user_id', $user->id),
+                            fn ($q) => $q->whereNull('user_id')->where('designation_id', $user->slab_designation_id)
+                        )->first();
+
+                    $vehicleSlab = \App\Models\TaDaVehicleSlab::query()
+                        ->where('travel_mode_id', $trip->travel_mode)
+                        ->when($isIndividual,
+                            fn ($q) => $q->where('user_id', $user->id),
+                            fn ($q) => $q->whereNull('user_id')->where('designation_id', $user->slab_designation_id)
+                        )->first();
+
+                    $tripTa = (float) ($vehicleSlab->travelling_allow_per_km ?? 0) * $tripKm;
+                    $tripDa = (float) ($tourSlab->da_amount ?? 0);
+
+                    if ($slab?->travel_mode_enabled == 1 && $tripKm < (float) $slab->travel_mode_limit) {
+                        switch ((int) $trip->trip_limit_override) {
+                            case 1: break; // Keep both
+                            case 2: $tripTa = 0.0; break;
+                            case 3: $tripDa = 0.0; break;
+                            default: $tripTa = 0.0; $tripDa = 0.0; break;
+                        }
+                    }
+                    $ta += $tripTa;
+                    $da += $tripDa;
                 }
             }
             
@@ -63,9 +103,8 @@ class UnifiedReportController extends Controller
             $orderCount = $user->orders->count();
             $paymentCollection = $user->partyPayments->sum('amount');
             
-            $ta = $user->expenses->where('bill_type', 'TA')->sum('amount');
-            $da = $user->expenses->where('bill_type', 'DA')->sum('amount');
-            $other = $user->expenses->whereNotIn('bill_type', ['TA', 'DA'])->sum('amount');
+            // Other expenses are approved expenses
+            $other = $user->expenses->where('approval_status', 'Approved')->sum('amount');
             $totalExpense = $ta + $da + $other;
 
             $monthNames = [1=>'january',2=>'february',3=>'march',4=>'april',5=>'may',6=>'june',
