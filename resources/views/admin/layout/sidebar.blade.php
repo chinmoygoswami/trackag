@@ -23,6 +23,27 @@
     <div class="sidebar-wrapper">
         <nav class="mt-3">
             <ul class="nav sidebar-menu flex-column" data-lte-toggle="treeview" role="menu" data-accordion="false">
+
+                {{-- Report Card --}}
+                <li class="nav-item {{ request()->routeIs('reports.index') || request()->routeIs('reports.unified') ? 'menu-open' : '' }}">
+                    <a href="#" class="nav-link {{ request()->routeIs('reports.index') || request()->routeIs('reports.unified') ? 'active' : '' }}">
+                        <i class="bi bi-card-checklist me-2"></i>
+                        <p>Report Card<i class="bi bi-chevron-right ms-auto"></i></p>
+                    </a>
+                    <ul class="nav nav-treeview" style="{{ request()->routeIs('reports.index') || request()->routeIs('reports.unified') ? 'display:block;' : '' }}">
+                        <li class="nav-item">
+                            <a href="{{ route('reports.index') }}" class="nav-link {{ request()->routeIs('reports.index') ? 'active' : '' }}">
+                                <i class="bi bi-file-earmark-bar-graph me-2"></i><p>Daily Report</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{{ route('reports.unified') }}" class="nav-link {{ request()->routeIs('reports.unified') ? 'active' : '' }}">
+                                <i class="bi bi-clipboard-data me-2"></i><p>Monthly Report</p>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+
                 @canany(['view_budget_plan','create_budget_plan','edit_budget_plan','delete_budget_plan','view_monthly_plan','create_monthly_plan','edit_monthly_plan','delete_monthly_plan','view_plan_vs_achievement','create_plan_vs_achievement','edit_plan_vs_achievement','delete_plan_vs_achievement'])
                 <li class="nav-item {{ request()->is('admin/budget*') || request()->is('admin/monthly*') || request()->is('admin/achievement*') ? 'menu-open' : '' }}">
                     <a href="#" class="nav-link {{ request()->is('admin/budget*') || request()->is('admin/monthly*') || request()->is('admin/achievement*') ? 'active' : '' }}">
@@ -468,25 +489,7 @@
                     </ul>
                 </li>
 
-                {{-- Report Card --}}
-                <li class="nav-item {{ request()->routeIs('reports.index') || request()->routeIs('reports.unified') ? 'menu-open' : '' }}">
-                    <a href="#" class="nav-link {{ request()->routeIs('reports.index') || request()->routeIs('reports.unified') ? 'active' : '' }}">
-                        <i class="bi bi-card-checklist me-2"></i>
-                        <p>Report Card<i class="bi bi-chevron-right ms-auto"></i></p>
-                    </a>
-                    <ul class="nav nav-treeview" style="{{ request()->routeIs('reports.index') || request()->routeIs('reports.unified') ? 'display:block;' : '' }}">
-                        <li class="nav-item">
-                            <a href="{{ route('reports.index') }}" class="nav-link {{ request()->routeIs('reports.index') ? 'active' : '' }}">
-                                <i class="bi bi-file-earmark-bar-graph me-2"></i><p>Daily Report</p>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="{{ route('reports.unified') }}" class="nav-link {{ request()->routeIs('reports.unified') ? 'active' : '' }}">
-                                <i class="bi bi-clipboard-data me-2"></i><p>Monthly Report</p>
-                            </a>
-                        </li>
-                    </ul>
-                </li>
+
 
 
                 <!-- Master Management -->
