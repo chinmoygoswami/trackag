@@ -60,6 +60,7 @@ class ReportController extends Controller
 
             return [
                 'user_id' => $user->id,
+                'trip_id' => $trip ? $trip->id : null,
                 'date' => $trip && $trip->trip_date ? Carbon::parse($trip->trip_date)->format('d/m/Y') : Carbon::now()->format('d/m/Y'),
                 'state' => $user->state ? $user->state->name : 'N/A',
                 'employee_name' => $user->name,

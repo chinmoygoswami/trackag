@@ -61,7 +61,8 @@
             position: absolute;
             bottom: 24px;
             left: 12px;
-            right: 12px;
+            right: auto;
+            max-width: calc(100% - 60px);
             z-index: 10;
             pointer-events: none;
             display: flex;
@@ -379,7 +380,10 @@
                 center: pathCoordinates[0],
                 mapId: "DEMO_MAP_ID",
                 disableDefaultUI: true, // cleaner UI for webview
-                zoomControl: true
+                zoomControl: true,
+                zoomControlOptions: {
+                    position: google.maps.ControlPosition.RIGHT_CENTER
+                }
             });
 
             // ---------- POLYLINE PATH ----------

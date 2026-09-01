@@ -82,7 +82,12 @@
                                 <span class="text-danger fw-bold" title="Punch Out">{{ $data['punch_out'] }}</span><br>
                                 <span class="badge bg-light text-dark border mt-1"><i class="fas fa-clock me-1"></i>{{ $data['working_hrs'] }} Hrs</span>
                             </td>
-                            <td>{{ $data['travel_km'] }} KM</td>
+                            <td>
+                                {{ $data['travel_km'] }} KM
+                                @if(!empty($data['trip_id']))
+                                    <br><button class="btn btn-sm btn-view mt-1 py-0 px-2 d-inline-block" onclick="showTripMap({{ $data['trip_id'] }})"><i class="fas fa-map-marked-alt"></i> MAP</button>
+                                @endif
+                            </td>
                             <td>
                                 <div>
                                     <span class="text-muted small">Visit:</span> <span class="fw-bold">{{ $data['visit_party_count'] }}</span>
@@ -135,6 +140,21 @@
     @include('admin.reports.partials.orders-modal')
     @include('admin.reports.partials.payments-modal')
     @include('admin.reports.partials.farm-visits-modal')
+
+    <!-- Map Modal -->
+    <div class="modal fade" id="tripMapModal" tabindex="-1" aria-labelledby="tripMapModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header border-0 bg-light">
+                    <h5 class="modal-title fw-bold" id="tripMapModalLabel"><i class="fas fa-map-marked-alt text-primary me-2"></i>Trip Route Map</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-0" style="height: 600px;">
+                    <iframe id="tripMapIframe" src="" width="100%" height="100%" frameborder="0" style="border:0;" allowfullscreen="" aria-hidden="false" tabindex="0"></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
 </main>
 @endsection
 
@@ -153,6 +173,20 @@
             return customer.agro_name || customer.name || customer.contact_person_name || 'Unnamed Party';
         }
         return 'Party ID: ' + (defaultId || 'Unknown');
+    }
+
+    function showTripMap(tripId) {
+        var mapIframe = document.getElementById('tripMapIframe');
+        var url = '/admin/trips/' + tripId + '/map';
+        mapIframe.src = url;
+        
+        var modalElement = document.getElementById('tripMapModal');
+        if (typeof bootstrap !== 'undefined') {
+            var modal = new bootstrap.Modal(modalElement);
+            modal.show();
+        } else {
+            $(modalElement).modal('show');
+        }
     }
 
     function showVisitedParties(parties) {

@@ -261,6 +261,12 @@ class TripController extends Controller
 
     }
 
+    public function showRoute(Trip $trip)
+    {
+        $data = $this->show($trip)->getData();
+        return view('admin.trips.map_webview', $data);
+    }
+
     public function edit(Trip $trip)
     {
         $customers = Customer::where('is_active', true)->get();
