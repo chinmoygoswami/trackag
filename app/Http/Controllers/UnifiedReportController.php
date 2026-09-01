@@ -40,7 +40,7 @@ class UnifiedReportController extends Controller
                 $q->whereMonth('bill_date', $month)->whereYear('bill_date', $year);
             }
         ])
-        ->where('user_level', '!=', 'master_admin')
+        ->whereNotIn('user_level', ['master_admin', 'sub_admin'])
         ->get();
 
         $reportData = $users->map(function($user) use ($date, $month, $year) {
