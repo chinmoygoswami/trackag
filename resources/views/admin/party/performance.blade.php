@@ -62,7 +62,7 @@
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
                                     <h6 class="text-white-50 mb-1">Total Opening Balance</h6>
-                                    <h3 class="mb-0">₹{{ $fmt2->format(abs($totalOpening)) }}</h3>
+                                    <h3 class="mb-0">₹{{ $fmt2->format($totalOpening) }}</h3>
                                 </div>
                                 <div class="fs-1 text-white-50"><i class="bi bi-wallet-fill"></i></div>
                             </div>
@@ -101,7 +101,7 @@
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
                                     <h6 class="text-white-50 mb-1">Total Closing Balance</h6>
-                                    <h3 class="mb-0">₹{{ $fmt2->format(abs($totalClosing)) }}</h3>
+                                    <h3 class="mb-0">₹{{ $fmt2->format($totalClosing) }}</h3>
                                 </div>
                                 <div class="fs-1 text-white-50"><i class="bi bi-wallet2"></i></div>
                             </div>
@@ -143,10 +143,10 @@
                                 <td class="text-start border-end fw-medium" style="background-color: #f8f9fa;">{{ $record->party_name }}</td>
                                 <td class="border-end fw-medium">{{ $record->employee_name }}</td>
                                 <td class="border-end">{{ $record->state ?? '-' }}</td>
-                                <td class="border-end text-nowrap">{{ $fmt2->format(abs($record->opening_balance)) }}</td>
+                                <td class="border-end text-nowrap">{{ $fmt2->format($record->opening_balance) }}</td>
                                 <td class="border-end text-nowrap">{{ $fmt2->format($record->credit_amt) }}</td>
                                 <td class="border-end text-nowrap">{{ $fmt2->format($record->debit_amt) }}</td>
-                                <td class="border-end text-nowrap">{{ $fmt2->format(abs($record->closing_balance)) }}</td>
+                                <td class="border-end text-nowrap">{{ $fmt2->format($record->closing_balance) }}</td>
                                 @foreach($uniqueMonths as $ym)
                                     <td class="border-end text-success">{{ $fmt2->format($record->monthly[$ym]['credit']) }}</td>
                                     <td class="border-end text-danger">{{ $fmt2->format($record->monthly[$ym]['debit']) }}</td>
