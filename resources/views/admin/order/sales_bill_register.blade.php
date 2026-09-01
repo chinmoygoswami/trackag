@@ -182,28 +182,38 @@ $(document).ready(function() {
             });
 
             if (selectedIds.length > 0) {
-                if (confirm('Are you sure you want to delete the selected records?')) {
-                    $.ajax({
-                        url: "{{ route('tally.bulkDelete.salesBill') }}",
-                        type: 'POST',
-                        data: {
-                            _token: "{{ csrf_token() }}",
-                            ids: selectedIds
-                        },
-                        success: function(response) {
-                            if(response.success) {
-                                Swal.fire('Success', 'Records deleted successfully.', 'success').then(() => {
-                                    location.reload();
-                                });
-                            } else {
-                                Swal.fire('Error', 'Failed to delete records.', 'error');
+                Swal.fire({
+                    title: 'Are you sure?',
+                    text: 'Are you sure you want to delete the selected records?',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Yes, delete it!'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.ajax({
+                            url: "{{ route('tally.bulkDelete.salesBill') }}",
+                            type: 'POST',
+                            data: {
+                                _token: "{{ csrf_token() }}",
+                                ids: selectedIds
+                            },
+                            success: function(response) {
+                                if(response.success) {
+                                    Swal.fire('Success', 'Records deleted successfully.', 'success').then(() => {
+                                        location.reload();
+                                    });
+                                } else {
+                                    Swal.fire('Error', 'Failed to delete records.', 'error');
+                                }
+                            },
+                            error: function(xhr) {
+                                Swal.fire('Error', 'An error occurred while deleting records.', 'error');
                             }
-                        },
-                        error: function(xhr) {
-                            Swal.fire('Error', 'An error occurred while deleting records.', 'error');
-                        }
-                    });
-                }
+                        });
+                    }
+                });
             }
         });
     }

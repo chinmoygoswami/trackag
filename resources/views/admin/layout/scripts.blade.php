@@ -501,4 +501,52 @@ async function initMap() {
         toastr.warning("{{ Session::get('warning') }}");
     @endif
 </script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('form[onsubmit*="confirm("]').forEach(form => {
+            let onsubmitText = form.getAttribute('onsubmit');
+            let match = onsubmitText.match(/confirm\(\s*['"](.*?)['"]\s*\)/);
+            let message = match ? match[1] : 'Are you sure?';
+            form.removeAttribute('onsubmit');
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                Swal.fire({
+                    title: 'Are you sure?',
+                    text: message,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Yes'
+                }).then((result) => {
+                    if (result.isConfirmed) form.submit();
+                });
+            });
+        });
+
+        document.querySelectorAll('[onclick*="confirm("]').forEach(el => {
+            let onclickText = el.getAttribute('onclick');
+            let match = onclickText.match(/confirm\(\s*['"](.*?)['"]\s*\)/);
+            let message = match ? match[1] : 'Are you sure?';
+            el.removeAttribute('onclick');
+            el.addEventListener('click', function(e) {
+                e.preventDefault();
+                Swal.fire({
+                    title: 'Are you sure?',
+                    text: message,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Yes'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        if (el.tagName === 'A' && el.href) window.location.href = el.href;
+                        else if (el.closest('form')) el.closest('form').submit();
+                    }
+                });
+            });
+        });
+    });
+</script>
 @stack('scripts')

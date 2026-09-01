@@ -218,29 +218,39 @@ $(document).ready(function() {
         }
 
         $('#btnBulkDelete').click(function() {
-            if (!confirm('Are you sure you want to delete the selected parties?')) return;
-            var selectedIds = $('input[type="checkbox"].row-checkbox:checked').map(function(){
-                return $(this).val();
-            }).get();
+            Swal.fire({
+                title: 'Are you sure?',
+                text: 'Are you sure you want to delete the selected parties?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, delete it!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    var selectedIds = $('input[type="checkbox"].row-checkbox:checked').map(function(){
+                        return $(this).val();
+                    }).get();
 
-            $(this).prop('disabled', true).text('Deleting...');
+                    $('#btnBulkDelete').prop('disabled', true).text('Deleting...');
 
-            $.ajax({
-                url: '{{ route("tally.bulkDelete.partySync") }}',
-                type: 'POST',
-                data: {
-                    _token: '{{ csrf_token() }}',
-                    ids: selectedIds
-                },
-                success: function(response) {
-                    if(response.success) {
-                        alert('Parties deleted successfully!');
-                        location.reload();
-                    }
-                },
-                error: function(xhr) {
-                    alert('An error occurred while deleting parties.');
-                    $('#btnBulkDelete').prop('disabled', false).html('<i class="fas fa-trash me-1"></i> Bulk Delete');
+                    $.ajax({
+                        url: '{{ route("tally.bulkDelete.partySync") }}',
+                        type: 'POST',
+                        data: {
+                            _token: '{{ csrf_token() }}',
+                            ids: selectedIds
+                        },
+                        success: function(response) {
+                            if(response.success) {
+                                Swal.fire('Deleted!', 'Parties deleted successfully!', 'success').then(() => location.reload());
+                            }
+                        },
+                        error: function(xhr) {
+                            Swal.fire('Error!', 'An error occurred while deleting parties.', 'error');
+                            $('#btnBulkDelete').prop('disabled', false).html('<i class="fas fa-trash me-1"></i> Bulk Delete');
+                        }
+                    });
                 }
             });
         });

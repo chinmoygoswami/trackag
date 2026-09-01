@@ -278,29 +278,39 @@ $(document).ready(function() {
     }
 });
 
-$(document).on('change', '.customer-toggle', function () {
+$(document).on('change', '.customer-toggle', function (e) {
     let customerId = $(this).data('id');
     let toggle = $(this);
+    let originalState = !toggle.prop('checked');
+    toggle.prop('checked', originalState);
 
-    if (!confirm('Are you sure you want to change status?')) {
-        toggle.prop('checked', !toggle.prop('checked'));
-        return;
-    }
-
-    $.ajax({
-        url: "{{ route('customers.toggle-status', ':id') }}".replace(':id', customerId),
-        type: "PATCH",
-        data: {
-            _token: "{{ csrf_token() }}"
-        },
-        success: function (response) {
-            if (response.success) {
-                toggle.next('span').text(response.status ? 'Active' : 'Inactive');
-            }
-        },
-        error: function () {
-            alert('Something went wrong!');
-            toggle.prop('checked', !toggle.prop('checked'));
+    Swal.fire({
+        title: 'Are you sure?',
+        text: 'Are you sure you want to change status?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Yes, change it!'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            toggle.prop('checked', !originalState);
+            $.ajax({
+                url: "{{ route('customers.toggle-status', ':id') }}".replace(':id', customerId),
+                type: "PATCH",
+                data: {
+                    _token: "{{ csrf_token() }}"
+                },
+                success: function (response) {
+                    if (response.success) {
+                        toggle.next('span').text(response.status ? 'Active' : 'Inactive');
+                    }
+                },
+                error: function () {
+                    Swal.fire('Error!', 'Something went wrong!', 'error');
+                    toggle.prop('checked', originalState);
+                }
+            });
         }
     });
 });

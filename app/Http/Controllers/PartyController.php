@@ -629,7 +629,7 @@ class PartyController extends Controller
         $userIds = \App\Models\User::where('reporting_to', $user->id)->pluck('id')->toArray();
         $userIds[] = $user->id;
 
-        $customerQuery = \App\Models\Customer::with(['user', 'state'])->where('type', 'web');
+        $customerQuery = \App\Models\Customer::with(['user', 'state'])->where('type', 'web')->where('is_active', 1);
         if (!$isMasterAdmin) {
             $customerQuery->whereIn('user_id', $userIds);
         }
