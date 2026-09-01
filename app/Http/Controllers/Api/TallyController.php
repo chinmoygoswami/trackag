@@ -19,7 +19,9 @@ class TallyController extends Controller
             $data = collect($validated['Data']);
             
             // Get all unique, non-empty master_ids from the request
-            $masterIds = $data->pluck('master_id')->filter()->unique();
+            $masterIds = $data->pluck('master_id')->filter(function ($val) {
+                return $val !== null && $val !== '';
+            })->unique();
             
             // Fetch all existing master_ids in a single query
             $existingMasterIds = \App\Models\TallyPartySync::whereIn('master_id', $masterIds)
@@ -28,7 +30,7 @@ class TallyController extends Controller
             
             foreach ($data as $item) {
                 // Skip if this master_id already exists in the database
-                if (!empty($item['master_id']) && in_array($item['master_id'], $existingMasterIds)) {
+                if (isset($item['master_id']) && $item['master_id'] !== '' && in_array($item['master_id'], $existingMasterIds)) {
                     continue;
                 }
                 
@@ -69,7 +71,7 @@ class TallyController extends Controller
             foreach ($data as $item) {
                 $item['raw_payload'] = $item;
                 
-                if (!empty($item['master_id'])) {
+                if (isset($item['master_id']) && $item['master_id'] !== '') {
                     \App\Models\TallyOpeningClosing::updateOrCreate(
                         ['master_id' => $item['master_id']],
                         $item
@@ -93,7 +95,7 @@ class TallyController extends Controller
             foreach ($validated['Data'] as $item) {
                 $item['raw_payload'] = $item;
                 
-                if (!empty($item['voucher_no'])) {
+                if (isset($item['voucher_no']) && $item['voucher_no'] !== '') {
                     \App\Models\TallyPartywisePaymentCredit::updateOrCreate(
                         ['voucher_no' => $item['voucher_no']],
                         $item

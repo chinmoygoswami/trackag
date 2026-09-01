@@ -15,6 +15,7 @@ class OpeningClosingRequest extends TallyFormRequest
             'Data.*.credit_amt' => ['required', 'numeric'],
             'Data.*.debit_amt' => ['required', 'numeric'],
             'Data.*.closing_balance_amt' => ['required', 'numeric'],
+            'Data.*.Alter_id' => ['nullable', 'string', 'max:255'],
         ];
     }
 }
