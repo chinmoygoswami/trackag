@@ -148,7 +148,7 @@ class UnifiedReportController extends Controller
                 'new_party_count' => $user->customers->count(),
                 'order_count' => $orderCount,
                 'payment_collection' => $paymentCollection,
-                'farmer_download' => 'N/A', // Module not implemented
+                'farmer_download' => 0, // Module not implemented
                 'field_demo' => $user->farmVisits->count(),
                 
                 'ta_allowance' => $ta,
