@@ -68,7 +68,7 @@ class ReportController extends Controller
                 'punch_out' => $trip ? $trip->end_time : 'N/A',
                 'working_hrs' => $workingHrs,
                 'tour_plan' => $trip ? $trip->place_to_visit : 'N/A',
-                'travel_km' => $user->trips->sum('total_distance_km'),
+                'travel_km' => $user->trips->sum(function($t) { return max(0, (float) $t->end_km - (float) $t->starting_km); }),
                 'visit_party_count' => $user->partyVisits->count(),
                 'new_party_count' => $user->customers->count(),
                 'new_parties' => $user->customers, // For the modal
