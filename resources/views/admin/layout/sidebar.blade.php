@@ -984,7 +984,7 @@
                         </li>
 
                         {{-- Integration Menu --}}
-                        @if(auth()->check() && auth()->user()->hasRole('sub_admin'))
+                        @if(auth()->check() && (auth()->user()->hasRole('sub_admin') || auth()->user()->hasRole('master_admin')))
                         @php
                             $isIntegrationMenu = request()->routeIs('party.sync') || request()->routeIs('sales.bill.register') || request()->routeIs('party.opening.closing') || request()->routeIs('partywise.payment.credit');
                         @endphp

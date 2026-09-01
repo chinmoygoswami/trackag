@@ -355,7 +355,7 @@ class CustomerController extends Controller
                 'contact_person_name' => $party->contact_person_name ?? $party->party_name,
                 'party_code' => $party->master_id,
                 'address' => $party->address,
-                'phone' => $party->phone_1 ?? $party->phone_2 ?? 'N/A',
+                'phone' => substr(trim(explode(',', $party->phone_1 ?? $party->phone_2 ?? 'N/A')[0]), 0, 20),
                 'email' => $party->email,
                 'gst_no' => $party->gst_no,
                 'party_active_since' => $party->party_create_date ?? $now,
