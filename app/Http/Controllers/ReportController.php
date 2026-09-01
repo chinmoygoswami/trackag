@@ -40,7 +40,7 @@ class ReportController extends Controller
                 $this->applyDateFilter($q, $filter, 'created_at');
             }
         ])
-        ->where('user_level', '!=', 'master_admin')
+        ->whereNotIn('user_level', ['master_admin', 'sub_admin', 'company_admin'])
         ->whereHas('trips', function($q) use ($filter) {
             $this->applyDateFilter($q, $filter, 'trip_date');
         });
