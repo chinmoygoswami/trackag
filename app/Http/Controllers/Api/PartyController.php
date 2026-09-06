@@ -118,7 +118,7 @@ class PartyController extends BaseController
         $validated = $request->validate([
             'agro_name'             => 'required|string',
             'contact_person_name'   => 'nullable|string',
-            'phone'                 => 'required|string|max:20',
+            'phone'                 => 'nullable|string|max:20',
             'mobil_no_2'            => 'nullable|string|max:20',
             'state_id'              => 'required|integer',
             'district_id'           => 'required|integer',
