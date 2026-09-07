@@ -194,6 +194,7 @@ class PartyPerformanceController extends Controller
                     'previous_year_closing' => $this->balanceValue($previousClosingRecord?->closing_balance_amt),
                     'current_year_opening' => $this->balanceValue($latestBalanceRecord?->opening_balance_amt),
                     'current_year_credit' => $this->creditValue($latestBalanceRecord?->credit_amt),
+                    'current_year_debit' => $this->debitValue($latestBalanceRecord?->debit_amt),
                     'current_year_closing' => $this->balanceValue($latestBalanceRecord?->closing_balance_amt),
                 ],
             ];
@@ -287,6 +288,17 @@ class PartyPerformanceController extends Controller
             'amount' => $amount,
             'type' => 'Cr',
             'formatted' => $this->formatAmount($amount).' Cr',
+        ];
+    }
+
+    private function debitValue($value): array
+    {
+        $amount = abs((float) ($value ?? 0));
+
+        return [
+            'amount' => $amount,
+            'type' => 'Dr',
+            'formatted' => $this->formatAmount($amount).' Dr',
         ];
     }
 
