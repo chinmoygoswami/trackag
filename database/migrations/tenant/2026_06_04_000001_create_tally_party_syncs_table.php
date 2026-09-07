@@ -17,8 +17,8 @@ return new class extends Migration
             $table->string('master_id')->unique()->nullable();
             $table->string('group_name');
             $table->string('party_name');
-            $table->string('phone_1', 30)->nullable();
-            $table->string('phone_2', 30)->nullable();
+            $table->text('phone_1')->nullable();
+            $table->text('phone_2')->nullable();
             $table->string('contact_person_name')->nullable();
             $table->string('state')->nullable();
             $table->string('district')->nullable();
