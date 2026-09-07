@@ -292,6 +292,20 @@ class PartyPerformanceController extends Controller
 
     private function formatAmount(float $amount): string
     {
-        return preg_replace('/\.00$/', '', number_format($amount, 2, '.', ','));
+        $amountStr = number_format($amount, 2, '.', '');
+        $parts = explode('.', $amountStr);
+        $whole = $parts[0];
+        $fraction = $parts[1] ?? '00';
+
+        $last3 = substr($whole, -3);
+        $other = substr($whole, 0, -3);
+
+        if ($other !== '') {
+            $last3 = ',' . $last3;
+            $other = preg_replace('/\B(?=(\d{2})+(?!\d))/', ',', $other);
+        }
+
+        $formatted = $other . $last3 . '.' . $fraction;
+        return preg_replace('/\.00$/', '', $formatted);
     }
 }
