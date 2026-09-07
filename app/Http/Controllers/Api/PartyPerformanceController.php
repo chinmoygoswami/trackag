@@ -274,8 +274,8 @@ class PartyPerformanceController extends Controller
 
         return [
             'amount' => abs($amount),
-            'type' => $amount < 0 ? 'Cr' : 'Dr',
-            'formatted' => $this->formatAmount(abs($amount)).' '.($amount < 0 ? 'Cr' : 'Dr'),
+            'type' => $amount < 0 ? 'Dr' : 'Cr',
+            'formatted' => $this->formatAmount(abs($amount)).' '.($amount < 0 ? 'Dr' : 'Cr'),
         ];
     }
 
