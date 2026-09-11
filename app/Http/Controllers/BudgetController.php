@@ -9,6 +9,9 @@ use App\Models\User;
 use App\Models\State;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\Customer;
+use App\Models\TallyPartySync;
+use App\Models\TallySalesBill;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 
@@ -38,20 +41,72 @@ class BudgetController extends Controller
         $startYear = $years[0];
         $endYear = count($years) > 1 ? '20' . $years[1] : $years[0] + 1;
 
+        // --- Pre-load Tally data in bulk (avoids N+1 queries) ---
+
+        // 1. Collect all unique user IDs from budget rows
+        $userIds = $budgets->pluck('user_id')->unique()->toArray();
+
+        // 2. Load all active web-type customers for these users, grouped by user_id
+        $allCustomers = Customer::where('type', 'web')
+            ->where('is_active', 1)
+            ->whereIn('user_id', $userIds)
+            ->get()
+            ->groupBy('user_id');
+
+        // 3. Load TallyPartySync keyed by master_id and by party_name (same as Party Performance)
+        $tallyParties = TallyPartySync::get();
+        $partiesByCode = $tallyParties->keyBy('master_id');
+        $partiesByName = $tallyParties->keyBy('party_name');
+
+        // 4. Build YYYY-MM key for each month in the financial year
+        $monthYearMap = [];
+        foreach ($months as $monthName => $monthNum) {
+            $year = ($monthNum >= 4) ? $startYear : $endYear;
+            $monthYearMap[$monthName] = sprintf('%04d-%02d', $year, $monthNum);
+        }
+
+        // 5. Load TallySalesBill totals for all FY months in one query
+        //    grouped by party_name -> YYYY-MM
+        $allYearMonths = array_values($monthYearMap);
+        $salesData = TallySalesBill::selectRaw('party_name, DATE_FORMAT(invoice_date, "%Y-%m") as ym, SUM(grand_total) as total_amount')
+            ->whereIn(DB::raw('DATE_FORMAT(invoice_date, "%Y-%m")'), $allYearMonths)
+            ->groupBy('party_name', 'ym')
+            ->get()
+            ->groupBy('party_name')
+            ->map(function ($items) {
+                return $items->keyBy('ym');
+            });
+
+        // --- Calculate achievements from Tally Sales Bills ---
+
         foreach ($budgets as $budget) {
             $achievements = [];
-            foreach ($months as $monthName => $monthNum) {
-                $year = ($monthNum >= 4) ? $startYear : $endYear;
-                
-                $achive = OrderItem::whereHas('order', function($q) use ($budget, $monthNum, $year) {
-                    $q->where('user_id', $budget->user_id)
-                      ->where('status', 'approved')
-                      ->whereMonth('created_at', $monthNum)
-                      ->whereYear('created_at', $year);
-                })->sum('total_price');
 
+            // Resolve Tally party names for this user's customers
+            $userCustomers = $allCustomers->get($budget->user_id, collect());
+            $tallyPartyNames = [];
+            foreach ($userCustomers as $customer) {
+                $party = $customer->party_code ? $partiesByCode->get($customer->party_code) : null;
+                if (!$party) {
+                    $party = $partiesByName->get($customer->agro_name);
+                }
+                if ($party) {
+                    $tallyPartyNames[] = $party->party_name;
+                }
+            }
+
+            // Sum sales for each month from pre-loaded data
+            foreach ($months as $monthName => $monthNum) {
+                $ym = $monthYearMap[$monthName];
+                $achive = 0;
+                foreach ($tallyPartyNames as $partyName) {
+                    if (isset($salesData[$partyName]) && isset($salesData[$partyName][$ym])) {
+                        $achive += $salesData[$partyName][$ym]->total_amount;
+                    }
+                }
                 $achievements[$monthName] = $achive;
             }
+
             $budget->achievements = $achievements;
         }
 
