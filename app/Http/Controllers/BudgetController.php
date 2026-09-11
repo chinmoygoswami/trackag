@@ -242,9 +242,9 @@ class BudgetController extends Controller
 
             if (!isset($stateReport[$stateId])) {
                 $stateReport[$stateId] = [
-                    'name' => $stateName,
-                    'total_target' => 0,
-                    'monthly_targets' => array_fill_keys($monthList, 0),
+                    'name'                 => $stateName,
+                    'total_target'         => 0,
+                    'monthly_targets'      => array_fill_keys($monthList, 0),
                     'monthly_achievements' => array_fill_keys($monthList, 0),
                 ];
             }
@@ -252,21 +252,88 @@ class BudgetController extends Controller
             $stateReport[$stateId]['total_target'] += $budget->total_target;
             foreach ($monthList as $m) {
                 $stateReport[$stateId]['monthly_targets'][$m] += $budget->$m ?? 0;
-                
-                $monthNum = $months[$m];
-                $year = ($monthNum >= 4) ? $startYear : $endYear;
-                
-                $achive = OrderItem::whereHas('order', function($q) use ($budget, $monthNum, $year) {
-                    $q->where('user_id', $budget->user_id)
-                      ->where('status', 'approved')
-                      ->whereMonth('created_at', $monthNum)
-                      ->whereYear('created_at', $year);
-                })->sum('total_price');
-                
+            }
+        }
+
+        // --- Pre-load Tally data in bulk for achievement calculation ---
+
+        // 1. Collect all unique user IDs from budgets
+        $userIds = $budgets->pluck('user_id')->unique()->toArray();
+
+        // 2. Load customers grouped by user_id
+        $allCustomers = Customer::where('type', 'web')
+            ->where('is_active', 1)
+            ->whereIn('user_id', $userIds)
+            ->get()
+            ->groupBy('user_id');
+
+        // 3. TallyPartySync keyed by master_id and party_name
+        $tallyParties = TallyPartySync::get();
+        $partiesByCode = $tallyParties->keyBy('master_id');
+        $partiesByName = $tallyParties->keyBy('party_name');
+
+        // 4. Build YYYY-MM key for each month in the financial year
+        $monthYearMap = [];
+        foreach ($months as $monthName => $monthNum) {
+            $year = ($monthNum >= 4) ? $startYear : $endYear;
+            $monthYearMap[$monthName] = sprintf('%04d-%02d', $year, $monthNum);
+        }
+
+        // 5. Load TallySalesBill totals for all FY months in one query
+        $allYearMonths = array_values($monthYearMap);
+        $salesData = TallySalesBill::selectRaw('party_name, DATE_FORMAT(invoice_date, "%Y-%m") as ym, SUM(grand_total) as total_amount')
+            ->whereIn(DB::raw('DATE_FORMAT(invoice_date, "%Y-%m")'), $allYearMonths)
+            ->groupBy('party_name', 'ym')
+            ->get()
+            ->groupBy('party_name')
+            ->map(function ($items) {
+                return $items->keyBy('ym');
+            });
+
+        // 6. Accumulate achievements per state using pre-loaded data
+        foreach ($budgets as $budget) {
+            $stateId = $budget->state_id;
+
+            // Resolve Tally party names for this user's customers
+            $userCustomers = $allCustomers->get($budget->user_id, collect());
+            $tallyPartyNames = [];
+            foreach ($userCustomers as $customer) {
+                $party = $customer->party_code ? $partiesByCode->get($customer->party_code) : null;
+                if (!$party) {
+                    $party = $partiesByName->get($customer->agro_name);
+                }
+                if ($party) {
+                    $tallyPartyNames[] = $party->party_name;
+                }
+            }
+
+            foreach ($monthList as $m) {
+                $ym     = $monthYearMap[$m];
+                $achive = 0;
+                foreach ($tallyPartyNames as $partyName) {
+                    if (isset($salesData[$partyName]) && isset($salesData[$partyName][$ym])) {
+                        $achive += $salesData[$partyName][$ym]->total_amount;
+                    }
+                }
                 $stateReport[$stateId]['monthly_achievements'][$m] += $achive;
             }
         }
 
-        return view('admin.budget.report', compact('stateReport', 'financial_year', 'months', 'monthList', 'states'));
+        // 7. Compute overall totals across all states
+        $overallTargets      = array_fill_keys($monthList, 0);
+        $overallAchievements = array_fill_keys($monthList, 0);
+        $overallTotalTarget  = 0;
+        foreach ($stateReport as $data) {
+            $overallTotalTarget += $data['total_target'];
+            foreach ($monthList as $m) {
+                $overallTargets[$m]      += $data['monthly_targets'][$m];
+                $overallAchievements[$m] += $data['monthly_achievements'][$m];
+            }
+        }
+
+        return view('admin.budget.report', compact(
+            'stateReport', 'financial_year', 'months', 'monthList', 'states',
+            'overallTargets', 'overallAchievements', 'overallTotalTarget'
+        ));
     }
 }

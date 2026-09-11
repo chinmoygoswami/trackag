@@ -1,128 +1,103 @@
 @extends('admin.layout.layout')
 
+@php
+    $fmt2 = new \NumberFormatter('en_IN', \NumberFormatter::DECIMAL);
+    $fmt2->setAttribute(\NumberFormatter::MIN_FRACTION_DIGITS, 2);
+    $fmt2->setAttribute(\NumberFormatter::MAX_FRACTION_DIGITS, 2);
+
+    $fmt0 = new \NumberFormatter('en_IN', \NumberFormatter::DECIMAL);
+    $fmt0->setAttribute(\NumberFormatter::MIN_FRACTION_DIGITS, 0);
+    $fmt0->setAttribute(\NumberFormatter::MAX_FRACTION_DIGITS, 0);
+@endphp
+
 @push('styles')
+<link rel="stylesheet" href="https://cdn.datatables.net/fixedcolumns/4.3.0/css/fixedColumns.dataTables.min.css">
 <style>
-    .budget-table-container {
-        max-height: 70vh;
-        overflow-y: auto;
-    }
-    .budget-table thead th {
-        position: sticky;
-        top: 0;
-        background: #f8f9fa !important;
-        z-index: 2;
-        box-shadow: inset 0 -1px 0 #dee2e6;
-    }
-    .budget-table thead tr:nth-child(2) th {
-        top: 48px;
-    }
     .target-input:focus {
         border-color: #ffc107;
         box-shadow: 0 0 0 0.25rem rgba(255, 193, 7, 0.25);
     }
-    /* Hide arrows from number inputs */
     input::-webkit-outer-spin-button,
-    input::-webkit-inner-spin-button {
-        -webkit-appearance: none;
-        margin: 0;
-    }
-    input[type=number] {
-        -moz-appearance: textfield;
-    }
+    input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    input[type=number] { -moz-appearance: textfield; }
+
     .card-premium {
         border: none;
-        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
-        border-radius: 12px;
+        box-shadow: 0 0.5rem 1.5rem rgba(0,0,0,0.08);
+        border-radius: 14px;
     }
-    .card-premium .card-header {
-        border-radius: 12px 12px 0 0;
-    }
-    
-    /* Horizontal Sticky Columns */
-    .sticky-col-1 {
-        position: sticky !important;
-        left: 0;
-        z-index: 11 !important;
+    .card-premium .card-header { border-radius: 14px 14px 0 0; }
+
+    /* DataTables FixedColumns overrides */
+    th.dtfc-fixed-left, td.dtfc-fixed-left {
         background-color: #fff !important;
-        border-right: 2px solid #dee2e6 !important;
+        z-index: 1;
     }
-    .sticky-col-2 {
-        position: sticky !important;
-        left: 65px; /* Width of Action column */
-        z-index: 11 !important;
-        background-color: #fff !important;
-        border-right: 2px solid #dee2e6 !important;
-    }
-    
-    /* Ensure thead sticky columns are above tbody ones */
-    thead th.sticky-col-1, thead th.sticky-col-2 {
-        z-index: 15 !important;
+    thead tr:nth-child(1) th.dtfc-fixed-left,
+    thead tr:nth-child(2) th.dtfc-fixed-left {
         background-color: #f8f9fa !important;
+        z-index: 3 !important;
     }
-    
-    .table-responsive {
-        overflow-x: auto;
-    }
+    .dataTables_scrollBody { border-bottom: 1px solid #dee2e6; }
+
     .btn-premium {
         border-radius: 8px;
         padding: 8px 20px;
         font-weight: 600;
-        transition: all 0.3s;
+        transition: all 0.25s;
     }
-    .btn-premium:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    }
-    .modal-content {
-        border-radius: 15px;
-        border: none;
-    }
+    .btn-premium:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.12); }
+    .modal-content { border-radius: 15px; border: none; }
+
+    /* Percent badges in table */
+    .pct-success { color: #198754; font-weight: 700; }
+    .pct-danger  { color: #dc3545; font-weight: 700; }
 </style>
 @endpush
 
 @section('content')
 <main class="app-main">
-    <div class="app-content-header">
-        <div class="container-fluid">
-            <div class="row">
+    <div class="app-content-header py-3 border-bottom bg-white">
+        <div class="container-fluid px-4">
+            <div class="row align-items-center">
                 <div class="col-sm-6">
-                    <h3 class="mb-0">Budget Plan</h3>
+                    <h3 class="mb-0 fw-bold text-dark">
+                        <i class="fas fa-bullseye text-warning me-2"></i> Budget Achievements
+                    </h3>
                 </div>
-                <div class="col-sm-6">
-                    <ol class="breadcrumb float-sm-end">
+                <div class="col-sm-6 text-sm-end">
+                    <ol class="breadcrumb float-sm-end mb-0">
                         <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">Dashboard</a></li>
-                        <li class="breadcrumb-item active" aria-current="page">Budget Plan</li>
+                        <li class="breadcrumb-item active">Budget Plan</li>
                     </ol>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- History Modal -->
+    {{-- History Modal --}}
     <div class="modal fade" id="budgetLogsModal" tabindex="-1">
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content shadow-lg">
                 <div class="modal-header bg-info text-white">
                     <h5 class="modal-title fw-bold">
-                        <i class="fas fa-history me-2"></i> Budget Change History - <span id="logUserName"></span>
+                        <i class="fas fa-history me-2"></i> Budget Change History — <span id="logUserName"></span>
                     </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <div class="table-responsive">
-                        <table class="table table-bordered table-hover">
-                            <thead class="bg-light">
+                        <table class="table table-bordered table-hover table-sm">
+                            <thead class="table-light">
                                 <tr>
-                                    <th>Date & Time</th>
+                                    <th>Date &amp; Time</th>
                                     <th>Month</th>
                                     <th class="text-end">Old Value</th>
                                     <th class="text-end">New Value</th>
                                     <th>Changed By</th>
                                 </tr>
                             </thead>
-                            <tbody id="logsTableBody">
-                                <!-- Logs will be loaded here -->
-                            </tbody>
+                            <tbody id="logsTableBody"></tbody>
                         </table>
                     </div>
                 </div>
@@ -130,15 +105,16 @@
         </div>
     </div>
 
-    <div class="app-content">
-        <div class="container-fluid">
-            <!-- Filter Section -->
-            <div class="card mb-4">
+    <div class="app-content py-4">
+        <div class="container-fluid px-4">
+
+            {{-- Filter Card --}}
+            <div class="card card-premium mb-4">
                 <div class="card-body">
                     <form action="{{ route('budget.index') }}" method="GET">
-                        <div class="row align-items-end">
+                        <div class="row align-items-end g-3">
                             <div class="col-md-3">
-                                <label>FY Year</label>
+                                <label class="form-label fw-semibold text-muted small text-uppercase">FY Year</label>
                                 <select name="financial_year" class="form-control select2">
                                     @php
                                         $currentYear = date('Y');
@@ -154,7 +130,7 @@
                                 </select>
                             </div>
                             <div class="col-md-3">
-                                <label>Select State</label>
+                                <label class="form-label fw-semibold text-muted small text-uppercase">State</label>
                                 <select name="state_id" class="form-control select2">
                                     <option value="">All States</option>
                                     @foreach($states as $st)
@@ -163,7 +139,7 @@
                                 </select>
                             </div>
                             <div class="col-md-3">
-                                <label>Select Emp</label>
+                                <label class="form-label fw-semibold text-muted small text-uppercase">Employee</label>
                                 <select name="employee_id" class="form-control select2">
                                     <option value="">All Employees</option>
                                     @foreach($employees as $emp)
@@ -172,111 +148,131 @@
                                 </select>
                             </div>
                             <div class="col-md-2">
-                                <button type="submit" class="btn btn-warning">GO</button>
+                                <button type="submit" class="btn btn-warning btn-premium w-100">
+                                    <i class="fas fa-search me-1"></i> GO
+                                </button>
                             </div>
+                            @if(auth()->user()->hasRole('master_admin') || auth()->user()->hasRole('sub_admin'))
+                            <div class="col-md-1">
+                                <button type="button" class="btn btn-dark btn-premium w-100"
+                                    data-bs-toggle="modal" data-bs-target="#addBudgetModal">
+                                    <i class="fas fa-plus-circle"></i>
+                                </button>
+                            </div>
+                            @endif
                         </div>
                     </form>
                 </div>
             </div>
 
-            <!-- Listing Page Section -->
+            {{-- Table Card --}}
             <div class="card card-premium mb-4">
-                <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
-                    <h3 class="card-title mb-0 fw-bold">Budget Achievements</h3>
+                <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center py-3">
+                    <h5 class="mb-0 fw-bold">
+                        <i class="fas fa-table me-2"></i> Budget vs Achievement — {{ $financial_year }}
+                    </h5>
                     @if(auth()->user()->hasRole('master_admin') || auth()->user()->hasRole('sub_admin'))
-                    <button type="button" class="btn btn-dark btn-sm btn-premium ms-auto" data-bs-toggle="modal" data-bs-target="#addBudgetModal">
+                    <button type="button" class="btn btn-dark btn-sm btn-premium"
+                        data-bs-toggle="modal" data-bs-target="#addBudgetModal">
                         <i class="fas fa-plus-circle me-1"></i> Set Target
                     </button>
                     @endif
                 </div>
                 <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-bordered table-hover text-center mb-0">
-                            <thead>
-                                <tr class="bg-light text-nowrap">
-                                    <th rowspan="2" class="align-middle sticky-col-1">Action</th>
-                                    <th rowspan="2" class="align-middle sticky-col-2">Emp Name</th>
-                                    <th rowspan="2" class="align-middle">Total Target</th>
-                                    <th rowspan="2" class="align-middle">Total Achive</th>
-                                    <th rowspan="2" class="align-middle">Total Ach %</th>
+                    <table id="budget-index-table" class="table table-bordered table-hover text-center mb-0" style="white-space: nowrap; font-size: 13px;">
+                        <thead class="table-light">
+                            <tr>
+                                <th rowspan="2" class="align-middle">Action</th>
+                                <th rowspan="2" class="align-middle text-start">Employee</th>
+                                <th rowspan="2" class="align-middle">Total Target</th>
+                                <th rowspan="2" class="align-middle">Total Achive</th>
+                                <th rowspan="2" class="align-middle">Ach %</th>
+                                @foreach($months as $monthName => $monthNum)
+                                    <th colspan="3" class="bg-light">{{ ucfirst($monthName) }}</th>
+                                @endforeach
+                            </tr>
+                            <tr>
+                                @foreach($months as $monthName => $monthNum)
+                                    <th class="text-muted" style="font-size:11px;">Target</th>
+                                    <th class="text-muted" style="font-size:11px;">Achive</th>
+                                    <th class="text-muted" style="font-size:11px;">Ach %</th>
+                                @endforeach
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($budgets as $budget)
+                                @php
+                                    $targetData   = [];
+                                    $total_achive = 0;
+                                    foreach($monthList as $m) {
+                                        $targetData[$m] = $budget->$m ?? 0;
+                                        $total_achive  += $budget->achievements[$m] ?? 0;
+                                    }
+                                    $targetDataJson = json_encode($targetData);
+                                    $total_target   = $budget->total_target ?? 0;
+                                    $total_percent  = $total_target > 0
+                                        ? ($total_achive / $total_target) * 100
+                                        : ($total_achive > 0 ? 100 : 0);
+                                @endphp
+                                <tr>
+                                    <td class="align-middle">
+                                        <button type="button" class="btn btn-outline-warning btn-sm edit-budget-btn"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#addBudgetModal"
+                                            data-user-id="{{ $budget->user_id }}"
+                                            data-state-id="{{ $budget->state_id }}"
+                                            data-fy="{{ $budget->financial_year }}"
+                                            data-total="{{ $budget->total_target }}"
+                                            data-targets='{{ $targetDataJson }}'
+                                            title="Edit">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-info view-logs ms-1"
+                                            title="View History"
+                                            data-user-id="{{ $budget->user_id }}"
+                                            data-user-name="{{ $budget->user->name }}"
+                                            data-fy="{{ $budget->financial_year }}">
+                                            <i class="fas fa-history"></i>
+                                        </button>
+                                    </td>
+                                    <td class="text-start align-middle fw-semibold">{{ $budget->user->name }}</td>
+                                    <td class="align-middle fw-bold">₹{{ $fmt2->format($total_target) }}</td>
+                                    <td class="align-middle fw-bold">₹{{ $fmt2->format($total_achive) }}</td>
+                                    <td class="align-middle fw-bold {{ $total_percent >= 100 ? 'pct-success' : 'pct-danger' }}">
+                                        {{ number_format($total_percent, 1) }}%
+                                    </td>
                                     @foreach($months as $monthName => $monthNum)
-                                        <th colspan="3">{{ ucfirst($monthName) }}</th>
+                                        @php
+                                            $target  = $budget->$monthName ?? 0;
+                                            $achive  = $budget->achievements[$monthName] ?? 0;
+                                            $percent = $target > 0
+                                                ? ($achive / $target) * 100
+                                                : ($achive > 0 ? 100 : 0);
+                                        @endphp
+                                        <td class="align-middle text-muted">{{ $fmt0->format($target) }}</td>
+                                        <td class="align-middle">{{ $fmt0->format($achive) }}</td>
+                                        <td class="align-middle fw-bold {{ $percent >= 100 ? 'pct-success' : 'pct-danger' }}">
+                                            {{ number_format($percent, 1) }}%
+                                        </td>
                                     @endforeach
                                 </tr>
-                                <tr class="bg-light text-nowrap">
-                                    @foreach($months as $monthName => $monthNum)
-                                        <th>Target</th>
-                                        <th>Achive</th>
-                                        <th>Ach %</th>
-                                    @endforeach
+                            @empty
+                                <tr>
+                                    <td colspan="{{ count($months) * 3 + 5 }}" class="py-5 text-muted">
+                                        <i class="fas fa-inbox fa-2x d-block mb-2 text-secondary"></i>
+                                        No budget records found for the selected filters.
+                                    </td>
                                 </tr>
-                            </thead>
-                            <tbody>
-                                @forelse($budgets as $budget)
-                                    @php
-                                        $targetData = [];
-                                        $total_achive = 0;
-                                        foreach($monthList as $m) {
-                                            $targetData[$m] = $budget->$m ?? 0;
-                                            $total_achive += $budget->achievements[$m] ?? 0;
-                                        }
-                                        $targetDataJson = json_encode($targetData);
-                                        $total_target = $budget->total_target ?? 0;
-                                        $total_percent = $total_target > 0 ? ($total_achive / $total_target) * 100 : ($total_achive > 0 ? 100 : 0);
-                                    @endphp
-                                    <tr>
-                                        <td class="align-middle sticky-col-1">
-                                            <button type="button" class="btn btn-outline-warning btn-sm edit-budget-btn" 
-                                                data-bs-toggle="modal" 
-                                                data-bs-target="#addBudgetModal"
-                                                data-user-id="{{ $budget->user_id }}"
-                                                data-state-id="{{ $budget->state_id }}"
-                                                data-fy="{{ $budget->financial_year }}"
-                                                data-total="{{ $budget->total_target }}"
-                                                data-targets='{{ $targetDataJson }}'>
-                                                <i class="fas fa-edit"></i>
-                                            </button>
-                                            <button type="button" class="btn btn-sm btn-outline-info view-logs" 
-                                                title="View History"
-                                                data-user-id="{{ $budget->user_id }}"
-                                                data-user-name="{{ $budget->user->name }}"
-                                                data-fy="{{ $budget->financial_year }}">
-                                                <i class="fas fa-history"></i>
-                                            </button>
-                                        </td>
-                                        <td class="text-start align-middle sticky-col-2">
-                                            <div class="fw-bold">{{ $budget->user->name }}</div>
-                                        </td>
-                                        <td class="align-middle fw-bold">{{ number_format($total_target, 2) }}</td>
-                                        <td class="align-middle fw-bold">{{ number_format($total_achive, 2) }}</td>
-                                        <td class="align-middle fw-bold {{ $total_percent >= 100 ? 'text-success' : 'text-danger' }}">{{ number_format($total_percent, 1) }}%</td>
-                                        @foreach($months as $monthName => $monthNum)
-                                            @php
-                                                $target = $budget->$monthName ?? 0;
-                                                $achive = $budget->achievements[$monthName] ?? 0;
-                                                $percent = $target > 0 ? ($achive / $target) * 100 : ($achive > 0 ? 100 : 0);
-                                            @endphp
-                                            <td class="align-middle">{{ number_format($target, 0) }}</td>
-                                            <td class="align-middle">{{ number_format($achive, 0) }}</td>
-                                            <td class="align-middle {{ $percent >= 100 ? 'text-success' : 'text-danger' }} fw-bold">
-                                                {{ number_format($percent, 1) }}%
-                                            </td>
-                                        @endforeach
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="{{ count($months) * 3 + 5 }}" class="py-4 text-muted">No budget records found for selected filters.</td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
+                            @endforelse
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
+        </div>
     </div>
 
-    <!-- Set Target Modal -->
+    {{-- Set / Edit Target Modal --}}
     <div class="modal fade" id="addBudgetModal" tabindex="-1" aria-labelledby="addBudgetModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-xl modal-dialog-centered">
             <div class="modal-content shadow-lg">
@@ -284,14 +280,14 @@
                     <h5 class="modal-title fw-bold" id="addBudgetModalLabel">
                         <i class="fas fa-bullseye me-2"></i> Set Budget Target
                     </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <form action="{{ route('budget.store') }}" method="POST">
                     @csrf
                     <div class="modal-body">
-                        <div class="row mb-4">
+                        <div class="row mb-3 g-3">
                             <div class="col-md-4">
-                                <label class="form-label fw-bold">Select State</label>
+                                <label class="form-label fw-bold">State</label>
                                 <select name="state_id" class="form-control select2-modal" required>
                                     <option value="">Select State</option>
                                     @foreach($states as $st)
@@ -300,7 +296,7 @@
                                 </select>
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label fw-bold">Select Employee</label>
+                                <label class="form-label fw-bold">Employee</label>
                                 <select name="user_id" class="form-control select2-modal" required>
                                     <option value="">Select Employee</option>
                                     @foreach($employees as $emp)
@@ -309,7 +305,7 @@
                                 </select>
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label fw-bold">FY Year</label>
+                                <label class="form-label fw-bold">Financial Year</label>
                                 <select name="financial_year" class="form-control select2-modal" required>
                                     @foreach($years as $fy)
                                         <option value="{{ $fy }}">{{ $fy }}</option>
@@ -317,32 +313,32 @@
                                 </select>
                             </div>
                         </div>
-
                         <hr>
-
-                        <div class="row mt-4">
+                        <div class="row mt-3 g-3">
                             <div class="col-md-7">
                                 <div class="table-responsive">
-                                    <table class="table table-bordered align-middle">
-                                        <thead class="bg-light">
+                                    <table class="table table-bordered table-sm align-middle">
+                                        <thead class="table-light">
                                             <tr>
                                                 <th width="30%">Month</th>
                                                 <th width="50%">Target Amount</th>
-                                                <th width="20%">% Share</th>
+                                                <th width="20%" class="text-center">% Share</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-
                                             @foreach($monthList as $m)
                                                 <tr>
-                                                    <td class="fw-bold">{{ ucfirst($m) }}</td>
+                                                    <td class="fw-semibold">{{ ucfirst($m) }}</td>
                                                     <td>
-                                                        <div class="input-group">
-                                                            <span class="input-group-text">₹</span>
-                                                            <input type="number" name="monthly_targets[{{ $m }}]" class="form-control target-input" data-month="{{ $m }}" step="0.01" value="0" min="0">
+                                                        <div class="input-group input-group-sm">
+                                                            <span class="input-group-text bg-warning-subtle border-warning text-dark">₹</span>
+                                                            <input type="number" name="monthly_targets[{{ $m }}]"
+                                                                class="form-control target-input"
+                                                                data-month="{{ $m }}"
+                                                                step="0.01" value="0" min="0">
                                                         </div>
                                                     </td>
-                                                    <td>
+                                                    <td class="text-center">
                                                         <span class="badge bg-secondary share-percent" id="share-{{ $m }}">0%</span>
                                                     </td>
                                                 </tr>
@@ -353,18 +349,21 @@
                             </div>
                             <div class="col-md-5">
                                 <div class="card bg-light border-0 h-100">
-                                    <div class="card-body d-flex flex-column justify-content-center text-center">
-                                        <h5 class="text-muted mb-3">Yearly Total Target</h5>
-                                        <div class="input-group input-group-lg mb-4">
+                                    <div class="card-body d-flex flex-column justify-content-center text-center p-4">
+                                        <h6 class="text-muted text-uppercase fw-bold mb-3">Yearly Total Target</h6>
+                                        <div class="input-group input-group-lg mb-3">
                                             <span class="input-group-text bg-warning border-warning text-dark">₹</span>
-                                            <input type="number" id="total-target-input" name="total_target" class="form-control border-warning fw-bold" placeholder="Enter Total Yearly Budget" step="0.01" min="0">
+                                            <input type="number" id="total-target-input" name="total_target"
+                                                class="form-control border-warning fw-bold"
+                                                placeholder="Enter Total Yearly Budget"
+                                                step="0.01" min="0">
                                         </div>
                                         <p class="text-muted small mb-4">
-                                            <i class="fas fa-info-circle me-1"></i> 
-                                            Entering a total will automatically split it across all 12 months.
+                                            <i class="fas fa-info-circle me-1"></i>
+                                            Entering a total auto-splits it across all 12 months.
                                         </p>
-                                        <div class="py-4 border-top border-bottom mb-4">
-                                            <h6 class="text-muted small text-uppercase mb-2">Calculated Total</h6>
+                                        <div class="py-3 border-top border-bottom mb-4">
+                                            <span class="text-muted small text-uppercase fw-bold d-block mb-1">Calculated Total</span>
                                             <h1 class="display-5 fw-bold text-warning" id="total-budget-big">0.00</h1>
                                         </div>
                                         <button type="submit" class="btn btn-warning btn-lg btn-premium w-100">
@@ -383,153 +382,122 @@
 @endsection
 
 @push('scripts')
+<script src="https://cdn.datatables.net/fixedcolumns/4.3.0/js/dataTables.fixedColumns.min.js"></script>
 <script>
-    $(document).ready(function() {
-        // Initialize select2 for modal if needed
-        $('#addBudgetModal').on('shown.bs.modal', function () {
-            $('.select2-modal').select2({
-                dropdownParent: $('#addBudgetModal')
-            });
+$(document).ready(function() {
+
+    // DataTable with 2 fixed columns (Action + Employee) + monthly scrollbar
+    $('#budget-index-table').DataTable({
+        responsive: false,
+        scrollX: true,
+        autoWidth: false,
+        pageLength: 25,
+        lengthMenu: [15, 25, 50, 100],
+        order: [],
+        fixedColumns: { left: 5 }  // Action, Employee, Total Target, Total Achive, Ach%
+    });
+
+    // Select2 inside modal
+    $('#addBudgetModal').on('shown.bs.modal', function () {
+        $('.select2-modal').select2({ dropdownParent: $('#addBudgetModal') });
+    });
+
+    // Handle Edit Button
+    $('.edit-budget-btn').on('click', function() {
+        const btn     = $(this);
+        const targets = btn.data('targets');
+        $('#addBudgetModal select[name="user_id"]').val(btn.data('user-id')).trigger('change');
+        $('#addBudgetModal select[name="state_id"]').val(btn.data('state-id')).trigger('change');
+        $('#addBudgetModal select[name="financial_year"]').val(btn.data('fy')).trigger('change');
+        $('#total-target-input').val(btn.data('total'));
+        Object.keys(targets).forEach(month => {
+            $(`.target-input[data-month="${month}"]`).val(targets[month]);
         });
+        updateBigDisplay(btn.data('total'));
+        updateShares(btn.data('total'));
+        $('#addBudgetModalLabel').html('<i class="fas fa-edit me-2"></i> Edit Budget Target');
+    });
 
-        // Handle Edit Button Click
-        $('.edit-budget-btn').on('click', function() {
-            const btn = $(this);
-            const userId = btn.data('user-id');
-            const stateId = btn.data('state-id');
-            const fy = btn.data('fy');
-            const total = btn.data('total');
-            const targets = btn.data('targets');
+    // Reset for New Entry
+    $('[data-bs-target="#addBudgetModal"]:not(.edit-budget-btn)').on('click', function() {
+        $('#addBudgetModal form')[0].reset();
+        $('.select2-modal').val('').trigger('change');
+        $('#total-target-input').val('');
+        $('.target-input').val(0);
+        updateBigDisplay(0);
+        updateShares(0);
+        $('#addBudgetModalLabel').html('<i class="fas fa-plus-circle me-2"></i> Set Budget Target');
+    });
 
-            // Set values
-            $('#addBudgetModal select[name="user_id"]').val(userId).trigger('change');
-            $('#addBudgetModal select[name="state_id"]').val(stateId).trigger('change');
-            $('#addBudgetModal select[name="financial_year"]').val(fy).trigger('change');
-            $('#total-target-input').val(total);
+    // Block minus, e, arrows on number inputs
+    $('input[type="number"]').on('keydown', function(e) {
+        if (['-', 'e', 'E'].includes(e.key) || e.keyCode === 38 || e.keyCode === 40) e.preventDefault();
+    });
+    $('input[type="number"]').on('wheel', function() { $(this).blur(); });
 
-            // Set monthly targets
-            Object.keys(targets).forEach(month => {
-                $(`.target-input[data-month="${month}"]`).val(targets[month]);
-            });
+    // Monthly input change
+    $('.target-input').on('input', calculateTotalFromMonthly);
 
-            updateBigDisplay(total);
-            updateShares(total);
-            $('#addBudgetModalLabel').html('<i class="fas fa-edit me-2"></i> Edit Budget Target');
+    // Total input — auto-distribute
+    $('#total-target-input').on('input', function() {
+        let total   = parseFloat($(this).val()) || 0;
+        let monthly = (total / 12).toFixed(2);
+        $('.target-input').val(monthly);
+        $('.target-input[data-month="march"]').val((total - (monthly * 11)).toFixed(2));
+        updateBigDisplay(total);
+        updateShares(total);
+    });
+
+    function calculateTotalFromMonthly() {
+        let total = 0;
+        $('.target-input').each(function() { total += parseFloat($(this).val()) || 0; });
+        $('#total-target-input').val(total.toFixed(2));
+        updateBigDisplay(total);
+        updateShares(total);
+    }
+
+    function updateBigDisplay(total) {
+        $('#total-budget-big').text(Number(total).toLocaleString('en-IN', { minimumFractionDigits: 2 }));
+    }
+
+    function updateShares(total) {
+        $('.target-input').each(function() {
+            let val   = parseFloat($(this).val()) || 0;
+            let month = $(this).data('month');
+            $(`#share-${month}`).text(total > 0 ? (val / total * 100).toFixed(1) + '%' : '0%');
         });
+    }
 
-        // Reset Modal for New Entry
-        $('[data-bs-target="#addBudgetModal"]:not(.edit-budget-btn)').on('click', function() {
-            $('#addBudgetModal form')[0].reset();
-            $('.select2-modal').val('').trigger('change');
-            $('#total-target-input').val('');
-            $('.target-input').val(0);
-            updateBigDisplay(0);
-            updateShares(0);
-            $('#addBudgetModalLabel').html('<i class="fas fa-plus-circle me-2"></i> Set Budget Target');
-        });
-
-        // Prevent minus sign, 'e', and arrow keys
-        $('input[type="number"]').on('keydown', function(e) {
-            if (['-', 'e', 'E'].includes(e.key)) {
-                e.preventDefault();
+    // View Logs
+    $('.view-logs').on('click', function() {
+        const userId   = $(this).data('user-id');
+        const userName = $(this).data('user-name');
+        const fy       = $(this).data('fy');
+        $('#logUserName').text(userName);
+        $('#logsTableBody').html('<tr><td colspan="5" class="text-center py-3"><div class="spinner-border text-info" role="status"></div></td></tr>');
+        $('#budgetLogsModal').modal('show');
+        $.ajax({
+            url: "{{ route('budget.logs') }}",
+            type: 'GET',
+            data: { user_id: userId, financial_year: fy },
+            success: function(res) {
+                let html = res.logs.length
+                    ? res.logs.map(log => `
+                        <tr>
+                            <td>${log.date}</td>
+                            <td>${log.month}</td>
+                            <td class="text-end">${log.old_value}</td>
+                            <td class="text-end text-primary fw-bold">${log.new_value}</td>
+                            <td>${log.admin_name}</td>
+                        </tr>`).join('')
+                    : '<tr><td colspan="5" class="text-center text-muted py-3">No change history found.</td></tr>';
+                $('#logsTableBody').html(html);
+            },
+            error: function() {
+                $('#logsTableBody').html('<tr><td colspan="5" class="text-center text-danger py-3">Error loading history.</td></tr>');
             }
-            // Disable Up and Down arrow keys
-            if (e.keyCode === 38 || e.keyCode === 40) {
-                e.preventDefault();
-            }
-        });
-
-        // Prevent scroll wheel from changing values
-        $('input[type="number"]').on('wheel', function(e) {
-            $(this).blur();
-        });
-
-        // Monthly input change
-        $('.target-input').on('input', function() {
-            calculateTotalFromMonthly();
-        });
-
-        // Total input change (Auto-distribute)
-        $('#total-target-input').on('input', function() {
-            let total = parseFloat($(this).val()) || 0;
-            let monthly = (total / 12).toFixed(2);
-            
-            $('.target-input').val(monthly);
-            
-            // Adjust last month to be precise
-            let lastMonth = (total - (monthly * 11)).toFixed(2);
-            $('.target-input[data-month="march"]').val(lastMonth);
-            
-            updateBigDisplay(total);
-            updateShares(total);
-        });
-
-        function calculateTotalFromMonthly() {
-            let total = 0;
-            $('.target-input').each(function() {
-                let val = parseFloat($(this).val()) || 0;
-                total += val;
-            });
-
-            $('#total-target-input').val(total.toFixed(2));
-            updateBigDisplay(total);
-            updateShares(total);
-        }
-
-        function updateBigDisplay(total) {
-            $('#total-budget-big').text(total.toLocaleString('en-IN', {minimumFractionDigits: 2}));
-        }
-
-        function updateShares(total) {
-            $('.target-input').each(function() {
-                let val = parseFloat($(this).val()) || 0;
-                let month = $(this).data('month');
-                let share = total > 0 ? (val / total * 100).toFixed(1) : 0;
-                $(`#share-${month}`).text(share + '%');
-            });
-        }
-
-        // View Logs
-        $('.view-logs').on('click', function() {
-            const userId = $(this).data('user-id');
-            const userName = $(this).data('user-name');
-            const fy = $(this).data('fy');
-            
-            $('#logUserName').text(userName);
-            $('#logsTableBody').html('<tr><td colspan="5" class="text-center py-3"><div class="spinner-border text-info" role="status"></div></td></tr>');
-            $('#budgetLogsModal').modal('show');
-
-            $.ajax({
-                url: "{{ route('budget.logs') }}",
-                type: 'GET',
-                data: {
-                    user_id: userId,
-                    financial_year: fy
-                },
-                success: function(response) {
-                    let html = '';
-                    if (response.logs.length > 0) {
-                        response.logs.forEach(log => {
-                            html += `
-                                <tr>
-                                    <td>${log.date}</td>
-                                    <td>${log.month}</td>
-                                    <td class="text-end">${log.old_value}</td>
-                                    <td class="text-end text-primary fw-bold">${log.new_value}</td>
-                                    <td>${log.admin_name}</td>
-                                </tr>
-                            `;
-                        });
-                    } else {
-                        html = '<tr><td colspan="5" class="text-center text-muted py-3">No change history found for this budget.</td></tr>';
-                    }
-                    $('#logsTableBody').html(html);
-                },
-                error: function() {
-                    $('#logsTableBody').html('<tr><td colspan="5" class="text-center text-danger py-3">Error loading history.</td></tr>');
-                }
-            });
         });
     });
+});
 </script>
 @endpush
