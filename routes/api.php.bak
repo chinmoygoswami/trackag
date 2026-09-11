@@ -23,8 +23,6 @@ use App\Http\Controllers\Api\MonthlyPlanReportController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\StockController;
 use App\Http\Controllers\Api\TallyAuthController;
-use App\Http\Controllers\Api\AdminReportController;
-use App\Http\Controllers\Api\AdminUnifiedReportController;
 use App\Http\Controllers\Api\TallyController;
 use App\Http\Middleware\EnsureTallyAccessToken;
 use Illuminate\Support\Facades\Route;
@@ -88,8 +86,6 @@ Route::middleware([TenantAuthenticate::class])->group(function () {
     Route::get('/admin/party-performance', [PartyPerformanceController::class, 'index']);
     Route::get('/admin/all-products', [MasterDataController::class, 'products']);
     Route::get('/admin/all-employees', [MasterDataController::class, 'employees']);
-    Route::get('/admin/reports', [AdminReportController::class, 'index']);
-    Route::get('/admin/unified-report', [AdminUnifiedReportController::class, 'index']);
 
     //party vist api
     Route::get('/get-party-visits', [PartyController::class, 'index']);
