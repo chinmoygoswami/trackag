@@ -52,7 +52,19 @@ class TallyController extends Controller
             foreach ($validated['Data'] as $item) {
                 $item['gst_amount'] = $item['gst_amount'] ?? 0;
                 $item['raw_payload'] = $item;
-                \App\Models\TallySalesBill::create($item);
+                
+                if (isset($item['invoice_no']) && $item['invoice_no'] !== '') {
+                    \App\Models\TallySalesBill::updateOrCreate(
+                        [
+                            'invoice_no' => $item['invoice_no'],
+                            'product_name_with_packing' => $item['product_name_with_packing'],
+                            'financial_year' => $item['financial_year']
+                        ],
+                        $item
+                    );
+                } else {
+                    \App\Models\TallySalesBill::create($item);
+                }
             }
 
             return $this->successResponse();
