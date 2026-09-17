@@ -605,6 +605,7 @@
 function openSlabModal(userId) {
     $('#user_id').val(userId);
     $('#slabModal').modal('show');
+    $('#designation_id_modal').val(null).trigger('change.select2');
 
     // 🔹 Get user’s current slab (Individual / Slab Wise)
     $.ajax({
@@ -669,8 +670,11 @@ $(document).ready(function() {
                     let selected = (parseInt(d.id) === parseInt(designationId)) ? 'selected' : '';
                     $('#designation_id_modal').append(`<option value="${d.id}" ${selected}>${d.name}</option>`);
                 });
-                $('#designation_id_modal').select2();
-                if(res.slab_designation_id){
+                $('#designation_id_modal').select2({
+                    dropdownParent: $('#slabModal'),
+                    width: '100%'
+                });
+                if(!designationId && res.slab_designation_id){
                     $('#designation_id_modal').val(res.slab_designation_id).trigger('change.select2');
                 }
                 

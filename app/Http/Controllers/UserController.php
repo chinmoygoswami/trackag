@@ -362,6 +362,9 @@ class UserController extends Controller
 
         if ($slabType === "Slab Wise") {
             $designationId = $request->designation_id;
+            if (empty($designationId)) {
+                $designationId = $user->slab_designation_id;
+            }
             $taDaSlab = TaDaSlab::whereNull('user_id')->first();
             
             $vehicleSlabs = TaDaVehicleSlab::where('type', 'slab_wise')->where('designation_id', $designationId)->whereNull('user_id')->get();
