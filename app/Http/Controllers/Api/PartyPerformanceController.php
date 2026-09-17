@@ -173,6 +173,7 @@ class PartyPerformanceController extends Controller
                 'mobile_2' => $party->mobil_no_2 ?: $tallyParty?->phone_2,
                 'joining_date' => $joiningDate?->format('Y-m-d'),
                 'joining_year' => $joiningDate?->format('Y'),
+                'update_date' => $latestBalanceRecord?->updated_at?->format('Y-m-d H:i:s'),
                 'credit_limit' => (float) ($party->credit_limit ?: $tallyParty?->credit_limit ?: 0),
                 'receipt' => $partyPayments->map(fn (TallyPartywisePaymentCredit $payment) => [
                     'payment_date' => $payment->payment_date?->format('Y-m-d'),
