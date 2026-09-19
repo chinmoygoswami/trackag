@@ -2,6 +2,7 @@
 use App\Http\Controllers\Api\ApiAuthController;
 use App\Http\Controllers\Api\ApiTripController;
 use App\Http\Controllers\Api\BudgetApiController;
+use App\Http\Controllers\Api\MobileSalesBillController;
 use App\Http\Controllers\Api\CommanController;
 use App\Http\Controllers\Api\ExpenseController;
 use App\Http\Controllers\Api\AdminTaDaReportController;
@@ -146,4 +147,13 @@ Route::middleware([TenantAuthenticate::class])->group(function () {
 
     Route::get('/budget/annual', [BudgetApiController::class, 'annualBudget']);
     Route::post('/update-fcm-token', [ApiAuthController::class, 'updateToken']);
+
+    // Mobile Sales Bill APIs
+    Route::group(['prefix' => 'admin/sales-bill-register'], function () {
+        Route::post('/states', [MobileSalesBillController::class, 'getStates']);
+        Route::post('/employees', [MobileSalesBillController::class, 'getEmployees']);
+        Route::post('/parties', [MobileSalesBillController::class, 'getParties']);
+        Route::post('/bills', [MobileSalesBillController::class, 'getSalesBills']);
+        Route::post('/bills/details', [MobileSalesBillController::class, 'getSalesBillDetails']);
+    });
 });

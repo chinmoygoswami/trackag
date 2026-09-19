@@ -278,6 +278,212 @@
                 }
             },
             "response": []
+        },
+        {
+            "name": "Mobile Sales Bill Register - States",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "Accept",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "X-Company-Code",
+                        "value": "testing"
+                    },
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{token}}"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{}"
+                },
+                "url": {
+                    "raw": "{{base_url}}/api/admin/sales-bill-register/states",
+                    "host": [
+                        "{{base_url}}"
+                    ],
+                    "path": [
+                        "api",
+                        "admin",
+                        "sales-bill-register",
+                        "states"
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "Mobile Sales Bill Register - Employees",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "Accept",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "X-Company-Code",
+                        "value": "testing"
+                    },
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{token}}"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"state_id\": 1\n}"
+                },
+                "url": {
+                    "raw": "{{base_url}}/api/admin/sales-bill-register/employees",
+                    "host": [
+                        "{{base_url}}"
+                    ],
+                    "path": [
+                        "api",
+                        "admin",
+                        "sales-bill-register",
+                        "employees"
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "Mobile Sales Bill Register - Parties",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "Accept",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "X-Company-Code",
+                        "value": "testing"
+                    },
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{token}}"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"employee_id\": 101\n}"
+                },
+                "url": {
+                    "raw": "{{base_url}}/api/admin/sales-bill-register/parties",
+                    "host": [
+                        "{{base_url}}"
+                    ],
+                    "path": [
+                        "api",
+                        "admin",
+                        "sales-bill-register",
+                        "parties"
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "Mobile Sales Bill Register - Bills",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "Accept",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "X-Company-Code",
+                        "value": "testing"
+                    },
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{token}}"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"party_name\": \"John Doe Enterprises\",\n  \"start_date\": \"\",\n  \"end_date\": \"\"\n}"
+                },
+                "url": {
+                    "raw": "{{base_url}}/api/admin/sales-bill-register/bills",
+                    "host": [
+                        "{{base_url}}"
+                    ],
+                    "path": [
+                        "api",
+                        "admin",
+                        "sales-bill-register",
+                        "bills"
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "Mobile Sales Bill Register - Bill Details",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "Accept",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "X-Company-Code",
+                        "value": "testing"
+                    },
+                    {
+                        "key": "Authorization",
+                        "value": "Bearer {{token}}"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"invoice_no\": \"INV-1001\",\n  \"party_name\": \"John Doe Enterprises\"\n}"
+                },
+                "url": {
+                    "raw": "{{base_url}}/api/admin/sales-bill-register/bills/details",
+                    "host": [
+                        "{{base_url}}"
+                    ],
+                    "path": [
+                        "api",
+                        "admin",
+                        "sales-bill-register",
+                        "bills",
+                        "details"
+                    ]
+                }
+            },
+            "response": []
         }
     ],
     "variable": [
