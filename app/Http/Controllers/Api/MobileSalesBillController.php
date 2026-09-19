@@ -8,149 +8,133 @@ use App\Models\State;
 use App\Models\User;
 use App\Models\Customer;
 use App\Models\TallySalesBill;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class MobileSalesBillController extends Controller
 {
-    /**
-     * Get all states (optionally filter by active users, but here we return all)
-     */
     public function getStates(Request $request)
     {
-        $states = State::select('id', 'name')->orderBy('name', 'asc')->get();
-        return response()->json([
-            'success' => true,
-            'data' => $states
-        ]);
+        try {
+            $states = State::select('id', 'name')->orderBy('name', 'asc')->get();
+            return $this->successResponse($states, 'States fetched successfully');
+        } catch (Throwable $exception) {
+            return $this->errorResponse($exception, 'get-states');
+        }
     }
 
-    /**
-     * Get employees belonging to a specific state
-     */
     public function getEmployees(Request $request)
     {
-        $request->validate([
-            'state_id' => 'required|integer|exists:states,id'
-        ]);
+        try {
+            $request->validate([
+                'state_id' => 'required|integer|exists:states,id'
+            ]);
 
-        // Assuming user_type or role differentiates employees, or we just return all users in the state
-        // For safety, returning users with the state_id
-        $employees = User::where('state_id', $request->state_id)
-            ->where('status', 'active')
-            ->select('id', 'name', 'user_code')
-            ->orderBy('name', 'asc')
-            ->get();
+            $employees = User::where('state_id', $request->state_id)
+                ->where('status', 'active')
+                ->select('id', 'name', 'user_code')
+                ->orderBy('name', 'asc')
+                ->get();
 
-        return response()->json([
-            'success' => true,
-            'data' => $employees
-        ]);
+            return $this->successResponse($employees, 'Employees fetched successfully');
+        } catch (Throwable $exception) {
+            return $this->errorResponse($exception, 'get-employees');
+        }
     }
 
-    /**
-     * Get parties (customers) assigned to a specific employee
-     */
     public function getParties(Request $request)
     {
-        $request->validate([
-            'employee_id' => 'required|integer|exists:users,id'
-        ]);
+        try {
+            $request->validate([
+                'employee_id' => 'required|integer|exists:users,id'
+            ]);
 
-        $parties = Customer::where('user_id', $request->employee_id)
-            ->where('is_active', true)
-            ->select('id', 'name', 'agro_name', 'party_code', 'city')
-            ->orderBy('name', 'asc')
-            ->get();
+            $parties = Customer::where('user_id', $request->employee_id)
+                ->where('is_active', true)
+                ->select('id', 'name', 'agro_name', 'party_code', 'city')
+                ->orderBy('name', 'asc')
+                ->get();
 
-        return response()->json([
-            'success' => true,
-            'data' => $parties
-        ]);
+            return $this->successResponse($parties, 'Parties fetched successfully');
+        } catch (Throwable $exception) {
+            return $this->errorResponse($exception, 'get-parties');
+        }
     }
 
-    /**
-     * Get sales bills grouped by invoice for a specific party within a date range
-     */
     public function getSalesBills(Request $request)
     {
-        $request->validate([
-            'party_name' => 'required|string',
-            'start_date' => 'nullable|date',
-            'end_date' => 'nullable|date',
-        ]);
+        try {
+            $request->validate([
+                'party_name' => 'required|string',
+                'start_date' => 'nullable|date',
+                'end_date' => 'nullable|date',
+            ]);
 
-        $query = TallySalesBill::where('party_name', $request->party_name);
+            $query = TallySalesBill::where('party_name', $request->party_name);
 
-        if ($request->filled('start_date')) {
-            $query->whereDate('invoice_date', '>=', $request->start_date);
+            if ($request->filled('start_date')) {
+                $query->whereDate('invoice_date', '>=', $request->start_date);
+            }
+
+            if ($request->filled('end_date')) {
+                $query->whereDate('invoice_date', '<=', $request->end_date);
+            }
+
+            $records = $query->orderBy('invoice_date', 'desc')->get();
+
+            $grouped = $records->groupBy('invoice_no')->map(function ($items, $invoiceNo) {
+                $first = $items->first();
+                return [
+                    'invoice_no' => $first->invoice_no,
+                    'invoice_date' => $first->invoice_date ? $first->invoice_date->format('Y-m-d') : null,
+                    'party_name' => $first->party_name,
+                    'grand_total' => $items->sum('amount') + $items->sum('gst_amount'),
+                ];
+            })->values();
+
+            return $this->successResponse($grouped, 'Sales bills fetched successfully');
+        } catch (Throwable $exception) {
+            return $this->errorResponse($exception, 'get-sales-bills');
         }
-
-        if ($request->filled('end_date')) {
-            $query->whereDate('invoice_date', '<=', $request->end_date);
-        }
-
-        // Fetch all matching records, then group them by invoice_no in PHP
-        // Because a bill might have multiple items, we group them to show unique bills in the listing
-        $records = $query->orderBy('invoice_date', 'desc')->get();
-
-        $grouped = $records->groupBy('invoice_no')->map(function ($items, $invoiceNo) {
-            $first = $items->first();
-            return [
-                'invoice_no' => $first->invoice_no,
-                'invoice_date' => $first->invoice_date ? $first->invoice_date->format('Y-m-d') : null,
-                'party_name' => $first->party_name,
-                // Summing up grand_total across all items of this invoice if they are split
-                'grand_total' => $items->sum('amount') + $items->sum('gst_amount'),
-            ];
-        })->values();
-
-        return response()->json([
-            'success' => true,
-            'data' => $grouped
-        ]);
     }
 
-    /**
-     * Get detailed items for a specific sales bill
-     */
     public function getSalesBillDetails(Request $request)
     {
-        $request->validate([
-            'invoice_no' => 'required|string',
-            'party_name' => 'required|string'
-        ]);
+        try {
+            $request->validate([
+                'invoice_no' => 'required|string',
+                'party_name' => 'required|string'
+            ]);
 
-        $items = TallySalesBill::where('invoice_no', $request->invoice_no)
-            ->where('party_name', $request->party_name)
-            ->get();
+            $items = TallySalesBill::where('invoice_no', $request->invoice_no)
+                ->where('party_name', $request->party_name)
+                ->get();
 
-        if ($items->isEmpty()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Invoice not found'
-            ], 404);
-        }
+            if ($items->isEmpty()) {
+                return response()->json([
+                    'status' => false,
+                    'success' => false,
+                    'message' => 'Invoice not found',
+                    'data' => null
+                ], 404);
+            }
 
-        $firstItem = $items->first();
+            $firstItem = $items->first();
 
-        // Prepare items array
-        $lineItems = $items->map(function ($item) {
-            return [
-                'id' => $item->id,
-                'product_name' => $item->product_name_with_packing,
-                'qty' => $item->qty,
-                'amount' => $item->amount,
-            ];
-        });
+            $lineItems = $items->map(function ($item) {
+                return [
+                    'id' => $item->id,
+                    'product_name' => $item->product_name_with_packing,
+                    'qty' => $item->qty,
+                    'amount' => $item->amount,
+                ];
+            });
 
-        // Calculate totals
-        $totalAmount = $items->sum('amount');
-        $totalGst = $items->sum('gst_amount');
-        $grandTotal = $totalAmount + $totalGst;
+            $totalAmount = $items->sum('amount');
+            $totalGst = $items->sum('gst_amount');
+            $grandTotal = $totalAmount + $totalGst;
 
-        return response()->json([
-            'success' => true,
-            'data' => [
+            $data = [
                 'invoice_no' => $firstItem->invoice_no,
                 'invoice_date' => $firstItem->invoice_date ? $firstItem->invoice_date->format('Y-m-d') : null,
                 'party_name' => $firstItem->party_name,
@@ -159,7 +143,37 @@ class MobileSalesBillController extends Controller
                 'total_amount' => $totalAmount,
                 'gst_amount' => $totalGst,
                 'grand_total' => $grandTotal,
-            ]
+            ];
+
+            return $this->successResponse($data, 'Sales bill details fetched successfully');
+        } catch (Throwable $exception) {
+            return $this->errorResponse($exception, 'get-sales-bill-details');
+        }
+    }
+
+    private function successResponse($data, string $message)
+    {
+        return response()->json([
+            'status' => true,
+            'success' => true,
+            'count' => is_countable($data) ? count($data) : 1,
+            'message' => $message,
+            'data' => $data,
         ]);
+    }
+
+    private function errorResponse(Throwable $exception, string $endpoint)
+    {
+        Log::error('Mobile Sales Bill API failed.', [
+            'endpoint' => $endpoint,
+            'message' => $exception->getMessage(),
+            'exception' => $exception,
+        ]);
+
+        return response()->json([
+            'status' => false,
+            'success' => false,
+            'message' => 'Something went wrong',
+        ], 500);
     }
 }

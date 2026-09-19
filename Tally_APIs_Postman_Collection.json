@@ -306,13 +306,13 @@
                     "raw": "{}"
                 },
                 "url": {
-                    "raw": "{{base_url}}/api/admin/sales-bill-register/states",
+                    "raw": "{{base_url}}/api/tally/sales-bill-register/states",
                     "host": [
                         "{{base_url}}"
                     ],
                     "path": [
                         "api",
-                        "admin",
+                        "tally",
                         "sales-bill-register",
                         "states"
                     ]
@@ -347,13 +347,13 @@
                     "raw": "{\n  \"state_id\": 1\n}"
                 },
                 "url": {
-                    "raw": "{{base_url}}/api/admin/sales-bill-register/employees",
+                    "raw": "{{base_url}}/api/tally/sales-bill-register/employees",
                     "host": [
                         "{{base_url}}"
                     ],
                     "path": [
                         "api",
-                        "admin",
+                        "tally",
                         "sales-bill-register",
                         "employees"
                     ]
@@ -388,13 +388,13 @@
                     "raw": "{\n  \"employee_id\": 101\n}"
                 },
                 "url": {
-                    "raw": "{{base_url}}/api/admin/sales-bill-register/parties",
+                    "raw": "{{base_url}}/api/tally/sales-bill-register/parties",
                     "host": [
                         "{{base_url}}"
                     ],
                     "path": [
                         "api",
-                        "admin",
+                        "tally",
                         "sales-bill-register",
                         "parties"
                     ]
@@ -429,13 +429,13 @@
                     "raw": "{\n  \"party_name\": \"John Doe Enterprises\",\n  \"start_date\": \"\",\n  \"end_date\": \"\"\n}"
                 },
                 "url": {
-                    "raw": "{{base_url}}/api/admin/sales-bill-register/bills",
+                    "raw": "{{base_url}}/api/tally/sales-bill-register/bills",
                     "host": [
                         "{{base_url}}"
                     ],
                     "path": [
                         "api",
-                        "admin",
+                        "tally",
                         "sales-bill-register",
                         "bills"
                     ]
@@ -470,13 +470,13 @@
                     "raw": "{\n  \"invoice_no\": \"INV-1001\",\n  \"party_name\": \"John Doe Enterprises\"\n}"
                 },
                 "url": {
-                    "raw": "{{base_url}}/api/admin/sales-bill-register/bills/details",
+                    "raw": "{{base_url}}/api/tally/sales-bill-register/bills/details",
                     "host": [
                         "{{base_url}}"
                     ],
                     "path": [
                         "api",
-                        "admin",
+                        "tally",
                         "sales-bill-register",
                         "bills",
                         "details"

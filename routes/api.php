@@ -49,9 +49,17 @@ Route::prefix('tally')->group(function () {
         Route::get('/opening-closing', [TallyController::class, 'openingClosing']);
         Route::post('/opening-closing', [TallyController::class, 'openingClosing']);
         Route::post('/partywise-payment-credit', [TallyController::class, 'partywisePaymentCredit']);
+
+        // Mobile Sales Bill APIs
+        Route::group(['prefix' => 'sales-bill-register'], function () {
+            Route::post('/states', [MobileSalesBillController::class, 'getStates']);
+            Route::post('/employees', [MobileSalesBillController::class, 'getEmployees']);
+            Route::post('/parties', [MobileSalesBillController::class, 'getParties']);
+            Route::post('/bills', [MobileSalesBillController::class, 'getSalesBills']);
+            Route::post('/bills/details', [MobileSalesBillController::class, 'getSalesBillDetails']);
+        });
     });
 });
-
 Route::middleware([TenantAuthenticate::class])->group(function () {
     Route::post('/logout', [ApiAuthController::class, 'logout']);
     Route::post('/profile', [ApiAuthController::class, 'profile']);
@@ -147,13 +155,4 @@ Route::middleware([TenantAuthenticate::class])->group(function () {
 
     Route::get('/budget/annual', [BudgetApiController::class, 'annualBudget']);
     Route::post('/update-fcm-token', [ApiAuthController::class, 'updateToken']);
-
-    // Mobile Sales Bill APIs
-    Route::group(['prefix' => 'admin/sales-bill-register'], function () {
-        Route::post('/states', [MobileSalesBillController::class, 'getStates']);
-        Route::post('/employees', [MobileSalesBillController::class, 'getEmployees']);
-        Route::post('/parties', [MobileSalesBillController::class, 'getParties']);
-        Route::post('/bills', [MobileSalesBillController::class, 'getSalesBills']);
-        Route::post('/bills/details', [MobileSalesBillController::class, 'getSalesBillDetails']);
-    });
 });
