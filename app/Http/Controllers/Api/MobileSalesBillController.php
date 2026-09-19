@@ -27,7 +27,7 @@ class MobileSalesBillController extends Controller
     {
         try {
             $request->validate([
-                'state_id' => 'required|integer|exists:states,id'
+                'state_id' => 'required|integer'
             ]);
 
             $employees = User::where('state_id', $request->state_id)
@@ -46,7 +46,7 @@ class MobileSalesBillController extends Controller
     {
         try {
             $request->validate([
-                'employee_id' => 'required|integer|exists:users,id'
+                'employee_id' => 'required|integer'
             ]);
 
             $parties = Customer::where('user_id', $request->employee_id)
@@ -173,7 +173,7 @@ class MobileSalesBillController extends Controller
         return response()->json([
             'status' => false,
             'success' => false,
-            'message' => 'Something went wrong',
+            'message' => $exception->getMessage(),
         ], 500);
     }
 }

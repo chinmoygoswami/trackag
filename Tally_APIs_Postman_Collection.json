@@ -21,7 +21,7 @@
                 ],
                 "body": {
                     "mode": "raw",
-                    "raw": "{\n  \"company_code\": \"testing\",\n  \"login_id\": \"1234567890\",\n  \"password\": \"password\"\n}"
+                    "raw": "{\n  \"company_code\": \"testing1\",\n  \"login_id\": \"1234567890\",\n  \"password\": \"password\"\n}"
                 },
                 "url": {
                     "raw": "{{base_url}}/api/tally/login",
@@ -35,7 +35,21 @@
                     ]
                 }
             },
-            "response": []
+            "response": [],
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "exec": [
+                            "var jsonData = pm.response.json();",
+                            "if (jsonData && jsonData.access_token) {",
+                            "    pm.collectionVariables.set(\"token\", jsonData.access_token);",
+                            "}"
+                        ],
+                        "type": "text/javascript"
+                    }
+                }
+            ]
         },
         {
             "name": "Party Sync",
@@ -52,7 +66,7 @@
                     },
                     {
                         "key": "X-Company-Code",
-                        "value": "testing"
+                        "value": "testing1"
                     },
                     {
                         "key": "Authorization",
@@ -92,7 +106,7 @@
                     },
                     {
                         "key": "X-Company-Code",
-                        "value": "testing"
+                        "value": "testing1"
                     },
                     {
                         "key": "Authorization",
@@ -132,7 +146,7 @@
                     },
                     {
                         "key": "X-Company-Code",
-                        "value": "testing"
+                        "value": "testing1"
                     },
                     {
                         "key": "Authorization",
@@ -172,7 +186,7 @@
                     },
                     {
                         "key": "X-Company-Code",
-                        "value": "testing"
+                        "value": "testing1"
                     },
                     {
                         "key": "Authorization",
@@ -294,7 +308,7 @@
                     },
                     {
                         "key": "X-Company-Code",
-                        "value": "testing"
+                        "value": "testing1"
                     },
                     {
                         "key": "Authorization",
@@ -335,7 +349,7 @@
                     },
                     {
                         "key": "X-Company-Code",
-                        "value": "testing"
+                        "value": "testing1"
                     },
                     {
                         "key": "Authorization",
@@ -376,7 +390,7 @@
                     },
                     {
                         "key": "X-Company-Code",
-                        "value": "testing"
+                        "value": "testing1"
                     },
                     {
                         "key": "Authorization",
@@ -417,7 +431,7 @@
                     },
                     {
                         "key": "X-Company-Code",
-                        "value": "testing"
+                        "value": "testing1"
                     },
                     {
                         "key": "Authorization",
@@ -458,7 +472,7 @@
                     },
                     {
                         "key": "X-Company-Code",
-                        "value": "testing"
+                        "value": "testing1"
                     },
                     {
                         "key": "Authorization",
@@ -489,7 +503,7 @@
     "variable": [
         {
             "key": "base_url",
-            "value": "http://localhost:8000"
+            "value": "https://testing1.trackag.in"
         },
         {
             "key": "token",
