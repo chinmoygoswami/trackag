@@ -51,8 +51,8 @@ class MobileSalesBillController extends Controller
 
             $parties = Customer::where('user_id', $request->employee_id)
                 ->where('is_active', true)
-                ->select('id', 'name', 'agro_name', 'party_code', 'city')
-                ->orderBy('name', 'asc')
+                ->select('id', 'agro_name as name', 'party_code', 'city')
+                ->orderBy('agro_name', 'asc')
                 ->get();
 
             return $this->successResponse($parties, 'Parties fetched successfully');
