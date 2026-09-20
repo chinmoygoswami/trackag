@@ -358,7 +358,7 @@
                 ],
                 "body": {
                     "mode": "raw",
-                    "raw": "{\n  \"state_id\": 1\n}"
+                    "raw": "{\n  \"state_id\": 13\n}"
                 },
                 "url": {
                     "raw": "{{base_url}}/api/tally/sales-bill-register/employees",
@@ -399,7 +399,7 @@
                 ],
                 "body": {
                     "mode": "raw",
-                    "raw": "{\n  \"employee_id\": 101\n}"
+                    "raw": "{\n  \"employee_id\": 3\n}"
                 },
                 "url": {
                     "raw": "{{base_url}}/api/tally/sales-bill-register/parties",
@@ -440,7 +440,7 @@
                 ],
                 "body": {
                     "mode": "raw",
-                    "raw": "{\n  \"party_name\": \"John Doe Enterprises\",\n  \"start_date\": \"\",\n  \"end_date\": \"\"\n}"
+                    "raw": "{\n  \"party_name\": \"SHIV BHOLE\",\n  \"start_date\": \"\",\n  \"end_date\": \"\"\n}"
                 },
                 "url": {
                     "raw": "{{base_url}}/api/tally/sales-bill-register/bills",
@@ -481,7 +481,7 @@
                 ],
                 "body": {
                     "mode": "raw",
-                    "raw": "{\n  \"invoice_no\": \"INV-1001\",\n  \"party_name\": \"John Doe Enterprises\"\n}"
+                    "raw": "{\n  \"invoice_no\": \"INV-2026-00125\",\n  \"party_name\": \"SHIV BHOLE\"\n}"
                 },
                 "url": {
                     "raw": "{{base_url}}/api/tally/sales-bill-register/bills/details",

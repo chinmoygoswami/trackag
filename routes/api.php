@@ -50,13 +50,16 @@ Route::prefix('tally')->group(function () {
         Route::post('/opening-closing', [TallyController::class, 'openingClosing']);
         Route::post('/partywise-payment-credit', [TallyController::class, 'partywisePaymentCredit']);
 
-        // Mobile Sales Bill APIs
+    });
+
+    // Mobile Sales Bill APIs (Authenticated via Mobile App tokens instead of Tally Desktop tokens)
+    Route::middleware([\App\Http\Middleware\TenantAuthenticate::class])->group(function () {
         Route::group(['prefix' => 'sales-bill-register'], function () {
             Route::post('/states', [MobileSalesBillController::class, 'getStates']);
             Route::post('/employees', [MobileSalesBillController::class, 'getEmployees']);
             Route::post('/parties', [MobileSalesBillController::class, 'getParties']);
-            Route::post('/bills', [MobileSalesBillController::class, 'getSalesBills']);
-            Route::post('/bills/details', [MobileSalesBillController::class, 'getSalesBillDetails']);
+            Route::post('/bills', [MobileSalesBillController::class, 'getBills']);
+            Route::post('/bills/details', [MobileSalesBillController::class, 'getBillDetails']);
         });
     });
 });
