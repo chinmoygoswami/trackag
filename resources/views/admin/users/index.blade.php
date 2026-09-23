@@ -718,14 +718,14 @@ $(document).ready(function() {
 
                 // 🔹 Slab type toggle
                 if (isSlabWise) {
-                    $('#travelModeCheckbox').closest('.form-check').hide();
-                    $('#tourTypeCheckbox').closest('.form-check').hide();
-                    $('#individualFields').hide();
+                    $('#travelModeCheckbox').closest('.form-check').show();
+                    $('#tourTypeCheckbox').closest('.form-check').show();
+                    $('#individualFields').show();
                     $('#approved_bills_in_da_slab_wise').show();
                     // $('#saveSlabBtn').hide();
                     $('#designation_id_modal').prop('disabled', false);
                     $('.vehicle-amount, .tour-amount').prop('readonly', true);
-                    if (res.ta_da_slab.approved_bills_in_da_slab_wise) {
+                    if (res.ta_da_slab && res.ta_da_slab.approved_bills_in_da_slab_wise) {
                     let billsNew = Array.isArray(res.ta_da_slab.approved_bills_in_da_slab_wise)
                         ? res.ta_da_slab.approved_bills_in_da_slab_wise
                         : JSON.parse(res.ta_da_slab.approved_bills_in_da_slab_wise);
