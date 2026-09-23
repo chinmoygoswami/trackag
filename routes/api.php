@@ -58,8 +58,8 @@ Route::prefix('tally')->group(function () {
             Route::post('/states', [MobileSalesBillController::class, 'getStates']);
             Route::post('/employees', [MobileSalesBillController::class, 'getEmployees']);
             Route::post('/parties', [MobileSalesBillController::class, 'getParties']);
-            Route::post('/bills', [MobileSalesBillController::class, 'getBills']);
-            Route::post('/bills/details', [MobileSalesBillController::class, 'getBillDetails']);
+            Route::post('/bills', [MobileSalesBillController::class, 'getSalesBills']);
+            Route::post('/bills/details', [MobileSalesBillController::class, 'getSalesBillDetails']);
         });
     });
 });
