@@ -16,7 +16,21 @@ class MobileSalesBillController extends Controller
     public function getStates(Request $request)
     {
         try {
-            $states = State::select('id', 'name')->orderBy('name', 'asc')->get();
+            $company = $request->attributes->get('company');
+            $companyStates = [];
+            
+            if ($company && !empty($company->state)) {
+                $companyStates = array_map('intval', explode(',', $company->state));
+            }
+
+            $query = State::select('id', 'name')->orderBy('name', 'asc');
+            
+            if (!empty($companyStates)) {
+                $query->whereIn('id', $companyStates);
+            }
+            
+            $states = $query->get();
+            
             return $this->successResponse($states, 'States fetched successfully');
         } catch (Throwable $exception) {
             return $this->errorResponse($exception, 'get-states');
