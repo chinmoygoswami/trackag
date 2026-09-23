@@ -98,10 +98,24 @@ class MobileSalesBillController extends Controller
 
             $grouped = $records->groupBy('invoice_no')->map(function ($items, $invoiceNo) {
                 $first = $items->first();
+                
+                $lineItems = $items->map(function ($item) {
+                    return [
+                        'id' => $item->id,
+                        'product_name' => $item->product_name_with_packing,
+                        'qty' => (int) $item->qty,
+                        'amount' => (float) $item->amount,
+                    ];
+                })->values();
+
                 return [
                     'invoice_no' => $first->invoice_no,
                     'invoice_date' => $first->invoice_date ? $first->invoice_date->format('Y-m-d') : null,
                     'party_name' => $first->party_name,
+                    'bill_type' => $first->bill_type,
+                    'items' => $lineItems,
+                    'total_amount' => $items->sum('amount'),
+                    'gst_amount' => $items->sum('gst_amount'),
                     'grand_total' => $items->sum('amount') + $items->sum('gst_amount'),
                 ];
             })->values();
