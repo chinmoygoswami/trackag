@@ -498,6 +498,42 @@ class ExpenseController extends Controller
             return back()->with('error', 'All selected trips PDF already generated!');
         }
 
+        $firstTrip = $trips->first();
+        $userSlabType = $firstTrip->user ? $firstTrip->user->slab : "";
+        
+        $taDaSlabCheck = null;
+        if ($userSlabType == 'Individual') {
+            $taDaSlabCheck = TaDaSlab::where('user_id', $selected_user_id)->first();
+            if (!$taDaSlabCheck) {
+                $taDaSlabCheck = TaDaSlab::whereNull('user_id')->first();
+            }
+        } else {
+            $taDaSlabCheck = TaDaSlab::whereNull('user_id')->first();
+        }
+
+        if ($taDaSlabCheck && $taDaSlabCheck->max_monthly_travel === 'yes' && $taDaSlabCheck->km > 0) {
+            $total_travel_km_selected = $trips->sum(function ($item) {
+                return ($item->end_km - $item->starting_km);
+            });
+
+            $firstTripDate = $firstTrip->trip_date;
+            
+            $previouslyApprovedTripsKm = Trip::where('user_id', $selected_user_id)
+                ->where('pdf_status', 1)
+                ->whereYear('trip_date', \Carbon\Carbon::parse($firstTripDate)->year)
+                ->whereMonth('trip_date', \Carbon\Carbon::parse($firstTripDate)->month)
+                ->get()
+                ->sum(function($item) {
+                    return ((float)$item->end_km - (float)$item->starting_km);
+                });
+
+            $newTotalKm = $previouslyApprovedTripsKm + $total_travel_km_selected;
+
+            if ($newTotalKm > $taDaSlabCheck->km) {
+                return back()->with('error', 'Cannot approve trips. Max monthly travel limit (' . $taDaSlabCheck->km . ' km) exceeded. Current month approved: ' . $previouslyApprovedTripsKm . ' km, Selected: ' . $total_travel_km_selected . ' km.');
+            }
+        }
+
         /* ================= CALCULATIONS ================= */
         foreach ($trips as $item) {
 
