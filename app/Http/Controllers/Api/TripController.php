@@ -8,6 +8,7 @@ use App\Models\Trip;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use App\Models\TaDaSlab;
 
 class TripController extends BaseController
 {
@@ -142,7 +143,42 @@ class TripController extends BaseController
             $request->validate(['reason' => 'required|string|max:255']);
         }
 
-        $calculatedDistance = app(TripLogController::class)->calculateDistanceFromLogsInternal($trip->id);
+        $calculatedDistance = app(\App\Http\Controllers\Api\TripLogController::class)->calculateDistanceFromLogsInternal($trip->id) ?? 0;
+        
+        // Ensure calculatedDistance is valid
+        if (!is_finite($calculatedDistance) || $calculatedDistance < 0) {
+            $calculatedDistance = 0;
+        }
+
+        if ($status === 'approved') {
+            $trip->load('user');
+            $monthlyApprovedKm = Trip::where('user_id', $trip->user_id)
+                ->where('approval_status', 'approved')
+                ->whereYear('trip_date', Carbon::parse($trip->trip_date)->year)
+                ->whereMonth('trip_date', Carbon::parse($trip->trip_date)->month)
+                ->sum('total_distance_km');
+
+            $newTotal = $monthlyApprovedKm + $calculatedDistance;
+
+            $taDaSlab = null;
+            if ($trip->user->slab === 'Individual') {
+                $taDaSlab = TaDaSlab::where('user_id', $trip->user_id)->first();
+                if (!$taDaSlab) {
+                    $taDaSlab = TaDaSlab::whereNull('user_id')->first();
+                }
+            } else {
+                $taDaSlab = TaDaSlab::whereNull('user_id')->first();
+            }
+
+            if ($taDaSlab && $taDaSlab->max_monthly_travel === 'yes' && $taDaSlab->km > 0) {
+                if ($newTotal > $taDaSlab->km) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Cannot approve trip. Max monthly travel limit (' . $taDaSlab->km . ' km) exceeded. Current month approved: ' . $monthlyApprovedKm . ' km.'
+                    ], 422);
+                }
+            }
+        }
 
         $trip->update([
             'approval_status'   => $status,

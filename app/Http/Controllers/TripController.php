@@ -17,6 +17,7 @@ use App\Models\TourType;
 use App\Models\TravelMode;
 use App\Models\User;
 use App\Models\UserStateAccess;
+use App\Models\TaDaSlab;
 use Carbon\Carbon;
 
 class TripController extends Controller
@@ -398,6 +399,33 @@ class TripController extends Controller
         if (!is_finite($calculatedDistance) || $calculatedDistance < 0) {
             $calculatedDistance = 0;
         }
+
+        if ($status === 'approved') {
+            $monthlyApprovedKm = Trip::where('user_id', $trip->user_id)
+                ->where('approval_status', 'approved')
+                ->whereYear('trip_date', Carbon::parse($trip->trip_date)->year)
+                ->whereMonth('trip_date', Carbon::parse($trip->trip_date)->month)
+                ->sum('total_distance_km');
+
+            $newTotal = $monthlyApprovedKm + $calculatedDistance;
+
+            $taDaSlab = null;
+            if ($trip->user->slab === 'Individual') {
+                $taDaSlab = TaDaSlab::where('user_id', $trip->user_id)->first();
+                if (!$taDaSlab) {
+                    $taDaSlab = TaDaSlab::whereNull('user_id')->first();
+                }
+            } else {
+                $taDaSlab = TaDaSlab::whereNull('user_id')->first();
+            }
+
+            if ($taDaSlab && $taDaSlab->max_monthly_travel === 'yes' && $taDaSlab->km > 0) {
+                if ($newTotal > $taDaSlab->km) {
+                    return back()->with('error', 'Cannot approve trip. Max monthly travel limit (' . $taDaSlab->km . ' km) exceeded. Current month approved: ' . $monthlyApprovedKm . ' km.');
+                }
+            }
+        }
+
         $overrideValue = $request->input('trip_limit_override_confirm', 0);
 
         $trip->update([
