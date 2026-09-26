@@ -257,22 +257,30 @@ $("#approveSelected").on("click", function () {
         return;
     }
 
-    if (!confirm("Approve " + selected.length + " trips and generate PDF?")) {
-        return;
-    }
+    Swal.fire({
+        title: 'Are you sure?',
+        text: "Approve " + selected.length + (selected.length === 1 ? " trip" : " trips") + " and generate PDF?",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Yes, approve it!'
+    }).then((result) => {
+        if (result.value) {
+            // Collect IDs
+            let ids = [];
+            selected.each(function () {
+                ids.push($(this).val());
+            });
+            console.log(ids);
+            // Put IDs in hidden input
+            $("#trip_ids_input").val(JSON.stringify(ids));
+            $('#selected_user_id').val(selectedUserId);
 
-    // Collect IDs
-    let ids = [];
-    selected.each(function () {
-        ids.push($(this).val());
+            // Submit form
+            $("#bulkApproveForm").submit();
+        }
     });
-    console.log(ids);
-    // Put IDs in hidden input
-    $("#trip_ids_input").val(JSON.stringify(ids));
-    $('#selected_user_id').val(selectedUserId);
-
-    // Submit form
-    $("#bulkApproveForm").submit();
 });
 
 $('#stateSelect').on('change', function () {
