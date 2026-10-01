@@ -630,6 +630,8 @@ class ExpenseController extends Controller
             } else {
                 $payable_km = $total_km;
             }
+            
+            $item->payable_km = $payable_km;
 
             if ($limitEnabled == 1 && $total_km < $limitValue && $item->trip_limit_override == 0) {
                 $item->ta_exp = 0;
@@ -653,9 +655,7 @@ class ExpenseController extends Controller
         }
 
         /* ================= TOTALS ================= */
-        $total_travel_km = $trips->sum(function ($item) {
-            return ($item->end_km - $item->starting_km);
-        });
+        $total_travel_km = $trips->sum('payable_km');
 
         $total_ta     = $trips->sum('ta_exp');
         $total_da     = $trips->sum('da_exp');

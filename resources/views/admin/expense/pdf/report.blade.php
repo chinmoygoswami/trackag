@@ -101,9 +101,8 @@
             <th>End Time</th>
             <th>Visit Places</th>
             <th>Travel Mode</th>
-            <th>Start KM</th>
             <th>End KM</th>
-            <th>Travel KM</th>
+            <th>Approved KM</th>
             <th>GPS KM</th>
             <th>KM diff</th>
             <th>TA EXP</th>
@@ -126,10 +125,10 @@
             <td>{{ $t->travelMode->name ?? '-' }}</td>
             <td>{{ $t->starting_km ?? 0 }}</td>
             <td>{{ $t->end_km ?? 0 }}</td>
-            <td>{{ ($t->end_km ?? 0) - ($t->starting_km ?? 0) }}</td>
+            <td>{{ $t->payable_km ?? (($t->end_km ?? 0) - ($t->starting_km ?? 0)) }}</td>
             <td>{{ $t->total_distance_km ?? 0 }}</td>
             {{-- <td>{{ ($t->end_km ?? 0) - ($t->starting_km ?? 0) }}</td> --}}
-            <td>{{ (($t->end_km ?? 0) - ($t->starting_km ?? 0)) - ($t->total_distance_km ?? 0) }}</td>
+            <td>{{ ($t->payable_km ?? (($t->end_km ?? 0) - ($t->starting_km ?? 0))) - ($t->total_distance_km ?? 0) }}</td>
             <td>{{ number_format($t->ta_exp ?? 0, 2) }}</td>
             <td>{{ number_format($t->da_exp ?? 0, 2) }}</td>
             <td>{{ number_format($t->other_exp ?? 0, 2) }}</td>
