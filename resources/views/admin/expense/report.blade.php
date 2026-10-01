@@ -343,7 +343,7 @@ $("#approveSelected").on("click", function () {
         cancelButtonColor: '#d33',
         confirmButtonText: 'Yes, approve it!'
     }).then((result) => {
-        if (result.value) {
+        if (result.isConfirmed) {
             collectAndSubmit('');
         }
     });
