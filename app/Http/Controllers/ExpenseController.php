@@ -470,6 +470,37 @@ class ExpenseController extends Controller
         $total_other = $data->sum('other_exp');
         $total_total = $data->sum('total_exp');
 
+        $monthlyLimit = 0;
+        $previouslyApprovedKm = 0;
+
+        if ($request->filled('user_id')) {
+            $reportUser = User::find($request->user_id);
+            if ($reportUser) {
+                $userSlabType = $reportUser->slab ?? "";
+                $taDaSlabCheck = null;
+                if ($userSlabType == 'Individual') {
+                    $taDaSlabCheck = TaDaSlab::where('user_id', $reportUser->id)->first();
+                    if (!$taDaSlabCheck) {
+                        $taDaSlabCheck = TaDaSlab::whereNull('user_id')->first();
+                    }
+                } else {
+                    $taDaSlabCheck = TaDaSlab::whereNull('user_id')->first();
+                }
+
+                if ($taDaSlabCheck && $taDaSlabCheck->max_monthly_travel === 'yes' && $taDaSlabCheck->km > 0) {
+                    $monthlyLimit = $taDaSlabCheck->km;
+                    $previouslyApprovedKm = Trip::where('user_id', $reportUser->id)
+                        ->where('pdf_status', 1)
+                        ->whereYear('trip_date', \Carbon\Carbon::parse($month . '-01')->year)
+                        ->whereMonth('trip_date', \Carbon\Carbon::parse($month . '-01')->month)
+                        ->get()
+                        ->sum(function($item) {
+                            return ((float)$item->end_km - (float)$item->starting_km);
+                        });
+                }
+            }
+        }
+
         return view('admin.expense.report', compact(
             'data',
             'states',
@@ -479,7 +510,9 @@ class ExpenseController extends Controller
             'total_other',
             'total_total',
             'month',
-            'total_travel_km'
+            'total_travel_km',
+            'monthlyLimit',
+            'previouslyApprovedKm'
         ))->with(['from_date' => $from, 'to_date' => $to]);
     }
 
@@ -511,13 +544,15 @@ class ExpenseController extends Controller
             $taDaSlabCheck = TaDaSlab::whereNull('user_id')->first();
         }
 
+        $overrideLimit = $request->filled('override_limit') ? (float) $request->override_limit : null;
+
         if ($taDaSlabCheck && $taDaSlabCheck->max_monthly_travel === 'yes' && $taDaSlabCheck->km > 0) {
             $total_travel_km_selected = $trips->sum(function ($item) {
-                return ($item->end_km - $item->starting_km);
+                return ((float)$item->end_km - (float)$item->starting_km);
             });
 
             $firstTripDate = $firstTrip->trip_date;
-            
+
             $previouslyApprovedTripsKm = Trip::where('user_id', $selected_user_id)
                 ->where('pdf_status', 1)
                 ->whereYear('trip_date', \Carbon\Carbon::parse($firstTripDate)->year)
@@ -528,10 +563,17 @@ class ExpenseController extends Controller
                 });
 
             $newTotalKm = $previouslyApprovedTripsKm + $total_travel_km_selected;
+            $effectiveLimit = $overrideLimit ?? $taDaSlabCheck->km;
 
-            if ($newTotalKm > $taDaSlabCheck->km) {
+            // If no override was passed and limit is exceeded, block the request
+            if ($newTotalKm > $effectiveLimit && $overrideLimit === null) {
                 return back()->with('error', 'Cannot approve trips. Max monthly travel limit (' . $taDaSlabCheck->km . ' km) exceeded. Current month approved: ' . $previouslyApprovedTripsKm . ' km, Selected: ' . $total_travel_km_selected . ' km.');
             }
+
+            // Calculate remaining KM quota for TA payout
+            $remainingKmForTA = max(0, $effectiveLimit - $previouslyApprovedTripsKm);
+        } else {
+            $remainingKmForTA = null; // No limit active
         }
 
         /* ================= CALCULATIONS ================= */
@@ -578,26 +620,34 @@ class ExpenseController extends Controller
             $limitEnabled = $slabInfo ? $slabInfo->travel_mode_enabled : 0;
             $limitValue = $slabInfo ? $slabInfo->travel_mode_limit : 0;
 
-            $total_km = ($item->end_km - $item->starting_km);
+            $total_km = ((float)$item->end_km - (float)$item->starting_km);
+
+            // Determine how many of this trip's KM qualify for TA payout
+            // (when a monthly cap/override is active)
+            if ($remainingKmForTA !== null) {
+                $payable_km = min($total_km, max(0, $remainingKmForTA));
+                $remainingKmForTA -= $total_km; // Deduct full trip distance from quota
+            } else {
+                $payable_km = $total_km;
+            }
 
             if ($limitEnabled == 1 && $total_km < $limitValue && $item->trip_limit_override == 0) {
                 $item->ta_exp = 0;
                 $item->da_exp = 0;
             } else if($limitEnabled == 1 && $total_km < $limitValue && $item->trip_limit_override == 1){
-                $item->ta_exp = ($ta_amount->travelling_allow_per_km ?? 0) * $total_km;
+                $item->ta_exp = ($ta_amount->travelling_allow_per_km ?? 0) * $payable_km;
                 $item->da_exp = $da_amount->da_amount ?? 0;
             } else if($limitEnabled == 1 && $total_km < $limitValue && $item->trip_limit_override == 2){
                 $item->ta_exp = 0;
                 $item->da_exp = $da_amount->da_amount ?? 0;
             } else if($limitEnabled == 1 && $total_km < $limitValue && $item->trip_limit_override == 3){
-                $item->ta_exp = ($ta_amount->travelling_allow_per_km ?? 0) * $total_km;
+                $item->ta_exp = ($ta_amount->travelling_allow_per_km ?? 0) * $payable_km;
                 $item->da_exp = 0;
             } else {
-                $item->ta_exp = ($ta_amount->travelling_allow_per_km ?? 0) * $total_km;
+                $item->ta_exp = ($ta_amount->travelling_allow_per_km ?? 0) * $payable_km;
                 $item->da_exp = $da_amount->da_amount ?? 0;
             }
 
-            
             $item->other_exp = $expense->sum('amount') ?? 0;
             $item->total_exp = $item->ta_exp + $item->da_exp + $item->other_exp;
         }

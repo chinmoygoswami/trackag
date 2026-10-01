@@ -62,7 +62,13 @@
                         @csrf
                         <input type="hidden" id="trip_ids_input" name="trip_ids">
                         <input type="hidden" id="selected_user_id" name="selected_user_id">
+                        <input type="hidden" id="override_limit_input" name="override_limit" value="">
                     </form>
+                    {{-- Pass limit data to JS --}}
+                    <script>
+                        var monthlyLimit = {{ $monthlyLimit ?? 0 }};
+                        var previouslyApprovedKm = {{ $previouslyApprovedKm ?? 0 }};
+                    </script>
 
 
                     <form action="{{ route('expense.report') }}" method="GET" class="row g-3 mb-3">
@@ -163,7 +169,7 @@
                                 <tr>
                                     <td>{{ $key + 1 }}&nbsp;
                                         @if($report->pdf_status == 0)
-                                        <input type="checkbox" class="rowCheckbox" name="trip_ids[]" value="{{ $report->id }}">
+                                        <input type="checkbox" class="rowCheckbox" name="trip_ids[]" value="{{ $report->id }}" data-start-km="{{ $report->starting_km }}" data-end-km="{{ $report->end_km }}">
                                         @endif
                                     </td>
                                     <td>{{ $report->user->name ?? "" }}</td>
@@ -257,6 +263,77 @@ $("#approveSelected").on("click", function () {
         return;
     }
 
+    // Calculate total KM of selected trips
+    let selectedKm = 0;
+    selected.each(function () {
+        let startKm = parseFloat($(this).data('start-km')) || 0;
+        let endKm   = parseFloat($(this).data('end-km')) || 0;
+        selectedKm += (endKm - startKm);
+    });
+
+    function collectAndSubmit(overrideLimit) {
+        let ids = [];
+        selected.each(function () {
+            ids.push($(this).val());
+        });
+        $("#trip_ids_input").val(JSON.stringify(ids));
+        $('#selected_user_id').val(selectedUserId);
+        $('#override_limit_input').val(overrideLimit);
+        $("#bulkApproveForm").submit();
+    }
+
+    // Check if monthly limit is active and would be exceeded
+    if (monthlyLimit > 0) {
+        let remainingKm = monthlyLimit - previouslyApprovedKm;
+        let newTotal = previouslyApprovedKm + selectedKm;
+
+        if (newTotal > monthlyLimit) {
+            // Limit will be exceeded — show override dialog
+            Swal.fire({
+                title: 'Monthly Limit Exceeded!',
+                html: `<p>Monthly limit: <strong>${monthlyLimit} km</strong><br>
+                       Already approved: <strong>${previouslyApprovedKm.toFixed(2)} km</strong><br>
+                       Selected trips: <strong>${selectedKm.toFixed(2)} km</strong><br>
+                       Remaining allowed: <strong>${remainingKm.toFixed(2)} km</strong></p>
+                       <p>How would you like to proceed?</p>`,
+                icon: 'warning',
+                showCancelButton: true,
+                showDenyButton: true,
+                confirmButtonColor: '#3085d6',
+                denyButtonColor: '#f0ad4e',
+                cancelButtonColor: '#d33',
+                confirmButtonText: `Approve up to limit (${remainingKm.toFixed(2)} km)`,
+                denyButtonText: 'Enter Custom Limit',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Approve up to the configured limit
+                    collectAndSubmit(monthlyLimit);
+                } else if (result.isDenied) {
+                    // Ask for a custom limit
+                    Swal.fire({
+                        title: 'Enter Custom KM Limit',
+                        html: `<p>Currently approved: <strong>${previouslyApprovedKm.toFixed(2)} km</strong>. Enter the new total monthly limit for this approval:</p>`,
+                        input: 'number',
+                        inputAttributes: { min: 1, step: 1 },
+                        inputPlaceholder: 'e.g. 2000',
+                        showCancelButton: true,
+                        confirmButtonText: 'Approve with Custom Limit',
+                        inputValidator: (value) => {
+                            if (!value || value <= 0) return 'Please enter a valid KM value!';
+                        }
+                    }).then((customResult) => {
+                        if (customResult.isConfirmed) {
+                            collectAndSubmit(parseFloat(customResult.value));
+                        }
+                    });
+                }
+            });
+            return;
+        }
+    }
+
+    // No limit issue — show normal confirmation
     Swal.fire({
         title: 'Are you sure?',
         text: "Approve " + selected.length + (selected.length === 1 ? " trip" : " trips") + " and generate PDF?",
@@ -267,18 +344,7 @@ $("#approveSelected").on("click", function () {
         confirmButtonText: 'Yes, approve it!'
     }).then((result) => {
         if (result.value) {
-            // Collect IDs
-            let ids = [];
-            selected.each(function () {
-                ids.push($(this).val());
-            });
-            console.log(ids);
-            // Put IDs in hidden input
-            $("#trip_ids_input").val(JSON.stringify(ids));
-            $('#selected_user_id').val(selectedUserId);
-
-            // Submit form
-            $("#bulkApproveForm").submit();
+            collectAndSubmit('');
         }
     });
 });
