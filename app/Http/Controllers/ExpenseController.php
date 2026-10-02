@@ -577,6 +577,7 @@ class ExpenseController extends Controller
         }
 
         /* ================= CALCULATIONS ================= */
+        $approved_trips = collect();
         foreach ($trips as $item) {
 
             $slabType = $item->user->slab ?? "";
@@ -625,6 +626,9 @@ class ExpenseController extends Controller
             // Determine how many of this trip's KM qualify for TA payout
             // (when a monthly cap/override is active)
             if ($remainingKmForTA !== null) {
+                if ($remainingKmForTA <= 0) {
+                    continue; // Skip this trip entirely, it won't be approved
+                }
                 $payable_km = min($total_km, max(0, $remainingKmForTA));
                 $remainingKmForTA -= $total_km; // Deduct full trip distance from quota
             } else {
@@ -652,15 +656,21 @@ class ExpenseController extends Controller
 
             $item->other_exp = $expense->sum('amount') ?? 0;
             $item->total_exp = $item->ta_exp + $item->da_exp + $item->other_exp;
+            
+            $approved_trips->push($item);
+        }
+
+        if ($approved_trips->isEmpty()) {
+            return back()->with('error', 'No trips could be approved within the remaining limit.');
         }
 
         /* ================= TOTALS ================= */
-        $total_travel_km = $trips->sum('payable_km');
+        $total_travel_km = $approved_trips->sum('payable_km');
 
-        $total_ta     = $trips->sum('ta_exp');
-        $total_da     = $trips->sum('da_exp');
-        $total_other  = $trips->sum('other_exp');
-        $total_total  = $trips->sum('total_exp');
+        $total_ta     = $approved_trips->sum('ta_exp');
+        $total_da     = $approved_trips->sum('da_exp');
+        $total_other  = $approved_trips->sum('other_exp');
+        $total_total  = $approved_trips->sum('total_exp');
 
         /* ================= HEADER INFO ================= */
         $company = Company::first();
@@ -674,22 +684,22 @@ class ExpenseController extends Controller
             'designation'  => $getUser->designation->name ?? '-',
             'reporting_to' => $getUser->reportingManager->name ?? '-',
             'hq'           => $getUser->headquarter ?? '-',
-            'from_date'    => $trips->min('trip_date'),
-            'to_date'      => $trips->max('trip_date'),
+            'from_date'    => $approved_trips->min('trip_date'),
+            'to_date'      => $approved_trips->max('trip_date'),
         ];
 
         /* ================= PDF ================= */
-        $month = Carbon::parse($trips->min('trip_date'))->format('Y-m');
+        $month = Carbon::parse($approved_trips->min('trip_date'))->format('Y-m');
 
-        $pdf = Pdf::loadView('admin.expense.pdf.report', compact(
-            'trips',
-            'total_travel_km',
-            'total_ta',
-            'total_da',
-            'total_other',
-            'total_total',
-            'headerInfo'
-        ));
+        $pdf = Pdf::loadView('admin.expense.pdf.report', [
+            'trips' => $approved_trips,
+            'total_travel_km' => $total_travel_km,
+            'total_ta' => $total_ta,
+            'total_da' => $total_da,
+            'total_other' => $total_other,
+            'total_total' => $total_total,
+            'headerInfo' => $headerInfo
+        ])->setPaper('a4', 'landscape');
 
         $fileName = 'expense_'.$selected_user_id.'_'.$month.'_'.time().'.pdf';
         $path = 'expense_pdfs/'.$fileName;
@@ -702,11 +712,11 @@ class ExpenseController extends Controller
             'month'   => $month,
         ]);
 
-        Trip::whereIn('id', $trips->pluck('id'))->update([
+        Trip::whereIn('id', $approved_trips->pluck('id'))->update([
             'pdf_status' => 1
         ]);
 
-        $this->sendExpenseReportApprovalNotification($expensePdf, $trips->count(), $total_total);
+        $this->sendExpenseReportApprovalNotification($expensePdf, $approved_trips->count(), $total_total);
 
         return back()->with('success', 'Expense PDF generated successfully.');
     }

@@ -101,6 +101,7 @@
             <th>End Time</th>
             <th>Visit Places</th>
             <th>Travel Mode</th>
+            <th>Start KM</th>
             <th>End KM</th>
             <th>Approved KM</th>
             <th>GPS KM</th>
