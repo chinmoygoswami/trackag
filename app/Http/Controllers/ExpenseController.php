@@ -234,7 +234,10 @@ class ExpenseController extends Controller
                     $da = $da_amount->da_amount ?? 0;
                 }
 
-                
+                if (!isset($finalReport[$monthKey]['states'][$stateId])) {
+                    continue;
+                }
+
                 $other = $expense ?? 0;
 
                 $finalReport[$monthKey]['states'][$stateId]['ta'] += $ta;
