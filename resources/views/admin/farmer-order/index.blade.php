@@ -47,9 +47,9 @@
                                         @csrf<input type="hidden" name="farmer_order_id" value="{{ $order->id }}">
                                         @foreach($order->items as $index => $item)
                                             @php($sent = (int) $item->dispatches->sum('dispatch_qty'))
-                                            <label class="small d-block mt-1">{{ $item->product->product_name ?? 'Item' }} · remaining {{ max(0, (int) $item->shipper_size - $sent) }}</label>
+                                            <label class="small d-block mt-1">{{ $item->product->product_name ?? 'Item' }} · remaining {{ max(0, (int) $item->qty - $sent) }}</label>
                                             <input type="hidden" name="dispatch_items[{{ $index }}][item_id]" value="{{ $item->id }}">
-                                            <input type="number" min="0" max="{{ max(0, (int) $item->shipper_size - $sent) }}" name="dispatch_items[{{ $index }}][dispatch_qty]" value="0" class="form-control form-control-sm mb-1">
+                                            <input type="number" min="0" max="{{ max(0, (int) $item->qty - $sent) }}" name="dispatch_items[{{ $index }}][dispatch_qty]" value="0" class="form-control form-control-sm mb-1">
                                         @endforeach
                                         <input name="lr_number" class="form-control form-control-sm mb-1" placeholder="LR number">
                                         <input name="transport_name" class="form-control form-control-sm mb-1" placeholder="Transport">

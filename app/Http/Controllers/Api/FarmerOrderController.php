@@ -15,6 +15,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class FarmerOrderController extends Controller
@@ -31,6 +32,7 @@ class FarmerOrderController extends Controller
         $user = Auth::user();
         $products = Product::where('status', 1)->whereHas('productStates', function ($query) use ($user, $request) {
             $query->where('state_id', $user->state_id)
+                ->where('status', 1)
                 ->where($request->order_type === 'cash' ? 'is_ncr' : 'is_rpl', 1);
         })->select('id', 'product_name')->orderBy('product_name')->get();
 
@@ -40,16 +42,22 @@ class FarmerOrderController extends Controller
     public function packings(Request $request)
     {
         $request->validate(['product_id' => 'required|integer', 'order_type' => 'required|in:cash,debit']);
-        $exists = Product::whereKey($request->product_id)->where('status', 1)
-            ->whereHas('productStates', function ($query) use ($request) {
-                $query->where('state_id', Auth::user()->state_id)
-                    ->where($request->order_type === 'cash' ? 'is_ncr' : 'is_rpl', 1);
-            })->exists();
-        if (!$exists) return response()->json(['status' => false, 'message' => 'Product not available'], 404);
-
+        $user = Auth::user();
+        $priceColumn = $request->order_type === 'cash' ? 'cash_price' : 'credit_price';
         $data = ProductPacking::where('product_id', $request->product_id)->where('status', 1)
-            ->whereHas('packingStates', fn ($query) => $query->where('state_id', Auth::user()->state_id))
+            ->whereHas('product', function ($query) use ($user, $request) {
+                $query->where('status', 1)->whereHas('productStates', function ($stateQuery) use ($user, $request) {
+                    $stateQuery->where('state_id', $user->state_id)->where('status', 1)
+                        ->where($request->order_type === 'cash' ? 'is_ncr' : 'is_rpl', 1);
+                });
+            })
+            ->whereHas('packingStates', fn ($query) => $query->where('state_id', $user->state_id))
+            ->whereHas('prices', fn ($query) => $query->where('state_id', $user->state_id)->whereNotNull($priceColumn))
             ->select('id', 'packing_value', 'packing_size')->get();
+
+        if ($data->isEmpty()) {
+            return response()->json(['status' => false, 'message' => 'No eligible packings found for this product and order type'], 404);
+        }
 
         return response()->json(['status' => true, 'data' => $data]);
     }
@@ -58,28 +66,26 @@ class FarmerOrderController extends Controller
     {
         $request->validate([
             'packing_id' => 'required|integer', 'order_type' => 'required|in:cash,debit',
-            'qty' => 'required|numeric|min:1',
+            'qty' => 'required|integer|min:1', 'discount' => 'nullable|numeric|min:0',
         ]);
-        $stateId = Auth::user()->state_id;
-        $packing = ProductPacking::with([
-            'product:id,product_name,gst',
-            'prices' => fn ($query) => $query->where('state_id', $stateId),
-        ])->where('id', $request->packing_id)->where('status', 1)
-            ->whereHas('packingStates', fn ($query) => $query->where('state_id', $stateId))
-            ->firstOrFail();
-        $price = $packing->prices->first();
-        $unitPrice = $request->order_type === 'cash' ? ($price->cash_price ?? 0) : ($price->credit_price ?? 0);
-        $total = (float) $request->qty * (float) $packing->unit_in_shipper * (float) $unitPrice;
-        $gstPercent = (float) ($packing->product->gst ?? 0);
-        $gstAmount = $total * $gstPercent / 100;
+        $user = Auth::user();
+        $packing = $this->findOrderablePacking((int) $request->packing_id, $request->order_type, $user->state_id);
+        if (!$packing) {
+            return response()->json(['status' => false, 'message' => 'Packing is not available for this state and order type'], 404);
+        }
+        $quote = $this->calculateLine($packing, $request->order_type, (int) $request->qty, (float) ($request->discount ?? 0));
+        if (isset($quote['error'])) {
+            return response()->json(['status' => false, 'message' => $quote['error']], 422);
+        }
 
         return response()->json(['status' => true, 'data' => [
             'product_name' => $packing->product->product_name ?? null,
             'packing_id' => $packing->id, 'packing_value' => $packing->packing_value,
             'packing_size' => $packing->packing_size, 'shipper_type' => $packing->shipper_type,
             'shipper_size' => (string) $packing->shipper_size, 'unit_in_shipper' => $packing->unit_in_shipper,
-            'qty' => $request->qty, 'gst_percent' => $gstPercent, 'gst_amount' => $gstAmount,
-            'unit_price' => $unitPrice, 'total_price' => $total, 'grand_total' => $total + $gstAmount,
+            'qty' => (int) $request->qty, 'gst_percent' => $quote['gst_percent'], 'gst_amount' => $quote['gst'],
+            'unit_price' => $quote['price'], 'total_price' => $quote['total_price'], 'discount' => $quote['discount'],
+            'grand_total' => $quote['grand_total'],
         ]]);
     }
 
@@ -103,7 +109,7 @@ class FarmerOrderController extends Controller
                 'price' => $item->price, 'total_price' => $item->total_price, 'gst' => $item->gst,
                 'discount' => $item->discount, 'grand_total' => $item->grand_total, 'qty' => $item->qty,
                 'dispatched_qty' => $item->dispatches->sum('dispatch_qty'),
-                'pending_qty' => (int) $item->shipper_size - (int) $item->dispatches->sum('dispatch_qty'),
+                'pending_qty' => max(0, (int) $item->qty - (int) $item->dispatches->sum('dispatch_qty')),
             ]),
         ])]);
     }
@@ -192,7 +198,7 @@ class FarmerOrderController extends Controller
         ])->all();
         $dispatchDetail = $order->dispatches()->with('detail')->latest()->first()?->detail;
         $pdf = Pdf::loadView('api.order.farmer-pdf', compact('order', 'items', 'dispatchDetail'))->setPaper('a4', 'portrait');
-        $path = 'farmer_order_pdfs/farmer_order_'.$order->id.'_'.time().'.pdf';
+        $path = 'farmer_order_pdfs/farmer_order_'.$order->id.'_'.Str::uuid().'.pdf';
         Storage::disk('public')->put($path, $pdf->output());
 
         return response()->json(['status' => true, 'message' => 'Farmer order PDF generated successfully', 'data' => [
@@ -204,16 +210,109 @@ class FarmerOrderController extends Controller
 
     private function validatedOrder(Request $request): array
     {
-        return $request->validate([
+        $data = $request->validate([
             'farmer_id' => 'required|integer', 'order_type' => 'required|in:cash,debit',
             'depo_id' => 'nullable|integer', 'delivery_place' => 'nullable|string|max:255',
             'preferred_transport' => 'nullable|string|max:255', 'remark' => 'nullable|string',
             'products' => 'required|array|min:1', 'products.*.product_id' => 'required|integer',
-            'products.*.packing_id' => 'nullable|integer', 'products.*.shipper_size' => 'nullable|integer|min:0',
-            'products.*.price' => 'required|numeric|min:0', 'products.*.total_price' => 'required|numeric|min:0',
-            'products.*.gst' => 'nullable|numeric|min:0', 'products.*.discount' => 'nullable|numeric|min:0',
-            'products.*.grand_total' => 'required|numeric|min:0', 'products.*.qty' => 'nullable|integer|min:1',
+            'products.*.packing_id' => 'required|integer',
+            'products.*.shipper_size' => 'nullable|numeric|min:0',
+            // Keep accepting the old client fields, but never trust their totals.
+            'products.*.price' => 'sometimes|nullable|numeric|min:0',
+            'products.*.total_price' => 'sometimes|nullable|numeric|min:0',
+            'products.*.gst' => 'sometimes|nullable|numeric|min:0',
+            'products.*.discount' => 'sometimes|nullable|numeric|min:0',
+            'products.*.grand_total' => 'sometimes|nullable|numeric|min:0',
+            'products.*.qty' => 'nullable|integer|min:1',
         ]);
+
+        $user = Auth::user();
+        foreach ($data['products'] as $index => $line) {
+            $packing = $this->findOrderablePacking((int) $line['packing_id'], $data['order_type'], $user->state_id);
+            if (!$packing || (int) $packing->product_id !== (int) $line['product_id']) {
+                throw ValidationException::withMessages([
+                    "products.{$index}.packing_id" => 'The selected packing is not available for this product, state, or order type.',
+                ]);
+            }
+
+            $shipperSize = $line['shipper_size'] ?? $packing->shipper_size;
+            if ($shipperSize === null || (float) $shipperSize !== (float) (int) $shipperSize) {
+                throw ValidationException::withMessages([
+                    "products.{$index}.shipper_size" => 'Shipper size must be a whole number.',
+                ]);
+            }
+            $qty = (int) ($line['qty'] ?? 1);
+            $discount = (float) ($line['discount'] ?? 0);
+            $calculated = $this->calculateLine($packing, $data['order_type'], $qty, $discount);
+            if (isset($calculated['error'])) {
+                throw ValidationException::withMessages(["products.{$index}.discount" => $calculated['error']]);
+            }
+
+            // Persist server-calculated values while preserving the existing line-item contract.
+            $data['products'][$index] = [
+                'product_id' => (int) $packing->product_id,
+                'packing_id' => (int) $packing->id,
+                'shipper_size' => (int) $shipperSize,
+                'price' => $calculated['price'],
+                'total_price' => $calculated['total_price'],
+                'gst' => $calculated['gst'],
+                'discount' => $calculated['discount'],
+                'grand_total' => $calculated['grand_total'],
+                'qty' => $qty,
+            ];
+        }
+
+        return $data;
+    }
+
+    private function findOrderablePacking(int $packingId, string $orderType, ?int $stateId): ?ProductPacking
+    {
+        if (!$stateId) return null;
+
+        $priceColumn = $orderType === 'cash' ? 'cash_price' : 'credit_price';
+        return ProductPacking::with([
+            'product:id,product_name,gst,status',
+            'prices' => fn ($query) => $query->where('state_id', $stateId)->whereNotNull($priceColumn),
+        ])->whereKey($packingId)
+            ->where('status', 1)
+            ->whereHas('product', function ($query) use ($stateId, $orderType) {
+                $query->where('status', 1)->whereHas('productStates', function ($stateQuery) use ($stateId, $orderType) {
+                    $stateQuery->where('state_id', $stateId)->where('status', 1)
+                        ->where($orderType === 'cash' ? 'is_ncr' : 'is_rpl', 1);
+                });
+            })
+            ->whereHas('packingStates', fn ($query) => $query->where('state_id', $stateId))
+            ->whereHas('prices', fn ($query) => $query->where('state_id', $stateId)->whereNotNull($priceColumn))
+            ->first();
+    }
+
+    private function calculateLine(ProductPacking $packing, string $orderType, int $qty, float $discount): array
+    {
+        $price = $packing->prices->first();
+        $unitPrice = $orderType === 'cash' ? ($price->cash_price ?? null) : ($price->credit_price ?? null);
+        if ($unitPrice === null) {
+            return ['error' => 'A valid price is not configured for this packing and order type.'];
+        }
+
+        $unitPrice = round((float) $unitPrice, 2);
+        $total = round($qty * (float) $packing->unit_in_shipper * $unitPrice, 2);
+        $discount = round($discount, 2);
+        if ($discount > $total) {
+            return ['error' => 'Discount cannot exceed the line amount.'];
+        }
+
+        $taxableAmount = round($total - $discount, 2);
+        $gstPercent = (float) ($packing->product->gst ?? 0);
+        $gstAmount = round($taxableAmount * $gstPercent / 100, 2);
+
+        return [
+            'price' => $unitPrice,
+            'total_price' => $total,
+            'gst_percent' => $gstPercent,
+            'gst' => $gstAmount,
+            'discount' => $discount,
+            'grand_total' => round($taxableAmount + $gstAmount, 2),
+        ];
     }
 
     public function adminDispatchData(FarmerOrder $farmerOrder)
@@ -227,21 +326,24 @@ class FarmerOrderController extends Controller
             'packing' => trim(($item->packing->packing_value ?? '').' '.($item->packing->packing_size ?? '')),
             'order_qty' => $item->qty, 'shipper_size' => $item->shipper_size,
             'dispatched_qty' => $item->dispatches->sum('dispatch_qty'),
-            'pending_qty' => max(0, (int) $item->shipper_size - (int) $item->dispatches->sum('dispatch_qty')),
+            'pending_qty' => max(0, (int) $item->qty - (int) $item->dispatches->sum('dispatch_qty')),
         ]), 'dispatches' => $farmerOrder->dispatches()->with('detail')->get()]);
     }
 
     public function adminUpdateItem(Request $request)
     {
         $data = $request->validate(['item_id' => 'required|integer', 'shipper_size' => 'required|integer|min:0']);
-        $item = FarmerOrderItem::with(['order', 'product'])->findOrFail($data['item_id']);
-        if (!in_array($item->order->status, ['pending', 'hold'], true)) {
-            return response()->json(['success' => false, 'message' => 'Only pending or held farmer order items can be edited'], 409);
-        }
-        $amount = (float) $item->price * $data['shipper_size'];
-        $discounted = max(0, $amount - (float) $item->discount);
-        $gst = $discounted * (float) ($item->product->gst ?? 0) / 100;
-        $item->update(['shipper_size' => $data['shipper_size'], 'total_price' => $amount, 'gst' => $gst, 'grand_total' => round($discounted + $gst, 2)]);
+        $item = FarmerOrderItem::with('order')->findOrFail($data['item_id']);
+        $item->getConnection()->transaction(function () use ($data, $item) {
+            $order = FarmerOrder::whereKey($item->farmer_order_id)->lockForUpdate()->firstOrFail();
+            if (!in_array($order->status, ['pending', 'hold'], true)) {
+                throw ValidationException::withMessages(['item_id' => 'Only pending or held farmer order items can be edited.']);
+            }
+            $lockedItem = FarmerOrderItem::with('product')->where('farmer_order_id', $order->id)
+                ->lockForUpdate()->findOrFail($item->id);
+            $this->recalculateAdminItem($lockedItem, (int) $data['shipper_size']);
+        });
+        $item->refresh();
         return response()->json(['success' => true, 'message' => 'Farmer order item updated', 'data' => ['grand_total' => number_format($item->grand_total, 2, '.', '')]]);
     }
 
@@ -249,68 +351,109 @@ class FarmerOrderController extends Controller
     {
         $data = $request->validate([
             'farmer_order_id' => 'required|integer', 'items' => 'required|array|min:1',
-            'items.*.id' => 'required|integer', 'items.*.shipper_size' => 'required|integer|min:0',
+            'items.*.id' => 'required|integer|distinct', 'items.*.shipper_size' => 'required|integer|min:0',
         ]);
         $order = FarmerOrder::findOrFail($data['farmer_order_id']);
-        if (!in_array($order->status, ['pending', 'hold'], true)) {
-            return response()->json(['success' => false, 'message' => 'Only pending or held farmer orders can be edited'], 409);
-        }
-        foreach ($data['items'] as $itemData) {
-            $item = FarmerOrderItem::with('product')->where('farmer_order_id', $order->id)->find($itemData['id']);
-            if (!$item) continue;
-            $amount = (float) $item->price * $itemData['shipper_size'];
-            $discounted = max(0, $amount - (float) $item->discount);
-            $gst = $discounted * (float) ($item->product->gst ?? 0) / 100;
-            $item->update(['shipper_size' => $itemData['shipper_size'], 'total_price' => $amount, 'gst' => $gst, 'grand_total' => round($discounted + $gst, 2)]);
-        }
+        $order->getConnection()->transaction(function () use ($data, $order) {
+            $lockedOrder = FarmerOrder::whereKey($order->id)->lockForUpdate()->firstOrFail();
+            if (!in_array($lockedOrder->status, ['pending', 'hold'], true)) {
+                throw ValidationException::withMessages(['farmer_order_id' => 'Only pending or held farmer orders can be edited.']);
+            }
+
+            $ids = collect($data['items'])->pluck('id')->map(fn ($id) => (int) $id);
+            $items = FarmerOrderItem::with('product')->where('farmer_order_id', $lockedOrder->id)
+                ->whereIn('id', $ids)->lockForUpdate()->get()->keyBy('id');
+            if ($items->count() !== $ids->count()) {
+                throw ValidationException::withMessages(['items' => 'Every item must belong to the selected farmer order.']);
+            }
+
+            foreach ($data['items'] as $itemData) {
+                $this->recalculateAdminItem($items->get((int) $itemData['id']), (int) $itemData['shipper_size']);
+            }
+        });
         return response()->json(['success' => true, 'message' => 'Farmer order quantities updated']);
+    }
+
+    private function recalculateAdminItem(FarmerOrderItem $item, int $shipperSize): void
+    {
+        $amount = round((float) $item->price * $shipperSize, 2);
+        $discounted = max(0, $amount - (float) $item->discount);
+        $gst = round($discounted * (float) ($item->product->gst ?? 0) / 100, 2);
+        $item->update([
+            'shipper_size' => $shipperSize,
+            'total_price' => $amount,
+            'gst' => $gst,
+            'grand_total' => round($discounted + $gst, 2),
+        ]);
     }
 
     public function adminDispatch(Request $request)
     {
         $data = $request->validate([
             'farmer_order_id' => 'required|integer', 'dispatch_items' => 'required|array|min:1',
-            'dispatch_items.*.item_id' => 'required|integer', 'dispatch_items.*.dispatch_qty' => 'required|integer|min:0',
+            'dispatch_items.*.item_id' => 'required|integer|distinct', 'dispatch_items.*.dispatch_qty' => 'required|integer|min:0',
             'lr_number' => 'nullable|string|max:255', 'transport_name' => 'nullable|string|max:255',
             'vehicle_no' => 'nullable|string|max:255', 'dispatch_image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ]);
-        $order = FarmerOrder::with('items')->findOrFail($data['farmer_order_id']);
-        if (!in_array($order->status, ['approved', 'part_dispatched'], true)) {
-            return response()->json(['status' => false, 'message' => 'Only approved farmer orders can be dispatched'], 409);
-        }
-        $image = $request->hasFile('dispatch_image') ? $request->file('dispatch_image')->store('farmer_dispatch_images', 'public') : null;
-        $connection = $order->getConnection();
-        $connection->transaction(function () use ($data, $order, $image, $request) {
-            $dispatchedAny = false;
-            foreach ($data['dispatch_items'] as $dispatchItem) {
-                $item = $order->items->firstWhere('id', $dispatchItem['item_id']);
-                if (!$item) throw ValidationException::withMessages(['dispatch_items' => 'An item does not belong to this farmer order.']);
-                $before = (int) $item->dispatches()->sum('dispatch_qty');
-                $remaining = max(0, (int) $item->shipper_size - $before);
-                $qty = (int) $dispatchItem['dispatch_qty'];
-                if ($qty > $remaining) throw ValidationException::withMessages(['dispatch_items' => 'Dispatch quantity exceeds pending quantity.']);
-                if ($qty > 0) {
-                    $dispatchedAny = true;
+        $connection = (new FarmerOrder())->getConnection();
+        $image = null;
+        try {
+            $order = $connection->transaction(function () use ($data, $request, &$image) {
+                $order = FarmerOrder::with('items')->whereKey($data['farmer_order_id'])->lockForUpdate()->firstOrFail();
+                if (!in_array($order->status, ['approved', 'part_dispatched'], true)) {
+                    throw ValidationException::withMessages(['farmer_order_id' => 'Only approved farmer orders can be dispatched.']);
+                }
+
+                $dispatchPlan = [];
+                $dispatchedAny = false;
+                foreach ($data['dispatch_items'] as $dispatchItem) {
+                    $item = $order->items->firstWhere('id', $dispatchItem['item_id']);
+                    if (!$item) throw ValidationException::withMessages(['dispatch_items' => 'An item does not belong to this farmer order.']);
+                    $before = (int) $item->dispatches()->sum('dispatch_qty');
+                    $remaining = max(0, (int) $item->qty - $before);
+                    $qty = (int) $dispatchItem['dispatch_qty'];
+                    if ($qty > $remaining) throw ValidationException::withMessages(['dispatch_items' => 'Dispatch quantity exceeds pending quantity.']);
+                    if ($qty > 0) {
+                        $dispatchedAny = true;
+                        $dispatchPlan[] = ['item' => $item, 'qty' => $qty, 'remaining' => $remaining];
+                    }
+                }
+                if (!$dispatchedAny) {
+                    throw ValidationException::withMessages(['dispatch_items' => 'Enter at least one dispatch quantity greater than zero.']);
+                }
+
+                // Save the upload only after all order and quantity checks passed.
+                $image = $request->hasFile('dispatch_image')
+                    ? $request->file('dispatch_image')->store('farmer_dispatch_images', 'public')
+                    : null;
+                foreach ($dispatchPlan as $planned) {
                     $dispatch = FarmerOrderDispatch::create([
-                        'farmer_order_id' => $order->id, 'farmer_order_item_id' => $item->id,
-                        'dispatch_qty' => $qty, 'dispatch_type' => $qty === $remaining ? 'final' : 'partial',
+                        'farmer_order_id' => $order->id,
+                        'farmer_order_item_id' => $planned['item']->id,
+                        'dispatch_qty' => $planned['qty'],
+                        'dispatch_type' => $planned['qty'] === $planned['remaining'] ? 'final' : 'partial',
                     ]);
                     FarmerOrderDispatchDetail::create([
-                        'farmer_order_dispatch_id' => $dispatch->id, 'lr_number' => $request->lr_number,
-                        'transport_name' => $request->transport_name, 'vehicle_no' => $request->vehicle_no,
-                        'dispatch_image' => $image, 'dispatch_date' => now(),
+                        'farmer_order_dispatch_id' => $dispatch->id,
+                        'lr_number' => $request->lr_number,
+                        'transport_name' => $request->transport_name,
+                        'vehicle_no' => $request->vehicle_no,
+                        'dispatch_image' => $image,
+                        'dispatch_date' => now(),
                     ]);
                 }
-            }
-            if (!$dispatchedAny) {
-                throw ValidationException::withMessages(['dispatch_items' => 'Enter at least one dispatch quantity greater than zero.']);
-            }
-            $pendingTotal = $order->items->sum(function ($item) {
-                return max(0, (int) $item->shipper_size - (int) $item->dispatches()->sum('dispatch_qty'));
+
+                $pendingTotal = $order->items->sum(function ($item) {
+                    return max(0, (int) $item->qty - (int) $item->dispatches()->sum('dispatch_qty'));
+                });
+                $order->status = $pendingTotal === 0 ? 'dispatched' : 'part_dispatched';
+                $order->save();
+                return $order;
             });
-            $order->status = $pendingTotal === 0 ? 'dispatched' : 'part_dispatched';
-            $order->save();
-        });
+        } catch (\Throwable $exception) {
+            if ($image) Storage::disk('public')->delete($image);
+            throw $exception;
+        }
 
         $this->notifyEmployee($order, $order->status === 'dispatched' ? 'Your farmer order is fully dispatched.' : 'Your farmer order is partially dispatched.');
 
@@ -326,14 +469,21 @@ class FarmerOrderController extends Controller
         if (in_array($data['status'], ['hold', 'rejected'], true) && empty($data['remark'])) {
             throw ValidationException::withMessages(['remark' => 'A remark is required for hold or rejected orders.']);
         }
-        $order = FarmerOrder::findOrFail($data['farmer_order_id']);
-        if (!($order->status === 'pending' && in_array($data['status'], ['approved', 'hold', 'rejected'], true))
-            && !($order->status === 'hold' && $data['status'] === 'approved')) {
+        $connection = (new FarmerOrder())->getConnection();
+        $order = $connection->transaction(function () use ($data) {
+            $order = FarmerOrder::whereKey($data['farmer_order_id'])->lockForUpdate()->firstOrFail();
+            if (!($order->status === 'pending' && in_array($data['status'], ['approved', 'hold', 'rejected'], true))
+                && !($order->status === 'hold' && $data['status'] === 'approved')) {
+                return null;
+            }
+            $order->status = $data['status'];
+            if (isset($data['remark'])) $order->remark2 = $data['remark'];
+            $order->save();
+            return $order;
+        });
+        if (!$order) {
             return response()->json(['status' => false, 'message' => 'Invalid farmer order status transition'], 409);
         }
-        $order->status = $data['status'];
-        if (isset($data['remark'])) $order->remark2 = $data['remark'];
-        $order->save();
         $this->notifyEmployee($order, 'Farmer order #'.$order->order_no.' status updated to '.$order->status.'.');
         return response()->json(['status' => true, 'message' => 'Farmer order status updated']);
     }
