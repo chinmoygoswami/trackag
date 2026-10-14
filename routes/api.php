@@ -22,6 +22,7 @@ use App\Http\Controllers\Api\FarmVisitController;
 use App\Http\Controllers\Api\MonthlyPlanApiController;
 use App\Http\Controllers\Api\MonthlyPlanReportController;
 use App\Http\Controllers\Api\OrderController;
+use App\Http\Controllers\Api\FarmerOrderController;
 use App\Http\Controllers\Api\StockController;
 use App\Http\Controllers\Api\TallyAuthController;
 use App\Http\Controllers\Api\AdminReportController;
@@ -97,6 +98,7 @@ Route::middleware([TenantAuthenticate::class])->group(function () {
     Route::get('/admin/farm-visit-report', [AdminFarmVisitReportController::class, 'index']);
     Route::get('/admin/party-visit-report', [AdminPartyVisitReportController::class, 'index']);
     Route::get('/admin/order-report', [AdminOrderReportController::class, 'index']);
+    Route::get('/admin/farmer-order-report', [FarmerOrderController::class, 'adminReport']);
     Route::get('/admin/party-performance', [PartyPerformanceController::class, 'index']);
     Route::get('/admin/all-products', [MasterDataController::class, 'products']);
     Route::get('/admin/all-employees', [MasterDataController::class, 'employees']);
@@ -144,6 +146,17 @@ Route::middleware([TenantAuthenticate::class])->group(function () {
     Route::post('orders-update/{id}', [OrderController::class, 'update']);
     Route::delete('orders-delete/{id}', [OrderController::class, 'destroy']);
     Route::get('order-details/{id}', [OrderController::class, 'orderDetails']);
+
+    // Farmer orders use independent tables and endpoints; party order routes above remain unchanged.
+    Route::get('farmer-order-farmers', [FarmerOrderController::class, 'farmers']);
+    Route::get('farmer-order-products', [FarmerOrderController::class, 'products']);
+    Route::get('farmer-order-packings', [FarmerOrderController::class, 'packings']);
+    Route::get('farmer-order-packing-details', [FarmerOrderController::class, 'packingDetails']);
+    Route::get('farmer-orders-list', [FarmerOrderController::class, 'index']);
+    Route::post('farmer-orders-store', [FarmerOrderController::class, 'store']);
+    Route::post('farmer-orders-update/{id}', [FarmerOrderController::class, 'update']);
+    Route::delete('farmer-orders-delete/{id}', [FarmerOrderController::class, 'destroy']);
+    Route::get('farmer-order-details/{id}', [FarmerOrderController::class, 'details']);
 
 
     Route::get('/stock/packing-list', [StockController::class, 'getProductPackingList']);

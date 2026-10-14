@@ -36,6 +36,7 @@ use App\Http\Controllers\CropCategoryController;
 use App\Http\Controllers\CropSubCategoryController;
 use App\Http\Controllers\PartyController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\Api\FarmerOrderController;
 use App\Http\Controllers\StockController;
 use App\Http\Controllers\TrackingController;
 use App\Http\Controllers\ExpenseController;
@@ -207,6 +208,12 @@ Route::middleware(['web'])->group(function () {
             Route::post('order/dispatch/store', [OrderController::class, 'storeDispatch'])->name('order.dispatch.store');
             Route::get('order-report', [OrderController::class, 'report'])->name('order.report');
             Route::resource('order', OrderController::class);
+            Route::get('farmer-orders', [FarmerOrderController::class, 'adminIndex'])->name('farmer-order.index');
+            Route::post('farmer-order/status-update', [FarmerOrderController::class, 'adminStatus'])->name('farmer-order.status.update');
+            Route::post('farmer-order/item/update', [FarmerOrderController::class, 'adminUpdateItem'])->name('farmer-order.item.update');
+            Route::post('farmer-order/update-items-qty', [FarmerOrderController::class, 'adminUpdateItemsQty'])->name('farmer-order.items.update_qty');
+            Route::get('farmer-order/{farmerOrder}/dispatch-data', [FarmerOrderController::class, 'adminDispatchData'])->name('farmer-order.dispatch.data');
+            Route::post('farmer-order/dispatch/store', [FarmerOrderController::class, 'adminDispatch'])->name('farmer-order.dispatch.store');
             Route::view('sales-bill-register', 'admin.order.sales_bill_register')->name('sales.bill.register');
 
             Route::post('tally/bulk-delete/sales-bill', function (\Illuminate\Http\Request $request) {

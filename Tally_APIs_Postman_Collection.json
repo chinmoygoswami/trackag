@@ -239,16 +239,6 @@
                         {
                             "key": "filter",
                             "value": "daily"
-                        },
-                        {
-                            "key": "start_date",
-                            "value": "",
-                            "disabled": true
-                        },
-                        {
-                            "key": "end_date",
-                            "value": "",
-                            "disabled": true
                         }
                     ]
                 }
@@ -498,6 +488,1936 @@
                 }
             },
             "response": []
+        },
+        {
+            "name": "Farmer Orders - Isolated Flow",
+            "description": "Farmer order APIs use their own farmer_orders / farmer_order_items / dispatch tables and are separate from party order APIs. Set tenant credentials and valid IDs before running. Suggested sequence: Login, Farmer List, product/packing lookups, Store, List, Update, PDF, Delete. Deletion only removes the test farmer order. Admin report requires master_admin or sub_admin. Run login first. The response variables are shared across the collection. The farmer item ID can be copied from Farmer Orders List into farmer_order_item_id for admin item/dispatch requests.",
+            "item": [
+                {
+                    "name": "Mobile Login",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/login_new",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "login_new"
+                            ]
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"company_code\": \"{{company_code}}\",\n  \"company_mobile\": \"{{company_mobile}}\",\n  \"password\": \"{{mobile_password}}\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "const j=pm.response.json();",
+                                    "if(j?.success && j.data?.token) pm.collectionVariables.set(\"mobile_token\",j.data.token);"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Farmer Order Farmer List",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-Company-Code",
+                                "value": "{{company_code}}"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{mobile_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/farmer-order-farmers",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "farmer-order-farmers"
+                            ]
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "const j=pm.response.json();",
+                                    "if(j?.data?.[0]?.id) pm.collectionVariables.set(\"farmer_id\",j.data[0].id);"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Farmer Order Product List",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-Company-Code",
+                                "value": "{{company_code}}"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{mobile_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/farmer-order-products?order_type={{order_type}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "farmer-order-products"
+                            ],
+                            "query": [
+                                {
+                                    "key": "order_type",
+                                    "value": "{{order_type}}"
+                                }
+                            ]
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "const j=pm.response.json();",
+                                    "const p=j?.data||[];",
+                                    "if(p[0]?.id) pm.collectionVariables.set(\"product_id\",p[0].id);"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Farmer Order Packings",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-Company-Code",
+                                "value": "{{company_code}}"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{mobile_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/farmer-order-packings?product_id={{product_id}}&order_type={{order_type}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "farmer-order-packings"
+                            ],
+                            "query": [
+                                {
+                                    "key": "product_id",
+                                    "value": "{{product_id}}"
+                                },
+                                {
+                                    "key": "order_type",
+                                    "value": "{{order_type}}"
+                                }
+                            ]
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "const j=pm.response.json();",
+                                    "if(j?.data?.[0]?.id) pm.collectionVariables.set(\"packing_id\",j.data[0].id);"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Farmer Order Packing Quote",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-Company-Code",
+                                "value": "{{company_code}}"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{mobile_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/farmer-order-packing-details?packing_id={{packing_id}}&order_type={{order_type}}&qty={{qty}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "farmer-order-packing-details"
+                            ],
+                            "query": [
+                                {
+                                    "key": "packing_id",
+                                    "value": "{{packing_id}}"
+                                },
+                                {
+                                    "key": "order_type",
+                                    "value": "{{order_type}}"
+                                },
+                                {
+                                    "key": "qty",
+                                    "value": "{{qty}}"
+                                }
+                            ]
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "const d=pm.response.json()?.data;",
+                                    "if(d){pm.collectionVariables.set(\"unit_price\",d.unit_price);pm.collectionVariables.set(\"line_total\",d.total_price);pm.collectionVariables.set(\"gst_amount\",d.gst_amount);pm.collectionVariables.set(\"grand_total\",d.grand_total);}"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Store Farmer Order (Single Product)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-Company-Code",
+                                "value": "{{company_code}}"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{mobile_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/farmer-orders-store",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "farmer-orders-store"
+                            ]
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"farmer_id\": \"{{farmer_id}}\",\n  \"order_type\": \"{{order_type}}\",\n  \"delivery_place\": \"Postman test delivery\",\n  \"preferred_transport\": \"Test transport\",\n  \"remark\": \"Postman isolated farmer order test\",\n  \"products\": [\n    {\n      \"product_id\": \"{{product_id}}\",\n      \"packing_id\": \"{{packing_id}}\",\n      \"shipper_size\": \"{{shipper_size}}\",\n      \"price\": \"{{unit_price}}\",\n      \"total_price\": \"{{line_total}}\",\n      \"gst\": \"{{gst_amount}}\",\n      \"discount\": 0,\n      \"grand_total\": \"{{grand_total}}\",\n      \"qty\": \"{{qty}}\"\n    }\n  ]\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "const j=pm.response.json();",
+                                    "if(j?.order_id) pm.collectionVariables.set(\"farmer_order_id\",j.order_id);",
+                                    "pm.test(\"Farmer order saved\",function(){pm.expect(pm.response.code).to.be.oneOf([200,201]);pm.expect(j.status).to.eql(true);pm.expect(j.farmer_id).to.exist;});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Farmer Orders List",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-Company-Code",
+                                "value": "{{company_code}}"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{mobile_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/farmer-orders-list",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "farmer-orders-list"
+                            ]
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "const j=pm.response.json();",
+                                    "const firstOrder=j?.data?.[0];",
+                                    "const firstItem=firstOrder?.products?.[0];",
+                                    "if(firstItem?.item_id) pm.collectionVariables.set(\"farmer_order_item_id\",firstItem.item_id);"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Update Pending Farmer Order",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-Company-Code",
+                                "value": "{{company_code}}"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{mobile_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/farmer-orders-update/{{farmer_order_id}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "farmer-orders-update",
+                                "{{farmer_order_id}}"
+                            ]
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"farmer_id\": \"{{farmer_id}}\",\n  \"order_type\": \"{{order_type}}\",\n  \"delivery_place\": \"Updated Postman test delivery\",\n  \"preferred_transport\": \"Test transport\",\n  \"remark\": \"Updated isolated farmer order test\",\n  \"products\": [\n    {\n      \"product_id\": \"{{product_id}}\",\n      \"packing_id\": \"{{packing_id}}\",\n      \"shipper_size\": \"{{shipper_size}}\",\n      \"price\": \"{{unit_price}}\",\n      \"total_price\": \"{{line_total}}\",\n      \"gst\": \"{{gst_amount}}\",\n      \"discount\": 0,\n      \"grand_total\": \"{{grand_total}}\",\n      \"qty\": \"{{qty}}\"\n    }\n  ]\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "const j=pm.response.json();",
+                                    "pm.test(\"Farmer order updated\",function(){pm.expect(pm.response.code).to.eql(200);pm.expect(j.status).to.eql(true);});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Farmer Order PDF Details",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-Company-Code",
+                                "value": "{{company_code}}"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{mobile_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/farmer-order-details/{{farmer_order_id}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "farmer-order-details",
+                                "{{farmer_order_id}}"
+                            ]
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "const j=pm.response.json();",
+                                    "pm.test(\"Farmer order PDF generated\",function(){pm.expect(pm.response.code).to.eql(200);pm.expect(j.data.pdf_url).to.exist;});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Admin Farmer Order Report",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-Company-Code",
+                                "value": "{{company_code}}"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{mobile_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/admin/farmer-order-report?employee_id=&state_id=&farmer_id={{farmer_id}}&start_date=&end_date=",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "admin",
+                                "farmer-order-report"
+                            ],
+                            "query": [
+                                {
+                                    "key": "employee_id",
+                                    "value": ""
+                                },
+                                {
+                                    "key": "state_id",
+                                    "value": ""
+                                },
+                                {
+                                    "key": "farmer_id",
+                                    "value": "{{farmer_id}}"
+                                },
+                                {
+                                    "key": "start_date",
+                                    "value": ""
+                                },
+                                {
+                                    "key": "end_date",
+                                    "value": ""
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Delete Test Farmer Order",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-Company-Code",
+                                "value": "{{company_code}}"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{mobile_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/farmer-orders-delete/{{farmer_order_id}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "farmer-orders-delete",
+                                "{{farmer_order_id}}"
+                            ]
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test(\"Test farmer order deleted\",function(){pm.expect(pm.response.code).to.eql(200);});"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "Party Orders - Existing Mobile APIs",
+            "description": "Existing party-order APIs and payload shape. Use Mobile Login to set mobile_token. Replace the sample IDs/prices with tenant values. Party orders remain on the existing orders/order_items tables and existing endpoints. The Product List lookup saves the first two eligible product IDs when available; if only one product is available, both lines use it. Choose valid packing_id_2 and second-line price variables if the two products differ. For the two-line party sample, run the second-line packing and quote requests before placing the order.",
+            "item": [
+                {
+                    "name": "Mobile Login for Party Orders",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/login_new",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "login_new"
+                            ]
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"company_code\": \"{{company_code}}\",\n  \"company_mobile\": \"{{company_mobile}}\",\n  \"password\": \"{{mobile_password}}\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "const j=pm.response.json();",
+                                    "if(j?.success && j.data?.token) pm.collectionVariables.set(\"mobile_token\",j.data.token);"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Party List",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-Company-Code",
+                                "value": "{{company_code}}"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{mobile_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/party-list",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "party-list"
+                            ]
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "const j=pm.response.json();",
+                                    "const p=j?.data||[];",
+                                    "if(p[0]?.id) pm.collectionVariables.set(\"party_id\",p[0].id);"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Party Order Product List",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-Company-Code",
+                                "value": "{{company_code}}"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{mobile_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/product-list?order_type={{order_type}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "product-list"
+                            ],
+                            "query": [
+                                {
+                                    "key": "order_type",
+                                    "value": "{{order_type}}"
+                                }
+                            ]
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "const j=pm.response.json();",
+                                    "const p=j?.data||[];",
+                                    "if(p[0]?.id) pm.collectionVariables.set(\"product_id\",p[0].id);",
+                                    "if(p[1]?.id) pm.collectionVariables.set(\"product_id_2\",p[1].id); else if(p[0]?.id) pm.collectionVariables.set(\"product_id_2\",p[0].id);"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Party Order Packings",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-Company-Code",
+                                "value": "{{company_code}}"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{mobile_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/product-packings?product_id={{product_id}}&order_type={{order_type}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "product-packings"
+                            ],
+                            "query": [
+                                {
+                                    "key": "product_id",
+                                    "value": "{{product_id}}"
+                                },
+                                {
+                                    "key": "order_type",
+                                    "value": "{{order_type}}"
+                                }
+                            ]
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "const j=pm.response.json();",
+                                    "if(j?.data?.[0]?.id) pm.collectionVariables.set(\"packing_id\",j.data[0].id);"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Party Order Packing Quote",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-Company-Code",
+                                "value": "{{company_code}}"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{mobile_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/packing-details?packing_id={{packing_id}}&order_type={{order_type}}&qty={{qty}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "packing-details"
+                            ],
+                            "query": [
+                                {
+                                    "key": "packing_id",
+                                    "value": "{{packing_id}}"
+                                },
+                                {
+                                    "key": "order_type",
+                                    "value": "{{order_type}}"
+                                },
+                                {
+                                    "key": "qty",
+                                    "value": "{{qty}}"
+                                }
+                            ]
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "const d=pm.response.json()?.data;",
+                                    "if(d){pm.collectionVariables.set(\"unit_price\",d.unit_price);pm.collectionVariables.set(\"line_total\",d.total_price);pm.collectionVariables.set(\"gst_amount\",d.gst_amount);pm.collectionVariables.set(\"grand_total\",d.grand_total);}"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Party Order Packings (Second Line)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-Company-Code",
+                                "value": "{{company_code}}"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{mobile_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/product-packings?product_id={{product_id_2}}&order_type={{order_type}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "product-packings"
+                            ],
+                            "query": [
+                                {
+                                    "key": "product_id",
+                                    "value": "{{product_id_2}}"
+                                },
+                                {
+                                    "key": "order_type",
+                                    "value": "{{order_type}}"
+                                }
+                            ]
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "const j=pm.response.json();",
+                                    "if(j?.data?.[0]?.id) pm.collectionVariables.set(\"packing_id_2\",j.data[0].id);"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Party Order Packing Quote (Second Line)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-Company-Code",
+                                "value": "{{company_code}}"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{mobile_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/packing-details?packing_id={{packing_id_2}}&order_type={{order_type}}&qty={{qty}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "packing-details"
+                            ],
+                            "query": [
+                                {
+                                    "key": "packing_id",
+                                    "value": "{{packing_id_2}}"
+                                },
+                                {
+                                    "key": "order_type",
+                                    "value": "{{order_type}}"
+                                },
+                                {
+                                    "key": "qty",
+                                    "value": "{{qty}}"
+                                }
+                            ]
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "const d=pm.response.json()?.data;",
+                                    "if(d){pm.collectionVariables.set(\"unit_price_2\",d.unit_price);pm.collectionVariables.set(\"line_total_2\",d.total_price);pm.collectionVariables.set(\"gst_amount_2\",d.gst_amount);pm.collectionVariables.set(\"grand_total_2\",d.grand_total);}"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Party Orders List",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-Company-Code",
+                                "value": "{{company_code}}"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{mobile_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/orders-list",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "orders-list"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Place Party Order (Two Product Lines)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-Company-Code",
+                                "value": "{{company_code}}"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{mobile_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/orders-store",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "orders-store"
+                            ]
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"party_id\": \"{{party_id}}\",\n  \"order_type\": \"{{order_type}}\",\n  \"depo_id\": null,\n  \"delivery_place\": \"Postman party order test delivery address\",\n  \"preferred_transport\": \"Postman test transport\",\n  \"remark\": \"Postman party bulk order test\",\n  \"products\": [\n    {\n      \"product_id\": \"{{product_id}}\",\n      \"packing_id\": \"{{packing_id}}\",\n      \"shipper_size\": \"{{shipper_size}}\",\n      \"price\": \"{{unit_price}}\",\n      \"total_price\": \"{{line_total}}\",\n      \"gst\": \"{{gst_amount}}\",\n      \"discount\": 0,\n      \"grand_total\": \"{{grand_total}}\",\n      \"qty\": \"{{qty}}\"\n    },\n    {\n      \"product_id\": \"{{product_id_2}}\",\n      \"packing_id\": \"{{packing_id_2}}\",\n      \"shipper_size\": \"{{shipper_size}}\",\n      \"price\": \"{{unit_price_2}}\",\n      \"total_price\": \"{{line_total_2}}\",\n      \"gst\": \"{{gst_amount_2}}\",\n      \"discount\": 0,\n      \"grand_total\": \"{{grand_total_2}}\",\n      \"qty\": \"{{qty}}\"\n    }\n  ]\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "const j=pm.response.json();",
+                                    "if(j?.order_id) pm.collectionVariables.set(\"party_order_id\",j.order_id);",
+                                    "pm.test(\"Party order created\",function(){pm.expect(pm.response.code).to.be.oneOf([200,201]);pm.expect(j.status).to.eql(true);pm.expect(j.order_no).to.exist;});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Update Party Order (Pending Test Order)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-Company-Code",
+                                "value": "{{company_code}}"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{mobile_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/orders-update/{{party_order_id}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "orders-update",
+                                "{{party_order_id}}"
+                            ]
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"party_id\": \"{{party_id}}\",\n  \"order_type\": \"{{order_type}}\",\n  \"depo_id\": null,\n  \"delivery_place\": \"Updated Postman party delivery address\",\n  \"preferred_transport\": \"Postman test transport\",\n  \"remark\": \"Updated from Postman\",\n  \"products\": [\n    {\n      \"product_id\": \"{{product_id}}\",\n      \"packing_id\": \"{{packing_id}}\",\n      \"shipper_size\": \"{{shipper_size}}\",\n      \"price\": \"{{unit_price}}\",\n      \"total_price\": \"{{line_total}}\",\n      \"gst\": \"{{gst_amount}}\",\n      \"discount\": 0,\n      \"grand_total\": \"{{grand_total}}\",\n      \"qty\": \"{{qty}}\"\n    },\n    {\n      \"product_id\": \"{{product_id_2}}\",\n      \"packing_id\": \"{{packing_id_2}}\",\n      \"shipper_size\": \"{{shipper_size}}\",\n      \"price\": \"{{unit_price_2}}\",\n      \"total_price\": \"{{line_total_2}}\",\n      \"gst\": \"{{gst_amount_2}}\",\n      \"discount\": 0,\n      \"grand_total\": \"{{grand_total_2}}\",\n      \"qty\": \"{{qty}}\"\n    }\n  ]\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "const j=pm.response.json();",
+                                    "pm.test(\"Party order updated\",function(){pm.expect(pm.response.code).to.eql(200);pm.expect(j.status).to.eql(true);});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Party Order Details PDF",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-Company-Code",
+                                "value": "{{company_code}}"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{mobile_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/order-details/{{party_order_id}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "order-details",
+                                "{{party_order_id}}"
+                            ]
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "const j=pm.response.json();",
+                                    "pm.test(\"Party order PDF generated\",function(){pm.expect(pm.response.code).to.eql(200);pm.expect(j.data.pdf_url).to.exist;});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Party Admin Order Report API",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-Company-Code",
+                                "value": "{{company_code}}"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{mobile_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/admin/order-report?employee_id=&state_id=&start_date=&end_date=",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "admin",
+                                "order-report"
+                            ],
+                            "query": [
+                                {
+                                    "key": "employee_id",
+                                    "value": ""
+                                },
+                                {
+                                    "key": "state_id",
+                                    "value": ""
+                                },
+                                {
+                                    "key": "start_date",
+                                    "value": ""
+                                },
+                                {
+                                    "key": "end_date",
+                                    "value": ""
+                                }
+                            ]
+                        },
+                        "description": "Requires a master_admin or sub_admin mobile token."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Delete Party Test Order",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-Company-Code",
+                                "value": "{{company_code}}"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{mobile_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/orders-delete/{{party_order_id}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "orders-delete",
+                                "{{party_order_id}}"
+                            ]
+                        },
+                        "description": "Destructive: run only on the test party order created in this folder."
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test(\"Party test order deleted\",function(){pm.expect(pm.response.code).to.eql(200);});"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "Order Administration - Web Session Routes",
+            "description": "Sign in using the Admin Login requests first. Postman must retain the Laravel session cookie; the GET login request also captures the CSRF token for POST requests. Replace IDs with values from order lists and dispatch-data responses. Admin operations change real order status/quantities and dispatch records; run only against intended test orders.",
+            "item": [
+                {
+                    "name": "Admin Login Page (Get Session and CSRF)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "text/html"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/admin/login",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "admin",
+                                "login"
+                            ]
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "const match=pm.response.text().match(/name=\"_token\" value=\"([^\"]+)\"/);",
+                                    "if(match) pm.collectionVariables.set(\"admin_csrf_token\",match[1]);",
+                                    "pm.test(\"Login page and CSRF token loaded\",function(){pm.expect(pm.response.code).to.eql(200);});"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Admin Login (Create Session)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "text/html"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/x-www-form-urlencoded"
+                            }
+                        ],
+                        "body": {
+                            "mode": "urlencoded",
+                            "urlencoded": [
+                                {
+                                    "key": "_token",
+                                    "value": "{{admin_csrf_token}}",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "mobile",
+                                    "value": "{{admin_mobile}}",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "password",
+                                    "value": "{{admin_password}}",
+                                    "type": "text"
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/admin/login",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "admin",
+                                "login"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Party Admin Order List",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-CSRF-TOKEN",
+                                "value": "{{admin_csrf_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/admin/order",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "admin",
+                                "order"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Party Admin Order Report Page",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-CSRF-TOKEN",
+                                "value": "{{admin_csrf_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/admin/order-report",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "admin",
+                                "order-report"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Party Admin Order Dispatch Data",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-CSRF-TOKEN",
+                                "value": "{{admin_csrf_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/admin/order/{{party_order_id}}/dispatch-data",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "admin",
+                                "order",
+                                "{{party_order_id}}",
+                                "dispatch-data"
+                            ]
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "const j=pm.response.json();",
+                                    "if(j?.items?.[0]?.id) pm.collectionVariables.set(\"party_order_item_id\",j.items[0].id);"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Party Admin Approve Order",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-CSRF-TOKEN",
+                                "value": "{{admin_csrf_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/admin/order-status-update",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "admin",
+                                "order-status-update"
+                            ]
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"order_id\": \"{{party_order_id}}\",\n  \"status\": \"approved\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Party Admin Hold Order",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-CSRF-TOKEN",
+                                "value": "{{admin_csrf_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/admin/order-status-update",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "admin",
+                                "order-status-update"
+                            ]
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"order_id\": \"{{party_order_id}}\",\n  \"status\": \"hold\",\n  \"remark\": \"Postman test hold reason\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Party Admin Update One Item Quantity",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-CSRF-TOKEN",
+                                "value": "{{admin_csrf_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/admin/order/item/update",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "admin",
+                                "order",
+                                "item",
+                                "update"
+                            ]
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"item_id\": \"{{party_order_item_id}}\",\n  \"shipper_size\": \"{{shipper_size}}\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Party Admin Update Order Item Quantities",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-CSRF-TOKEN",
+                                "value": "{{admin_csrf_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/admin/order/update-items-qty",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "admin",
+                                "order",
+                                "update-items-qty"
+                            ]
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"order_id\": \"{{party_order_id}}\",\n  \"items\": [\n    {\n      \"id\": \"{{party_order_item_id}}\",\n      \"shipper_size\": \"{{shipper_size}}\"\n    }\n  ]\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Party Admin Store Dispatch (Multipart)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-CSRF-TOKEN",
+                                "value": "{{admin_csrf_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/admin/order/dispatch/store",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "admin",
+                                "order",
+                                "dispatch",
+                                "store"
+                            ]
+                        },
+                        "description": "Select a valid image file in Postman if required by the current order state. Confirm dispatch_qty is within pending quantity.",
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "order_id",
+                                    "value": "{{party_order_id}}",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "dispatch_items[0][item_id]",
+                                    "value": "{{party_order_item_id}}",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "dispatch_items[0][dispatch_qty]",
+                                    "value": "{{dispatch_qty}}",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "lr_number",
+                                    "value": "LR-POSTMAN-001",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "transport_name",
+                                    "value": "Postman Test Transport",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "vehicle_no",
+                                    "value": "TEST-1234",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "dispatch_image",
+                                    "type": "file",
+                                    "src": "{{dispatch_image_path}}"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Farmer Admin Order Management Page",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-CSRF-TOKEN",
+                                "value": "{{admin_csrf_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/admin/farmer-orders",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "admin",
+                                "farmer-orders"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Farmer Admin Dispatch Data",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-CSRF-TOKEN",
+                                "value": "{{admin_csrf_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/admin/farmer-order/{{farmer_order_id}}/dispatch-data",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "admin",
+                                "farmer-order",
+                                "{{farmer_order_id}}",
+                                "dispatch-data"
+                            ]
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "const j=pm.response.json();",
+                                    "if(j?.items?.[0]?.id) pm.collectionVariables.set(\"farmer_order_item_id\",j.items[0].id);"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Farmer Admin Approve Order",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-CSRF-TOKEN",
+                                "value": "{{admin_csrf_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/admin/farmer-order/status-update",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "admin",
+                                "farmer-order",
+                                "status-update"
+                            ]
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"farmer_order_id\": \"{{farmer_order_id}}\",\n  \"status\": \"approved\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Farmer Admin Hold Order",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-CSRF-TOKEN",
+                                "value": "{{admin_csrf_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/admin/farmer-order/status-update",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "admin",
+                                "farmer-order",
+                                "status-update"
+                            ]
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"farmer_order_id\": \"{{farmer_order_id}}\",\n  \"status\": \"hold\",\n  \"remark\": \"Postman test hold reason\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Farmer Admin Update One Item Quantity",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-CSRF-TOKEN",
+                                "value": "{{admin_csrf_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/admin/farmer-order/item/update",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "admin",
+                                "farmer-order",
+                                "item",
+                                "update"
+                            ]
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"item_id\": \"{{farmer_order_item_id}}\",\n  \"shipper_size\": \"{{shipper_size}}\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Farmer Admin Update Order Item Quantities",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-CSRF-TOKEN",
+                                "value": "{{admin_csrf_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/admin/farmer-order/update-items-qty",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "admin",
+                                "farmer-order",
+                                "update-items-qty"
+                            ]
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"farmer_order_id\": \"{{farmer_order_id}}\",\n  \"items\": [\n    {\n      \"id\": \"{{farmer_order_item_id}}\",\n      \"shipper_size\": \"{{shipper_size}}\"\n    }\n  ]\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Farmer Admin Store Dispatch (Multipart)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-CSRF-TOKEN",
+                                "value": "{{admin_csrf_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/admin/farmer-order/dispatch/store",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "admin",
+                                "farmer-order",
+                                "dispatch",
+                                "store"
+                            ]
+                        },
+                        "description": "Select an image file if desired and use a positive dispatch quantity no greater than pending.",
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "farmer_order_id",
+                                    "value": "{{farmer_order_id}}",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "dispatch_items[0][item_id]",
+                                    "value": "{{farmer_order_item_id}}",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "dispatch_items[0][dispatch_qty]",
+                                    "value": "{{dispatch_qty}}",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "lr_number",
+                                    "value": "LR-FARMER-POSTMAN-001",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "transport_name",
+                                    "value": "Postman Farmer Test Transport",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "vehicle_no",
+                                    "value": "TEST-FAR-1234",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "dispatch_image",
+                                    "type": "file",
+                                    "src": "{{dispatch_image_path}}"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
         }
     ],
     "variable": [
@@ -508,6 +2428,156 @@
         {
             "key": "token",
             "value": "YOUR_TALLY_ACCESS_TOKEN"
+        },
+        {
+            "key": "mobile_token",
+            "value": "",
+            "description": "Saved from Mobile Login."
+        },
+        {
+            "key": "company_code",
+            "value": "testing1",
+            "description": "Tenant company code."
+        },
+        {
+            "key": "company_mobile",
+            "value": "1234567890",
+            "description": "Employee mobile number."
+        },
+        {
+            "key": "mobile_password",
+            "value": "replace-me",
+            "description": "Employee password."
+        },
+        {
+            "key": "farmer_id",
+            "value": "1",
+            "description": "Must belong to the signed-in employee."
+        },
+        {
+            "key": "product_id",
+            "value": "1",
+            "description": "Active state-eligible product."
+        },
+        {
+            "key": "packing_id",
+            "value": "1",
+            "description": "Active state-eligible packing."
+        },
+        {
+            "key": "order_type",
+            "value": "cash",
+            "description": "cash or debit."
+        },
+        {
+            "key": "qty",
+            "value": "1",
+            "description": "Quantity sent to quote API."
+        },
+        {
+            "key": "shipper_size",
+            "value": "1",
+            "description": "Dispatchable quantity used on order line."
+        },
+        {
+            "key": "unit_price",
+            "value": "100",
+            "description": "Set from Farmer Order Packing Details."
+        },
+        {
+            "key": "line_total",
+            "value": "100",
+            "description": "Set from quote response."
+        },
+        {
+            "key": "gst_amount",
+            "value": "18",
+            "description": "Set from quote response."
+        },
+        {
+            "key": "grand_total",
+            "value": "118",
+            "description": "Set from quote response."
+        },
+        {
+            "key": "farmer_order_id",
+            "value": "",
+            "description": "Captured after Store Farmer Order."
+        },
+        {
+            "key": "party_id",
+            "value": "1",
+            "description": "Replace with a valid customer ID from Party List."
+        },
+        {
+            "key": "party_order_id",
+            "value": "",
+            "description": "Captured when Place Party Order succeeds."
+        },
+        {
+            "key": "party_order_item_id",
+            "value": "1",
+            "description": "Replace with an order item ID from admin dispatch data."
+        },
+        {
+            "key": "farmer_order_item_id",
+            "value": "",
+            "description": "Captured from Farmer Orders List response."
+        },
+        {
+            "key": "dispatch_qty",
+            "value": "1",
+            "description": "Must not exceed the remaining quantity for the selected line."
+        },
+        {
+            "key": "admin_csrf_token",
+            "value": "replace-with-session-csrf-token",
+            "description": "CSRF token for browser-admin POST endpoints."
+        },
+        {
+            "key": "dispatch_image_path",
+            "value": "",
+            "description": "Optional absolute path to a dispatch image for multipart dispatch requests."
+        },
+        {
+            "key": "product_id_2",
+            "value": "1",
+            "description": "Second eligible product for bulk party order example."
+        },
+        {
+            "key": "packing_id_2",
+            "value": "1",
+            "description": "Packing ID for the second party order line."
+        },
+        {
+            "key": "unit_price_2",
+            "value": "100",
+            "description": "Use the second product quote; it defaults to the sample value."
+        },
+        {
+            "key": "line_total_2",
+            "value": "100",
+            "description": "Pre-tax line amount for second line."
+        },
+        {
+            "key": "gst_amount_2",
+            "value": "18",
+            "description": "GST value for second line."
+        },
+        {
+            "key": "grand_total_2",
+            "value": "118",
+            "description": "Total including GST for second line."
+        },
+        {
+            "key": "admin_mobile",
+            "value": "1234567890",
+            "description": "Mobile number for a web admin account."
+        },
+        {
+            "key": "admin_password",
+            "value": "replace-me",
+            "description": "Password for a web admin account."
         }
     ]
 }

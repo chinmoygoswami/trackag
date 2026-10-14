@@ -1,0 +1,9 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Farmer Order {{ $order->order_no }}</title>
+<style>body{font-family:DejaVu Sans,Arial,sans-serif;color:#222;font-size:12px}h1{color:#0f6074}table{width:100%;border-collapse:collapse;margin-top:18px}th,td{border:1px solid #ddd;padding:8px;text-align:left}th{background:#edf5f6}.total{text-align:right;font-weight:bold}</style>
+</head><body>
+<h1>Farmer Order</h1><p><strong>Order no:</strong> {{ $order->order_no }}<br><strong>Date:</strong> {{ $order->created_at->format('d-m-Y') }}<br><strong>Farmer:</strong> {{ $order->farmer->farmer_name ?? '-' }}<br><strong>Mobile:</strong> {{ $order->farmer->mobile_no ?? '-' }}<br><strong>Village:</strong> {{ $order->farmer->village ?? '-' }}<br><strong>Payment:</strong> {{ ucfirst($order->order_type) }}<br><strong>Status:</strong> {{ ucfirst(str_replace('_', ' ', $order->status)) }}<br><strong>Transport:</strong> {{ $dispatchDetail->transport_name ?? '-' }}<br><strong>LR number:</strong> {{ $dispatchDetail->lr_number ?? '-' }}<br><strong>Vehicle:</strong> {{ $dispatchDetail->vehicle_no ?? '-' }}<br><strong>Dispatch date:</strong> {{ optional($dispatchDetail?->dispatch_date)->format('d-m-Y') ?? '-' }}</p>
+<table><thead><tr><th>Product</th><th>Packing</th><th>Qty</th><th>Shipper qty</th><th>Price</th><th>Amount</th><th>GST</th><th>Total</th></tr></thead><tbody>
+@foreach($items as $item)<tr><td>{{ $item['product_name'] }}</td><td>{{ $item['packing'] }}</td><td>{{ $item['qty'] }}</td><td>{{ $item['shipper_size'] }}</td><td>{{ number_format((float)$item['price'],2) }}</td><td>{{ number_format((float)$item['total_price'],2) }}</td><td>{{ number_format((float)$item['gst'],2) }}</td><td>{{ number_format((float)$item['grand_total'],2) }}</td></tr>@endforeach
+</tbody></table><p class="total">Grand total: ₹{{ number_format((float)$order->items->sum('grand_total'),2) }}</p>
+</body></html>
