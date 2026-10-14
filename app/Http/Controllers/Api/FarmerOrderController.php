@@ -8,9 +8,11 @@ use App\Models\FarmerOrder;
 use App\Models\FarmerOrderDispatch;
 use App\Models\FarmerOrderDispatchDetail;
 use App\Models\FarmerOrderItem;
+use App\Models\Depo;
 use App\Models\Product;
 use App\Models\ProductPacking;
 use App\Models\State;
+use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -323,11 +325,23 @@ class FarmerOrderController extends Controller
             'farmer_name' => $farmerOrder->farmer->farmer_name ?? null, 'status' => $farmerOrder->status,
         ], 'items' => $farmerOrder->items->map(fn ($item) => [
             'id' => $item->id, 'product' => $item->product->product_name ?? null,
-            'packing' => trim(($item->packing->packing_value ?? '').' '.($item->packing->packing_size ?? '')),
-            'order_qty' => $item->qty, 'shipper_size' => $item->shipper_size,
+            'packing_value' => $item->packing->packing_value ?? null,
+            'packing' => $item->packing->packing_size ?? null,
+            'order_qty' => $item->qty, 'qty' => $item->qty, 'shipper_size' => $item->shipper_size,
+            'unit_in_shipper' => $item->packing->unit_in_shipper ?? 1,
+            'price' => $item->price, 'gst_percent' => $item->product->gst ?? 0,
+            'gst' => $item->gst, 'discount' => $item->discount,
+            'total_price' => $item->total_price, 'grand_total' => $item->grand_total,
             'dispatched_qty' => $item->dispatches->sum('dispatch_qty'),
             'pending_qty' => max(0, (int) $item->qty - (int) $item->dispatches->sum('dispatch_qty')),
-        ]), 'dispatches' => $farmerOrder->dispatches()->with('detail')->get()]);
+        ]), 'dispatches' => $farmerOrder->dispatches()->with('detail')->get()->map(fn ($dispatch) => [
+            'id' => $dispatch->id,
+            'order_item_id' => $dispatch->farmer_order_item_id,
+            'dispatch_qty' => $dispatch->dispatch_qty,
+            'dispatch_type' => $dispatch->dispatch_type,
+            'created_at' => $dispatch->created_at,
+            'detail' => $dispatch->detail,
+        ])]);
     }
 
     public function adminUpdateItem(Request $request)
@@ -351,8 +365,15 @@ class FarmerOrderController extends Controller
     {
         $data = $request->validate([
             'farmer_order_id' => 'required|integer', 'items' => 'required|array|min:1',
-            'items.*.id' => 'required|integer|distinct', 'items.*.shipper_size' => 'required|integer|min:0',
+            'items.*.id' => 'required|integer|distinct',
+            'items.*.qty' => 'nullable|integer|min:1',
+            'items.*.shipper_size' => 'nullable|integer|min:0',
         ]);
+        foreach ($data['items'] as $index => $itemData) {
+            if (!isset($itemData['qty']) && !isset($itemData['shipper_size'])) {
+                throw ValidationException::withMessages(["items.{$index}.qty" => 'Enter a quantity.']);
+            }
+        }
         $order = FarmerOrder::findOrFail($data['farmer_order_id']);
         $order->getConnection()->transaction(function () use ($data, $order) {
             $lockedOrder = FarmerOrder::whereKey($order->id)->lockForUpdate()->firstOrFail();
@@ -368,10 +389,31 @@ class FarmerOrderController extends Controller
             }
 
             foreach ($data['items'] as $itemData) {
-                $this->recalculateAdminItem($items->get((int) $itemData['id']), (int) $itemData['shipper_size']);
+                $item = $items->get((int) $itemData['id']);
+                if (isset($itemData['qty'])) {
+                    $this->recalculateAdminQty($item, (int) $itemData['qty']);
+                } else {
+                    $this->recalculateAdminItem($item, (int) $itemData['shipper_size']);
+                }
             }
         });
         return response()->json(['success' => true, 'message' => 'Farmer order quantities updated']);
+    }
+
+    private function recalculateAdminQty(FarmerOrderItem $item, int $qty): void
+    {
+        $item->loadMissing(['product', 'packing']);
+        $amount = round((float) $item->price * (float) ($item->packing->unit_in_shipper ?? 1) * $qty, 2);
+        $discount = min((float) $item->discount, $amount);
+        $taxable = round($amount - $discount, 2);
+        $gst = round($taxable * (float) ($item->product->gst ?? 0) / 100, 2);
+        $item->update([
+            'qty' => $qty,
+            'total_price' => $amount,
+            'discount' => $discount,
+            'gst' => $gst,
+            'grand_total' => round($taxable + $gst, 2),
+        ]);
     }
 
     private function recalculateAdminItem(FarmerOrderItem $item, int $shipperSize): void
@@ -509,17 +551,24 @@ class FarmerOrderController extends Controller
     public function adminIndex(Request $request)
     {
         $orders = FarmerOrder::with(['user.state', 'farmer', 'items.product', 'items.packing', 'items.dispatches.detail'])
-            ->when($request->filled('status'), fn ($query) => $query->where('status', $request->status))
-            ->when($request->filled('employee_id'), fn ($query) => $query->where('user_id', $request->employee_id))
-            ->when($request->filled('farmer_id'), fn ($query) => $query->where('farmer_id', $request->farmer_id))
             ->when($request->filled('from_date'), fn ($query) => $query->whereDate('created_at', '>=', $request->from_date))
             ->when($request->filled('to_date'), fn ($query) => $query->whereDate('created_at', '<=', $request->to_date))
+            ->when($request->filled('state_id'), fn ($query) => $query->whereHas('user', fn ($userQuery) => $userQuery->where('state_id', $request->state_id)))
+            ->when($request->filled('user_id'), fn ($query) => $query->where('user_id', $request->user_id))
+            ->when($request->filled('status'), fn ($query) => $query->where('status', $request->status))
+            ->when($request->filled('farmer_id'), fn ($query) => $query->where('farmer_id', $request->farmer_id))
+            ->when($request->filled('product'), fn ($query) => $query->whereHas('items.product', fn ($productQuery) => $productQuery->where('product_name', 'like', '%'.$request->product.'%')))
+            ->when($request->filled('order_type'), fn ($query) => $query->where('order_type', $request->order_type))
+            ->when($request->filled('order_no'), fn ($query) => $query->where('order_no', 'like', '%'.$request->order_no.'%'))
+            ->when($request->filled('depo_id'), fn ($query) => $query->where('depo_id', $request->depo_id))
             ->latest()->get();
 
         return view('admin.farmer-order.index', [
             'orders' => $orders,
-            'employees' => \App\Models\User::where('status', 'Active')->orderBy('name')->get(['id', 'name']),
+            'states' => State::where('status', 1)->orderBy('name')->get(['id', 'name']),
+            'users' => User::where('status', 'Active')->orderBy('name')->get(['id', 'name']),
             'farmers' => Farmer::orderBy('farmer_name')->get(['id', 'farmer_name', 'village']),
+            'depos' => Depo::where('status', 1)->orderBy('depo_name')->get(['id', 'depo_name']),
         ]);
     }
 
