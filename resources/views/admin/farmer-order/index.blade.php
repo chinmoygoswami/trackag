@@ -34,117 +34,144 @@
                     </div>
                     <div class="card-body border-bottom">
 
+                        @php
+                            $extraFilterKeys = ['product', 'district_id', 'taluka_id', 'village', 'order_type', 'order_no', 'depo_id'];
+                            $showExtraFilters = collect($extraFilterKeys)->contains(fn ($key) => request()->filled($key));
+                        @endphp
+
                         <form method="GET" action="{{ route('farmer-order.index') }}">
-
-                            <div class="row g-2">
-
-                                <div class="col-md-2">
-                                    <label>From Date</label>
-                                    <input type="date" name="from_date" class="form-control"
-                                        value="{{ request('from_date') }}">
+                            <div class="row g-2 align-items-end">
+                                <div class="col-6 col-md-4 col-xl-2">
+                                    <label class="form-label mb-1 small">From Date</label>
+                                    <input type="date" name="from_date" class="form-control form-control-sm" value="{{ request('from_date') }}">
                                 </div>
 
-                                <div class="col-md-2">
-                                    <label>To Date</label>
-                                    <input type="date" name="to_date" class="form-control" value="{{ request('to_date') }}">
+                                <div class="col-6 col-md-4 col-xl-2">
+                                    <label class="form-label mb-1 small">To Date</label>
+                                    <input type="date" name="to_date" class="form-control form-control-sm" value="{{ request('to_date') }}">
                                 </div>
 
-                                <div class="col-md-2">
-                                    <label>State</label>
-                                    <select name="state_id" class="form-control">
+                                <div class="col-6 col-md-4 col-xl-2">
+                                    <label class="form-label mb-1 small">State</label>
+                                    <select name="state_id" class="form-select form-select-sm">
                                         <option value="">All</option>
                                         @foreach($states as $state)
-                                            <option value="{{ $state->id }}" {{ request('state_id') == $state->id ? 'selected' : '' }}>
-                                                {{ $state->name }}
-                                            </option>
+                                            <option value="{{ $state->id }}" {{ request('state_id') == $state->id ? 'selected' : '' }}>{{ $state->name }}</option>
                                         @endforeach
                                     </select>
                                 </div>
 
-                                <div class="col-md-2">
-                                    <label>Sales Person</label>
-                                    <select name="user_id" class="form-control">
+                                <div class="col-6 col-md-4 col-xl-2">
+                                    <label class="form-label mb-1 small">Sales Person</label>
+                                    <select name="user_id" class="form-select form-select-sm">
                                         <option value="">All</option>
                                         @foreach($users as $user)
-                                            <option value="{{ $user->id }}" {{ request('user_id') == $user->id ? 'selected' : '' }}>
-                                                {{ $user->name }}
-                                            </option>
+                                            <option value="{{ $user->id }}" {{ request('user_id') == $user->id ? 'selected' : '' }}>{{ $user->name }}</option>
                                         @endforeach
                                     </select>
                                 </div>
 
-                                <div class="col-md-2">
-                                    <label>Farmer</label>
-                                    <select name="farmer_id" class="form-control">
+                                <div class="col-6 col-md-4 col-xl-2">
+                                    <label class="form-label mb-1 small">Farmer</label>
+                                    <select name="farmer_id" class="form-select form-select-sm">
                                         <option value="">All</option>
                                         @foreach($farmers as $farmer)
                                             <option value="{{ $farmer->id }}" {{ request('farmer_id') == $farmer->id ? 'selected' : '' }}>
-                                                {{ $farmer->farmer_name }} {{ $farmer->village ? '('.$farmer->village.')' : '' }}
+                                                {{ $farmer->farmer_name }}{{ $farmer->village ? ' ('.$farmer->village.')' : '' }}
                                             </option>
                                         @endforeach
                                     </select>
                                 </div>
 
-                                <div class="col-md-2">
-                                    <label>Product</label>
-                                    <input type="text" name="product" class="form-control" value="{{ request('product') }}">
-                                </div>
-
-                                <div class="col-md-2">
-                                    <label>Order Type</label>
-                                    <select name="order_type" class="form-control">
+                                <div class="col-6 col-md-4 col-xl-2">
+                                    <label class="form-label mb-1 small">Status</label>
+                                    <select name="status" class="form-select form-select-sm">
                                         <option value="">All</option>
-                                        <option value="cash" {{ request('order_type') == 'cash' ? 'selected' : '' }}>Cash</option>
-                                        <option value="debit" {{ request('order_type') == 'debit' ? 'selected' : '' }}>Debit
-                                        </option>
-                                    </select>
-                                </div>
-
-                                <div class="col-md-2">
-                                    <label>Order No</label>
-                                    <input type="text" name="order_no" class="form-control"
-                                        value="{{ request('order_no') }}">
-                                </div>
-
-                                <div class="col-md-2">
-                                    <label>Depo</label>
-                                    <select name="depo_id" class="form-control">
-                                        <option value="">All</option>
-                                        @foreach($depos as $depo)
-                                            <option value="{{ $depo->id }}" {{ request('depo_id') == $depo->id ? 'selected' : '' }}>
-                                                {{ $depo->depo_name }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                </div>
-
-                                <div class="col-md-2">
-                                    <label>Status</label>
-                                    <select name="status" class="form-control">
-                                        <option value="">All</option>
-                                        <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending
-                                        </option>
+                                        <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
                                         <option value="hold" {{ request('status') == 'hold' ? 'selected' : '' }}>Hold</option>
-                                        <option value="approved" {{ request('status') == 'approved' ? 'selected' : '' }}>Approved
-                                        </option>
-                                        <option value="rejected" {{ request('status') == 'rejected' ? 'selected' : '' }}>Rejected
-                                        </option>
+                                        <option value="approved" {{ request('status') == 'approved' ? 'selected' : '' }}>Approved</option>
+                                        <option value="rejected" {{ request('status') == 'rejected' ? 'selected' : '' }}>Rejected</option>
                                         <option value="part_dispatched" {{ request('status') == 'part_dispatched' ? 'selected' : '' }}>Part Dispatched</option>
-                                        <option value="dispatched" {{ request('status') == 'dispatched' ? 'selected' : '' }}>
-                                            Dispatched</option>
+                                        <option value="dispatched" {{ request('status') == 'dispatched' ? 'selected' : '' }}>Dispatched</option>
                                     </select>
                                 </div>
 
-                                <div class="col-md-2 align-self-end">
-                                    <button class="btn btn-primary w-100">Filter</button>
+                                <div class="col-12 col-md-6 col-xl-2 d-flex gap-2">
+                                    <button class="btn btn-primary btn-sm flex-fill">Filter</button>
+                                    <a href="{{ route('farmer-order.index') }}" class="btn btn-secondary btn-sm flex-fill">Reset</a>
                                 </div>
 
-                                <div class="col-md-2 align-self-end">
-                                    <a href="{{ route('farmer-order.index') }}" class="btn btn-secondary w-100">Reset</a>
+                                <div class="col-12 col-md-6 col-xl-2">
+                                    <button class="btn btn-outline-primary btn-sm w-100" type="button" data-bs-toggle="collapse"
+                                        data-bs-target="#farmer-order-extra-filters" aria-expanded="{{ $showExtraFilters ? 'true' : 'false' }}"
+                                        aria-controls="farmer-order-extra-filters">
+                                        <i class="bi bi-sliders me-1"></i>More filters
+                                    </button>
                                 </div>
-
                             </div>
 
+                            <div class="collapse {{ $showExtraFilters ? 'show' : '' }}" id="farmer-order-extra-filters">
+                                <div class="row g-2 mt-1">
+                                    <div class="col-6 col-md-4 col-xl-2">
+                                        <label class="form-label mb-1 small">District</label>
+                                        <select name="district_id" class="form-select form-select-sm">
+                                            <option value="">All</option>
+                                            @foreach($districts as $district)
+                                                <option value="{{ $district->id }}" {{ request('district_id') == $district->id ? 'selected' : '' }}>{{ $district->name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+
+                                    <div class="col-6 col-md-4 col-xl-2">
+                                        <label class="form-label mb-1 small">Taluka</label>
+                                        <select name="taluka_id" class="form-select form-select-sm">
+                                            <option value="">All</option>
+                                            @foreach($talukas as $taluka)
+                                                <option value="{{ $taluka->id }}" {{ request('taluka_id') == $taluka->id ? 'selected' : '' }}>{{ $taluka->name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+
+                                    <div class="col-6 col-md-4 col-xl-2">
+                                        <label class="form-label mb-1 small">Village</label>
+                                        <select name="village" class="form-select form-select-sm">
+                                            <option value="">All</option>
+                                            @foreach($villages as $village)
+                                                <option value="{{ $village }}" {{ request('village') === $village ? 'selected' : '' }}>{{ $village }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+
+                                    <div class="col-6 col-md-4 col-xl-2">
+                                        <label class="form-label mb-1 small">Product</label>
+                                        <input type="text" name="product" class="form-control form-control-sm" value="{{ request('product') }}" placeholder="Search product">
+                                    </div>
+
+                                    <div class="col-6 col-md-4 col-xl-2">
+                                        <label class="form-label mb-1 small">Order Type</label>
+                                        <select name="order_type" class="form-select form-select-sm">
+                                            <option value="">All</option>
+                                            <option value="cash" {{ request('order_type') == 'cash' ? 'selected' : '' }}>Cash</option>
+                                            <option value="debit" {{ request('order_type') == 'debit' ? 'selected' : '' }}>Debit</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="col-6 col-md-4 col-xl-2">
+                                        <label class="form-label mb-1 small">Order No</label>
+                                        <input type="text" name="order_no" class="form-control form-control-sm" value="{{ request('order_no') }}">
+                                    </div>
+
+                                    <div class="col-6 col-md-4 col-xl-2">
+                                        <label class="form-label mb-1 small">Depo</label>
+                                        <select name="depo_id" class="form-select form-select-sm">
+                                            <option value="">All</option>
+                                            @foreach($depos as $depo)
+                                                <option value="{{ $depo->id }}" {{ request('depo_id') == $depo->id ? 'selected' : '' }}>{{ $depo->depo_name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
                         </form>
 
                     </div>
@@ -163,6 +190,9 @@
                                         <th>Order Type</th>
                                         <th>Order No</th>
                                         <th>Farmer</th>
+                                        <th>District</th>
+                                        <th>Taluka</th>
+                                        <th>Village</th>
                                         <th>Employee</th>
                                         <th>Total Qty</th>
                                         <th>Dispatched</th>
@@ -196,6 +226,12 @@
                                         <td><strong>{{ $order->order_no }}</strong></td>
 
                                         <td>{{ $order->farmer->farmer_name ?? '-' }}</td>
+
+                                        <td>{{ $order->farmer->district->name ?? '-' }}</td>
+
+                                        <td>{{ $order->farmer->talukaDetail->name ?? '-' }}</td>
+
+                                        <td>{{ $order->farmer->village ?? '-' }}</td>
 
                                         <td>{{ $order->user->name ?? '-' }}</td>
 

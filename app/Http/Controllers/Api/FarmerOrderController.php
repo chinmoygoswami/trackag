@@ -521,24 +521,41 @@ class FarmerOrderController extends Controller
 
     public function adminIndex(Request $request)
     {
-        $orders = FarmerOrder::with(['user.state', 'farmer', 'items.product', 'items.packing', 'items.dispatches.detail'])
+        $orders = FarmerOrder::with([
+            'user.state', 'farmer.district:id,name', 'farmer.talukaDetail:id,name', 'items.product', 'items.packing', 'items.dispatches.detail',
+        ])
             ->when($request->filled('from_date'), fn ($query) => $query->whereDate('created_at', '>=', $request->from_date))
             ->when($request->filled('to_date'), fn ($query) => $query->whereDate('created_at', '<=', $request->to_date))
             ->when($request->filled('state_id'), fn ($query) => $query->whereHas('user', fn ($userQuery) => $userQuery->where('state_id', $request->state_id)))
             ->when($request->filled('user_id'), fn ($query) => $query->where('user_id', $request->user_id))
             ->when($request->filled('status'), fn ($query) => $query->where('status', $request->status))
             ->when($request->filled('farmer_id'), fn ($query) => $query->where('farmer_id', $request->farmer_id))
+            ->when($request->filled('district_id'), fn ($query) => $query->whereHas('farmer', fn ($farmerQuery) => $farmerQuery->where('district_id', $request->district_id)))
+            ->when($request->filled('taluka_id'), fn ($query) => $query->whereHas('farmer', fn ($farmerQuery) => $farmerQuery->where('taluka_id', $request->taluka_id)))
+            ->when($request->filled('village'), fn ($query) => $query->whereHas('farmer', fn ($farmerQuery) => $farmerQuery->where('village', $request->village)))
             ->when($request->filled('product'), fn ($query) => $query->whereHas('items.product', fn ($productQuery) => $productQuery->where('product_name', 'like', '%'.$request->product.'%')))
             ->when($request->filled('order_type'), fn ($query) => $query->where('order_type', $request->order_type))
             ->when($request->filled('order_no'), fn ($query) => $query->where('order_no', 'like', '%'.$request->order_no.'%'))
             ->when($request->filled('depo_id'), fn ($query) => $query->where('depo_id', $request->depo_id))
             ->latest()->get();
 
+        $availableStates = $orders->map(fn ($order) => $order->user->state ?? null)
+            ->filter()->unique('id')->sortBy('name')->values();
+        $availableDistricts = $orders->map(fn ($order) => $order->farmer->district ?? null)
+            ->filter()->unique('id')->sortBy('name')->values();
+        $availableTalukas = $orders->map(fn ($order) => $order->farmer->talukaDetail ?? null)
+            ->filter()->unique('id')->sortBy('name')->values();
+        $availableVillages = $orders->map(fn ($order) => trim((string) ($order->farmer->village ?? '')))
+            ->filter()->unique()->sort()->values();
+
         return view('admin.farmer-order.index', [
             'orders' => $orders,
-            'states' => State::where('status', 1)->orderBy('name')->get(['id', 'name']),
+            'states' => $availableStates,
             'users' => User::where('status', 'Active')->orderBy('name')->get(['id', 'name']),
             'farmers' => Farmer::orderBy('farmer_name')->get(['id', 'farmer_name', 'village']),
+            'districts' => $availableDistricts,
+            'talukas' => $availableTalukas,
+            'villages' => $availableVillages,
             'depos' => Depo::where('status', 1)->orderBy('depo_name')->get(['id', 'depo_name']),
         ]);
     }
