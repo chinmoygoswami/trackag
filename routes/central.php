@@ -259,6 +259,8 @@ Route::middleware(['web'])->group(function () {
             Route::resource('products', ProductController::class);
             Route::get('product-price-list', [ProductController::class, 'priceList'])->name('products.price.list');
             Route::post('product-price-store', [ProductController::class, 'priceStore'])->name('products.price.store');
+            Route::get('farmer-product-price-list', [ProductController::class, 'farmerPriceList'])->name('products.farmer-price.list');
+            Route::post('farmer-product-price-store', [ProductController::class, 'farmerPriceStore'])->name('products.farmer-price.store');
 
             
             Route::resource('messages', MessageController::class);

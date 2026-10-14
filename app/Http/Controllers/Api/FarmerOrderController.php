@@ -54,7 +54,7 @@ class FarmerOrderController extends Controller
                 });
             })
             ->whereHas('packingStates', fn ($query) => $query->where('state_id', $user->state_id))
-            ->whereHas('prices', fn ($query) => $query->where('state_id', $user->state_id)->whereNotNull($priceColumn))
+            ->whereHas('farmerPrices', fn ($query) => $query->where('state_id', $user->state_id)->whereNotNull($priceColumn))
             ->select('id', 'packing_value', 'packing_size')->get();
 
         if ($data->isEmpty()) {
@@ -268,7 +268,7 @@ class FarmerOrderController extends Controller
         $priceColumn = $orderType === 'cash' ? 'cash_price' : 'credit_price';
         return ProductPacking::with([
             'product:id,product_name,gst,status',
-            'prices' => fn ($query) => $query->where('state_id', $stateId)->whereNotNull($priceColumn),
+            'farmerPrices' => fn ($query) => $query->where('state_id', $stateId)->whereNotNull($priceColumn),
         ])->whereKey($packingId)
             ->where('status', 1)
             ->whereHas('product', function ($query) use ($stateId, $orderType) {
@@ -278,13 +278,13 @@ class FarmerOrderController extends Controller
                 });
             })
             ->whereHas('packingStates', fn ($query) => $query->where('state_id', $stateId))
-            ->whereHas('prices', fn ($query) => $query->where('state_id', $stateId)->whereNotNull($priceColumn))
+            ->whereHas('farmerPrices', fn ($query) => $query->where('state_id', $stateId)->whereNotNull($priceColumn))
             ->first();
     }
 
     private function calculateLine(ProductPacking $packing, string $orderType, int $qty, float $discount): array
     {
-        $price = $packing->prices->first();
+        $price = $packing->farmerPrices->first();
         $unitPrice = $orderType === 'cash' ? ($price->cash_price ?? null) : ($price->credit_price ?? null);
         if ($unitPrice === null) {
             return ['error' => 'A valid price is not configured for this packing and order type.'];

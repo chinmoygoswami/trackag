@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Company;
+use App\Models\FarmerProductPackingPrice;
 use App\Models\PackingState;
 use App\Models\Product;
 use App\Models\ProductCategory;
@@ -12,6 +13,7 @@ use App\Models\ProductState;
 use App\Models\State;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class ProductController extends Controller
 {
@@ -280,5 +282,85 @@ class ProductController extends Controller
         }
 
         return back()->with('success','Product prices saved successfully');
+    }
+
+    public function farmerPriceList()
+    {
+        $companyCount = Company::count();
+        $company = $companyCount === 1 ? Company::first() : null;
+
+        if ($company && !empty($company->state)) {
+            $companyStates = array_map('intval', explode(',', $company->state));
+            $states = State::where('status', 1)->whereIn('id', $companyStates)->get();
+        } else {
+            $states = State::where('status', 1)->get();
+        }
+
+        $products = Product::with([
+            'packings.farmerPrices',
+            'packings.packingStates',
+            'productStates',
+        ])->get();
+
+        return view('admin.products.farmer_price_list', compact('products', 'states'));
+    }
+
+    public function farmerPriceStore(Request $request)
+    {
+        $data = $request->validate([
+            'product_id' => 'required|array',
+            'product_id.*' => 'required|integer',
+            'prices' => 'required|array',
+            'prices.*' => 'array',
+            'prices.*.*' => 'array',
+            'prices.*.*.cash_price' => 'nullable|numeric|min:0|max:99999999.99',
+            'prices.*.*.credit_price' => 'nullable|numeric|min:0|max:99999999.99',
+        ]);
+
+        $connection = (new ProductPacking())->getConnection();
+        $connection->transaction(function () use ($data) {
+            foreach ($data['prices'] as $packingId => $statePrices) {
+                $packing = ProductPacking::with(['packingStates', 'product.productStates'])->find($packingId);
+                if (!$packing || (int) ($data['product_id'][$packingId] ?? 0) !== (int) $packing->product_id) {
+                    throw ValidationException::withMessages([
+                        "product_id.{$packingId}" => 'The selected product and packing do not match.',
+                    ]);
+                }
+
+                foreach ($statePrices as $stateId => $priceValues) {
+                    $hasCash = array_key_exists('cash_price', $priceValues);
+                    $hasCredit = array_key_exists('credit_price', $priceValues);
+                    if (!$hasCash && !$hasCredit) {
+                        continue;
+                    }
+
+                    $productState = $packing->product->productStates->firstWhere('state_id', (int) $stateId);
+                    $packingAllowed = $packing->packingStates->contains('state_id', (int) $stateId);
+                    $cashAllowed = $packingAllowed && $productState && (int) $productState->is_ncr === 1;
+                    $creditAllowed = $packingAllowed && $productState && (int) $productState->is_rpl === 1;
+
+                    if (($hasCash && !$cashAllowed) || ($hasCredit && !$creditAllowed)) {
+                        throw ValidationException::withMessages([
+                            "prices.{$packingId}.{$stateId}" => 'Prices can only be set for states and order types enabled for this product packing.',
+                        ]);
+                    }
+
+                    $price = FarmerProductPackingPrice::firstOrNew([
+                        'packing_id' => $packing->id,
+                        'state_id' => (int) $stateId,
+                    ]);
+                    $price->product_id = $packing->product_id;
+                    if ($hasCash) {
+                        $price->cash_price = $priceValues['cash_price'] ?? null;
+                    }
+                    if ($hasCredit) {
+                        $price->credit_price = $priceValues['credit_price'] ?? null;
+                    }
+                    $price->save();
+                }
+            }
+        });
+
+        return back()->with('success', 'Farmer product prices saved successfully');
     }
 }

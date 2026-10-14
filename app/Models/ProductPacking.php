@@ -41,6 +41,11 @@ class ProductPacking extends Model
         return $this->hasMany(ProductPackingPrice::class, 'packing_id');
     }
 
+    public function farmerPrices()
+    {
+        return $this->hasMany(FarmerProductPackingPrice::class, 'packing_id');
+    }
+
     public function stock()
     {
         return $this->hasOne(Stock::class, 'packing_id');

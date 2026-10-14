@@ -819,7 +819,7 @@
 
                         {{-- Product Master --}}
                         @php
-                            $isProductMasterMenu = request()->is('admin/products*','admin/product-categories*') || request()->routeIs('products.price.list');
+                            $isProductMasterMenu = request()->is('admin/products*','admin/product-categories*') || request()->routeIs('products.price.list', 'products.farmer-price.list');
                         @endphp
 
                         <li class="nav-item {{ $isProductMasterMenu ? 'menu-open' : '' }}">
@@ -854,6 +854,12 @@
                                 <li class="nav-item">
                                     <a href="{{ route('products.price.list') }}" class="nav-link {{ request()->routeIs('products.price.list') ? 'active' : '' }}">
                                         <i class="bi bi-circle me-2"></i><p>Product Price</p>
+                                    </a>
+                                </li>
+
+                                <li class="nav-item">
+                                    <a href="{{ route('products.farmer-price.list') }}" class="nav-link {{ request()->routeIs('products.farmer-price.list') ? 'active' : '' }}">
+                                        <i class="bi bi-circle me-2"></i><p>Farmer Product Price</p>
                                     </a>
                                 </li>
 
