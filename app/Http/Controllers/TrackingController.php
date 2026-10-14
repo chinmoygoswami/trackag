@@ -69,7 +69,7 @@ class TrackingController extends Controller
                     ->groupBy('trips.user_id');
             })
 
-            ->with('trip.user:id,name,state_id')
+            ->with('trip.user:id,name,state_id,image')
             ->get();
 
 
@@ -77,6 +77,9 @@ class TrackingController extends Controller
 
             return [
                 'name'          => $log->trip->user->name ?? 'Unknown',
+                'image_url'     => !empty($log->trip->user?->image)
+                    ? asset('storage/'.$log->trip->user->image)
+                    : asset('admin/images/avatar.png'),
                 'latitude'      => $log->latitude,
                 'longitude'     => $log->longitude,
                 'mobile_status' => $log->mobile_status,
