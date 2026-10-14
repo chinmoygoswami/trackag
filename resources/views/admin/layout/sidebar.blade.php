@@ -179,7 +179,8 @@
                         'admin/order/*',
                         'admin/order-report*',
                         'admin/farmer-orders*',
-                        'admin/farmer-order/*'
+                        'admin/farmer-order/*',
+                        'admin/farmer-order-report*'
                     );
                 @endphp
 
@@ -213,6 +214,14 @@
                             class="nav-link {{ request()->is('admin/farmer-orders*', 'admin/farmer-order/*') ? 'active' : '' }}">
                                 <i class="bi bi-person-vcard me-2"></i>
                                 <p>Farmer Orders</p>
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a href="{{ route('farmer-order.report') }}"
+                            class="nav-link {{ request()->is('admin/farmer-order-report*') ? 'active' : '' }}">
+                                <i class="bi bi-bar-chart-line-fill me-2"></i>
+                                <p>Farmer Order Report</p>
                             </a>
                         </li>
 

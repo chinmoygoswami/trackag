@@ -209,6 +209,7 @@ Route::middleware(['web'])->group(function () {
             Route::get('order-report', [OrderController::class, 'report'])->name('order.report');
             Route::resource('order', OrderController::class);
             Route::get('farmer-orders', [FarmerOrderController::class, 'adminIndex'])->name('farmer-order.index');
+            Route::get('farmer-order-report', [FarmerOrderController::class, 'adminReportPage'])->name('farmer-order.report');
             Route::post('farmer-order/status-update', [FarmerOrderController::class, 'adminStatus'])->name('farmer-order.status.update');
             Route::post('farmer-order/item/update', [FarmerOrderController::class, 'adminUpdateItem'])->name('farmer-order.item.update');
             Route::post('farmer-order/update-items-qty', [FarmerOrderController::class, 'adminUpdateItemsQty'])->name('farmer-order.items.update_qty');
