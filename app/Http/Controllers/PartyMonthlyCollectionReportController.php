@@ -73,9 +73,10 @@ class PartyMonthlyCollectionReportController extends Controller
             $tallyParty = $syncByCode->get($customer->party_code);
             $employeeId = $customer->user_id ?: 0;
             $employeeName = $customer->user?->name ?: 'Unassigned';
-            $stateId = $customer->state_id ?: 0;
             $stateName = $customer->state?->name ?: $customer->user?->state?->name ?: 'Unassigned';
-            $key = $groupBy === 'employee' ? (string) $employeeId : (string) $stateId;
+            $key = $groupBy === 'employee'
+                ? (string) $employeeId
+                : $this->normalizePartyKey(preg_replace('/\s+/', ' ', $stateName));
 
             if (! isset($rows[$key])) {
                 $rows[$key] = [
