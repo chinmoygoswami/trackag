@@ -563,13 +563,86 @@ class FarmerOrderController extends Controller
     public function adminReportPage(Request $request)
     {
         $filters = $this->getRoleBasedStateAndEmployeeFilters();
-        $roleName = $filters['roleName'];
+        return view('admin.farmer-order.report', [
+            'orders' => $this->farmerReportQuery($request, $filters)->get(),
+            'states' => $filters['states'],
+            'users' => $filters['employees'],
+            'farmers' => Farmer::orderBy('farmer_name')->get(['id', 'farmer_name']),
+        ]);
+    }
 
-        $query = FarmerOrder::with(['user.state', 'farmer', 'items.product', 'items.packing'])
-            ->where('status', 'approved')
-            ->latest();
+    public function exportAdminReportCsv(Request $request)
+    {
+        $filters = $this->getRoleBasedStateAndEmployeeFilters();
+        $orders = $this->farmerReportQuery($request, $filters)->get();
+        $filename = 'farmer-order-report-'.now()->format('Ymd-His').'.csv';
 
-        if (! in_array($roleName, ['master_admin', 'sub_admin'])) {
+        return response()->streamDownload(function () use ($orders) {
+            $output = fopen('php://output', 'w');
+            fwrite($output, "\xEF\xBB\xBF");
+
+            $headers = [
+                'Order ID', 'Order Number', 'Created At', 'Updated At', 'Order Type', 'Order Status',
+                'Employee ID', 'Employee Name', 'Employee Mobile', 'State ID', 'State Name',
+                'Farmer ID', 'Farmer Name', 'Farmer Mobile', 'Farmer Alternate Mobile', 'Farmer State ID',
+                'Farmer District ID', 'Farmer District', 'Farmer Taluka ID', 'Farmer Taluka', 'Farmer Village',
+                'Farmer User ID', 'Farmer Crop Sowing ID', 'Farmer Land Acres', 'Farmer Land Acres Size',
+                'Farmer Irrigation Type', 'Farmer Latitude', 'Farmer Longitude',
+                'Depo ID', 'Depo Name', 'Delivery Place', 'Preferred Transport', 'Employee Remark',
+                'Back Office Remark', 'LR Number', 'Transport Name', 'Destination', 'Dispatch Date', 'Dispatch Image',
+                'Item ID', 'Product ID', 'Product Name', 'Product GST Rate', 'Packing ID', 'Packing',
+                'Quantity', 'Shipper Size', 'Unit Price', 'Amount', 'Discount', 'GST Amount', 'Grand Total',
+                'Order Amount Total', 'Order Discount Total', 'Order GST Total', 'Order Grand Total',
+            ];
+            fputcsv($output, $headers);
+
+            foreach ($orders as $order) {
+                $items = $order->items->isNotEmpty() ? $order->items : collect([null]);
+
+                foreach ($items as $item) {
+                    $row = [
+                        $order->id, $order->order_no, $order->created_at?->toDateTimeString(), $order->updated_at?->toDateTimeString(),
+                        $order->order_type, $order->status, $order->user_id, $order->user?->name, $order->user?->mobile,
+                        $order->user?->state_id, $order->user?->state?->name, $order->farmer_id,
+                        $order->farmer?->farmer_name, $order->farmer?->mobile_no, $order->farmer?->mobile_no_2,
+                        $order->farmer?->state_id, $order->farmer?->district_id, $order->farmer?->district?->name,
+                        $order->farmer?->taluka_id, $order->farmer?->talukaDetail?->name, $order->farmer?->village,
+                        $order->farmer?->user_id, $order->farmer?->crop_sowing_id, $order->farmer?->land_acr,
+                        $order->farmer?->land_acr_size, $order->farmer?->irrigation_type, $order->farmer?->latitude,
+                        $order->farmer?->longitude, $order->depo_id, $order->depo?->depo_name,
+                        $order->delivery_place, $order->preferred_transport, $order->remark, $order->remark2,
+                        $order->lr_number, $order->transport_name, $order->destination,
+                        $order->dispatch_date?->toDateTimeString(), $order->dispatch_image,
+                        $item?->id, $item?->product_id, $item?->product?->product_name, $item?->product?->gst,
+                        $item?->packing_id,
+                        $item ? trim(($item->packing?->packing_value ?? '').' '.($item->packing?->packing_size ?? '')) : null,
+                        $item?->qty, $item?->shipper_size, $item?->price, $item?->total_price,
+                        $item?->discount, $item?->gst, $item?->grand_total,
+                        $order->items->sum('total_price'), $order->items->sum('discount'),
+                        $order->items->sum('gst'), $order->items->sum('grand_total'),
+                    ];
+
+                    fputcsv($output, array_map(function ($value) {
+                        if (is_string($value) && preg_match('/^[=+@\\-\\t\\r]/', $value)) {
+                            return "'".$value;
+                        }
+
+                        return $value;
+                    }, $row));
+                }
+            }
+
+            fclose($output);
+        }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
+    private function farmerReportQuery(Request $request, array $filters)
+    {
+        $query = FarmerOrder::with([
+            'user.state', 'farmer.district', 'farmer.talukaDetail', 'depo', 'items.product', 'items.packing',
+        ])->where('status', 'approved')->latest();
+
+        if (! in_array($filters['roleName'], ['master_admin', 'sub_admin'])) {
             $employeeIds = $filters['employees']->pluck('id')->push($filters['user']->id)->unique();
             $query->whereIn('user_id', $employeeIds);
         }
@@ -596,12 +669,7 @@ class FarmerOrderController extends Controller
             $query->where('order_no', 'like', '%'.$request->order_no.'%');
         }
 
-        return view('admin.farmer-order.report', [
-            'orders' => $query->get(),
-            'states' => $filters['states'],
-            'users' => $filters['employees'],
-            'farmers' => Farmer::orderBy('farmer_name')->get(['id', 'farmer_name']),
-        ]);
+        return $query;
     }
 
     public function adminReport(Request $request)
