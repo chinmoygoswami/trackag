@@ -778,7 +778,7 @@
                         },
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"farmer_id\": \"{{farmer_id}}\",\n  \"order_type\": \"{{order_type}}\",\n  \"delivery_place\": \"Postman test delivery\",\n  \"preferred_transport\": \"Test transport\",\n  \"remark\": \"Postman isolated farmer order test\",\n  \"products\": [\n    {\n      \"product_id\": \"{{product_id}}\",\n      \"packing_id\": \"{{packing_id}}\",\n      \"shipper_size\": \"{{shipper_size}}\",\n      \"price\": \"{{unit_price}}\",\n      \"total_price\": \"{{line_total}}\",\n      \"gst\": \"{{gst_amount}}\",\n      \"discount\": 0,\n      \"grand_total\": \"{{grand_total}}\",\n      \"qty\": \"{{qty}}\"\n    }\n  ]\n}",
+                            "raw": "{\n  \"farmer_id\": \"{{farmer_id}}\",\n  \"order_type\": \"{{order_type}}\",\n  \"delivery_place\": \"Postman test delivery\",\n  \"preferred_transport\": \"Test transport\",\n  \"remark\": \"Postman isolated farmer order test\",\n  \"products\": [\n    {\n      \"product_id\": \"{{product_id}}\",\n      \"packing_id\": \"{{packing_id}}\",\n      \"price\": \"{{unit_price}}\",\n      \"total_price\": \"{{line_total}}\",\n      \"gst\": \"{{gst_amount}}\",\n      \"discount\": 0,\n      \"grand_total\": \"{{grand_total}}\",\n      \"qty\": \"{{qty}}\"\n    }\n  ]\n}",
                             "options": {
                                 "raw": {
                                     "language": "json"
@@ -881,7 +881,7 @@
                         },
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"farmer_id\": \"{{farmer_id}}\",\n  \"order_type\": \"{{order_type}}\",\n  \"delivery_place\": \"Updated Postman test delivery\",\n  \"preferred_transport\": \"Test transport\",\n  \"remark\": \"Updated isolated farmer order test\",\n  \"products\": [\n    {\n      \"product_id\": \"{{product_id}}\",\n      \"packing_id\": \"{{packing_id}}\",\n      \"shipper_size\": \"{{shipper_size}}\",\n      \"price\": \"{{unit_price}}\",\n      \"total_price\": \"{{line_total}}\",\n      \"gst\": \"{{gst_amount}}\",\n      \"discount\": 0,\n      \"grand_total\": \"{{grand_total}}\",\n      \"qty\": \"{{qty}}\"\n    }\n  ]\n}",
+                            "raw": "{\n  \"farmer_id\": \"{{farmer_id}}\",\n  \"order_type\": \"{{order_type}}\",\n  \"delivery_place\": \"Updated Postman test delivery\",\n  \"preferred_transport\": \"Test transport\",\n  \"remark\": \"Updated isolated farmer order test\",\n  \"products\": [\n    {\n      \"product_id\": \"{{product_id}}\",\n      \"packing_id\": \"{{packing_id}}\",\n      \"price\": \"{{unit_price}}\",\n      \"total_price\": \"{{line_total}}\",\n      \"gst\": \"{{gst_amount}}\",\n      \"discount\": 0,\n      \"grand_total\": \"{{grand_total}}\",\n      \"qty\": \"{{qty}}\"\n    }\n  ]\n}",
                             "options": {
                                 "raw": {
                                     "language": "json"
@@ -2296,7 +2296,7 @@
                         },
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"item_id\": \"{{farmer_order_item_id}}\",\n  \"shipper_size\": \"{{shipper_size}}\"\n}",
+                            "raw": "{\n  \"item_id\": \"{{farmer_order_item_id}}\",\n  \"qty\": \"{{qty}}\"\n}",
                             "options": {
                                 "raw": {
                                     "language": "json"
@@ -2337,7 +2337,7 @@
                         },
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"farmer_order_id\": \"{{farmer_order_id}}\",\n  \"items\": [\n    {\n      \"id\": \"{{farmer_order_item_id}}\",\n      \"shipper_size\": \"{{shipper_size}}\"\n    }\n  ]\n}",
+                            "raw": "{\n  \"farmer_order_id\": \"{{farmer_order_id}}\",\n  \"items\": [\n    {\n      \"id\": \"{{farmer_order_item_id}}\",\n      \"qty\": \"{{qty}}\"\n    }\n  ]\n}",
                             "options": {
                                 "raw": {
                                     "language": "json"
@@ -2472,17 +2472,17 @@
         {
             "key": "qty",
             "value": "1",
-            "description": "Quantity sent to quote API."
+            "description": "Whole number of units ordered; line amount is qty × configured unit price."
         },
         {
             "key": "shipper_size",
             "value": "1",
-            "description": "Dispatchable quantity used on order line."
+            "description": "Party orders use shipper size; farmer orders use qty units."
         },
         {
             "key": "unit_price",
             "value": "100",
-            "description": "Set from Farmer Order Packing Details."
+            "description": "Configured price per farmer-order unit; read from quote response."
         },
         {
             "key": "line_total",

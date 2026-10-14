@@ -84,7 +84,6 @@ class FarmerOrderController extends Controller
             'product_name' => $packing->product->product_name ?? null,
             'packing_id' => $packing->id, 'packing_value' => $packing->packing_value,
             'packing_size' => $packing->packing_size, 'shipper_type' => $packing->shipper_type,
-            'shipper_size' => (string) $packing->shipper_size, 'unit_in_shipper' => $packing->unit_in_shipper,
             'qty' => (int) $request->qty, 'gst_percent' => $quote['gst_percent'], 'gst_amount' => $quote['gst'],
             'unit_price' => $quote['price'], 'total_price' => $quote['total_price'], 'discount' => $quote['discount'],
             'grand_total' => $quote['grand_total'],
@@ -107,7 +106,7 @@ class FarmerOrderController extends Controller
             'products' => $order->items->map(fn ($item) => [
                 'item_id' => $item->id, 'product_id' => $item->product_id, 'product_name' => $item->product->product_name ?? null,
                 'packing_id' => $item->packing_id, 'packing_value' => $item->packing->packing_value ?? null,
-                'packing_size' => $item->packing->packing_size ?? null, 'shipper_size' => $item->shipper_size,
+                'packing_size' => $item->packing->packing_size ?? null,
                 'price' => $item->price, 'total_price' => $item->total_price, 'gst' => $item->gst,
                 'discount' => $item->discount, 'grand_total' => $item->grand_total, 'qty' => $item->qty,
                 'dispatched_qty' => $item->dispatches->sum('dispatch_qty'),
@@ -193,7 +192,7 @@ class FarmerOrderController extends Controller
         $items = $order->items->map(fn ($item) => [
             'product_name' => $item->product->product_name ?? '-',
             'packing' => trim(($item->packing->packing_value ?? '').' '.($item->packing->packing_size ?? '')) ?: '-',
-            'qty' => $item->qty, 'shipper_size' => $item->shipper_size, 'price' => $item->price,
+            'qty' => $item->qty, 'price' => $item->price,
             'total_price' => $item->total_price, 'gst' => $item->gst, 'discount' => $item->discount,
             'grand_total' => $item->grand_total,
             'dispatched_qty' => $item->dispatches->sum('dispatch_qty'),
@@ -218,6 +217,7 @@ class FarmerOrderController extends Controller
             'preferred_transport' => 'nullable|string|max:255', 'remark' => 'nullable|string',
             'products' => 'required|array|min:1', 'products.*.product_id' => 'required|integer',
             'products.*.packing_id' => 'required|integer',
+            // Retained as an ignored compatibility field for older farmer clients.
             'products.*.shipper_size' => 'nullable|numeric|min:0',
             // Keep accepting the old client fields, but never trust their totals.
             'products.*.price' => 'sometimes|nullable|numeric|min:0',
@@ -237,12 +237,6 @@ class FarmerOrderController extends Controller
                 ]);
             }
 
-            $shipperSize = $line['shipper_size'] ?? $packing->shipper_size;
-            if ($shipperSize === null || (float) $shipperSize !== (float) (int) $shipperSize) {
-                throw ValidationException::withMessages([
-                    "products.{$index}.shipper_size" => 'Shipper size must be a whole number.',
-                ]);
-            }
             $qty = (int) ($line['qty'] ?? 1);
             $discount = (float) ($line['discount'] ?? 0);
             $calculated = $this->calculateLine($packing, $data['order_type'], $qty, $discount);
@@ -254,7 +248,7 @@ class FarmerOrderController extends Controller
             $data['products'][$index] = [
                 'product_id' => (int) $packing->product_id,
                 'packing_id' => (int) $packing->id,
-                'shipper_size' => (int) $shipperSize,
+                'shipper_size' => null,
                 'price' => $calculated['price'],
                 'total_price' => $calculated['total_price'],
                 'gst' => $calculated['gst'],
@@ -296,8 +290,9 @@ class FarmerOrderController extends Controller
             return ['error' => 'A valid price is not configured for this packing and order type.'];
         }
 
+        // Farmer qty is the number of ordered units. Packing/shipper quantities are not price multipliers.
         $unitPrice = round((float) $unitPrice, 2);
-        $total = round($qty * (float) $packing->unit_in_shipper * $unitPrice, 2);
+        $total = round($qty * $unitPrice, 2);
         $discount = round($discount, 2);
         if ($discount > $total) {
             return ['error' => 'Discount cannot exceed the line amount.'];
@@ -327,8 +322,7 @@ class FarmerOrderController extends Controller
             'id' => $item->id, 'product' => $item->product->product_name ?? null,
             'packing_value' => $item->packing->packing_value ?? null,
             'packing' => $item->packing->packing_size ?? null,
-            'order_qty' => $item->qty, 'qty' => $item->qty, 'shipper_size' => $item->shipper_size,
-            'unit_in_shipper' => $item->packing->unit_in_shipper ?? 1,
+            'order_qty' => $item->qty, 'qty' => $item->qty,
             'price' => $item->price, 'gst_percent' => $item->product->gst ?? 0,
             'gst' => $item->gst, 'discount' => $item->discount,
             'total_price' => $item->total_price, 'grand_total' => $item->grand_total,
@@ -346,7 +340,7 @@ class FarmerOrderController extends Controller
 
     public function adminUpdateItem(Request $request)
     {
-        $data = $request->validate(['item_id' => 'required|integer', 'shipper_size' => 'required|integer|min:0']);
+        $data = $request->validate(['item_id' => 'required|integer', 'qty' => 'required|integer|min:1']);
         $item = FarmerOrderItem::with('order')->findOrFail($data['item_id']);
         $item->getConnection()->transaction(function () use ($data, $item) {
             $order = FarmerOrder::whereKey($item->farmer_order_id)->lockForUpdate()->firstOrFail();
@@ -355,7 +349,7 @@ class FarmerOrderController extends Controller
             }
             $lockedItem = FarmerOrderItem::with('product')->where('farmer_order_id', $order->id)
                 ->lockForUpdate()->findOrFail($item->id);
-            $this->recalculateAdminItem($lockedItem, (int) $data['shipper_size']);
+            $this->recalculateAdminQty($lockedItem, (int) $data['qty']);
         });
         $item->refresh();
         return response()->json(['success' => true, 'message' => 'Farmer order item updated', 'data' => ['grand_total' => number_format($item->grand_total, 2, '.', '')]]);
@@ -366,14 +360,8 @@ class FarmerOrderController extends Controller
         $data = $request->validate([
             'farmer_order_id' => 'required|integer', 'items' => 'required|array|min:1',
             'items.*.id' => 'required|integer|distinct',
-            'items.*.qty' => 'nullable|integer|min:1',
-            'items.*.shipper_size' => 'nullable|integer|min:0',
+            'items.*.qty' => 'required|integer|min:1',
         ]);
-        foreach ($data['items'] as $index => $itemData) {
-            if (!isset($itemData['qty']) && !isset($itemData['shipper_size'])) {
-                throw ValidationException::withMessages(["items.{$index}.qty" => 'Enter a quantity.']);
-            }
-        }
         $order = FarmerOrder::findOrFail($data['farmer_order_id']);
         $order->getConnection()->transaction(function () use ($data, $order) {
             $lockedOrder = FarmerOrder::whereKey($order->id)->lockForUpdate()->firstOrFail();
@@ -390,11 +378,7 @@ class FarmerOrderController extends Controller
 
             foreach ($data['items'] as $itemData) {
                 $item = $items->get((int) $itemData['id']);
-                if (isset($itemData['qty'])) {
-                    $this->recalculateAdminQty($item, (int) $itemData['qty']);
-                } else {
-                    $this->recalculateAdminItem($item, (int) $itemData['shipper_size']);
-                }
+                $this->recalculateAdminQty($item, (int) $itemData['qty']);
             }
         });
         return response()->json(['success' => true, 'message' => 'Farmer order quantities updated']);
@@ -402,8 +386,8 @@ class FarmerOrderController extends Controller
 
     private function recalculateAdminQty(FarmerOrderItem $item, int $qty): void
     {
-        $item->loadMissing(['product', 'packing']);
-        $amount = round((float) $item->price * (float) ($item->packing->unit_in_shipper ?? 1) * $qty, 2);
+        $item->loadMissing('product');
+        $amount = round((float) $item->price * $qty, 2);
         $discount = min((float) $item->discount, $amount);
         $taxable = round($amount - $discount, 2);
         $gst = round($taxable * (float) ($item->product->gst ?? 0) / 100, 2);
@@ -413,19 +397,6 @@ class FarmerOrderController extends Controller
             'discount' => $discount,
             'gst' => $gst,
             'grand_total' => round($taxable + $gst, 2),
-        ]);
-    }
-
-    private function recalculateAdminItem(FarmerOrderItem $item, int $shipperSize): void
-    {
-        $amount = round((float) $item->price * $shipperSize, 2);
-        $discounted = max(0, $amount - (float) $item->discount);
-        $gst = round($discounted * (float) ($item->product->gst ?? 0) / 100, 2);
-        $item->update([
-            'shipper_size' => $shipperSize,
-            'total_price' => $amount,
-            'gst' => $gst,
-            'grand_total' => round($discounted + $gst, 2),
         ]);
     }
 
@@ -605,7 +576,7 @@ class FarmerOrderController extends Controller
             'products' => $order->items->map(fn ($item) => [
                 'product_id' => $item->product_id, 'product_name' => $item->product->product_name ?? null,
                 'packing_id' => $item->packing_id, 'packing' => trim(($item->packing->packing_value ?? '').' '.($item->packing->packing_size ?? '')),
-                'qty' => $item->qty, 'shipper_size' => $item->shipper_size, 'price' => $item->price,
+                'qty' => $item->qty, 'price' => $item->price,
                 'amount' => $item->total_price, 'gst' => $item->gst, 'discount' => $item->discount, 'total' => $item->grand_total,
             ]),
         ]);
