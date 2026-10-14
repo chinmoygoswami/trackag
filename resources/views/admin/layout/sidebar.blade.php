@@ -97,6 +97,8 @@
                         'admin/new-party*',
                         'admin/party-payment*',
                         'admin/party-performance*',
+                        'admin/party-monthly-employee-report*',
+                        'admin/party-monthly-state-report*',
                         'admin/party-ledger*'
                     );
                 @endphp
@@ -152,6 +154,22 @@
                             class="nav-link {{ request()->routeIs('party.performance') ? 'active' : '' }}">
                                 <i class="bi bi-bar-chart-fill me-2"></i>
                                 <p>Party Performance</p>
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a href="{{ route('party.monthly.employee-report') }}"
+                            class="nav-link {{ request()->routeIs('party.monthly.employee-report') ? 'active' : '' }}">
+                                <i class="bi bi-calendar3 me-2"></i>
+                                <p>Employee Monthly Debit/Credit</p>
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a href="{{ route('party.monthly.state-report') }}"
+                            class="nav-link {{ request()->routeIs('party.monthly.state-report') ? 'active' : '' }}">
+                                <i class="bi bi-geo-alt me-2"></i>
+                                <p>State Monthly Debit/Credit</p>
                             </a>
                         </li>
 

@@ -35,6 +35,7 @@ use App\Http\Controllers\FarmerController;
 use App\Http\Controllers\CropCategoryController;
 use App\Http\Controllers\CropSubCategoryController;
 use App\Http\Controllers\PartyController;
+use App\Http\Controllers\PartyMonthlyCollectionReportController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\Api\FarmerOrderController;
 use App\Http\Controllers\StockController;
@@ -200,6 +201,8 @@ Route::middleware(['web'])->group(function () {
             Route::view('party-opening-closing', 'admin.party.opening_closing')->name('party.opening.closing');
             Route::view('partywise-payment-credit', 'admin.party.partywise_payment_credit')->name('partywise.payment.credit');
             Route::get('party-performance', [PartyController::class, 'partyPerformance'])->name('party.performance');
+            Route::get('party-monthly-employee-report', [PartyMonthlyCollectionReportController::class, 'employees'])->name('party.monthly.employee-report');
+            Route::get('party-monthly-state-report', [PartyMonthlyCollectionReportController::class, 'states'])->name('party.monthly.state-report');
             
             Route::post('order-status-update', [OrderController::class, 'updateStatus'])->name('order.status.update');
             Route::post('order/item/update', [OrderController::class, 'updateItem'])->name('order.item.update');
