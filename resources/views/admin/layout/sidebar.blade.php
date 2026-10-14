@@ -44,17 +44,19 @@
                     </ul>
                 </li>
 
+                @php
+                    $planningActive = request()->is('admin/budget*', 'admin/monthly*', 'admin/achievement*', 'admin/party-monthly-employee-report*', 'admin/party-monthly-state-report*');
+                @endphp
                 @canany(['view_budget_plan','create_budget_plan','edit_budget_plan','delete_budget_plan','view_monthly_plan','create_monthly_plan','edit_monthly_plan','delete_monthly_plan','view_plan_vs_achievement','create_plan_vs_achievement','edit_plan_vs_achievement','delete_plan_vs_achievement'])
-                <li class="nav-item {{ request()->is('admin/budget*') || request()->is('admin/monthly*') || request()->is('admin/achievement*') ? 'menu-open' : '' }}">
-                    <a href="#" class="nav-link {{ request()->is('admin/budget*') || request()->is('admin/monthly*') || request()->is('admin/achievement*') ? 'active' : '' }}">
+                <li class="nav-item {{ $planningActive ? 'menu-open' : '' }}">
+                    <a href="#" class="nav-link {{ $planningActive ? 'active' : '' }}">
                         <i class="bi bi-people-fill me-2"></i>
                         <p>
                             Planning
                             <i class="bi bi-chevron-right ms-auto"></i>
                         </p>
                     </a>
-                    <ul class="nav nav-treeview" 
-                        style="{{ request()->is('admin/budget*') || request()->is('admin/monthly*') || request()->is('admin/achievement*') ? 'display: block;' : '' }}">
+                    <ul class="nav nav-treeview" style="{{ $planningActive ? 'display: block;' : '' }}">
                         @canany(['view_budget_plan','create_budget_plan','edit_budget_plan','delete_budget_plan'])
                         <li class="nav-item">
                             <a href="{{ url('admin/budget') }}" class="nav-link {{ request()->is('admin/budget*') ? 'active' : '' }}">
@@ -67,6 +69,13 @@
                             <a href="{{ route('budget.report') }}" class="nav-link {{ request()->routeIs('budget.report') ? 'active' : '' }}">
                                 <i class="bi bi-file-earmark-bar-graph me-2"></i>
                                 <p>Budget Report</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{{ route('party.monthly.employee-report') }}"
+                               class="nav-link {{ request()->routeIs('party.monthly.employee-report', 'party.monthly.state-report') ? 'active' : '' }}">
+                                <i class="bi bi-bar-chart-line me-2"></i>
+                                <p>Monthly Debit/Credit</p>
                             </a>
                         </li>
                         @canany(['view_monthly_plan','create_monthly_plan','edit_monthly_plan','delete_monthly_plan'])
@@ -97,8 +106,6 @@
                         'admin/new-party*',
                         'admin/party-payment*',
                         'admin/party-performance*',
-                        'admin/party-monthly-employee-report*',
-                        'admin/party-monthly-state-report*',
                         'admin/party-ledger*'
                     );
                 @endphp
@@ -154,22 +161,6 @@
                             class="nav-link {{ request()->routeIs('party.performance') ? 'active' : '' }}">
                                 <i class="bi bi-bar-chart-fill me-2"></i>
                                 <p>Party Performance</p>
-                            </a>
-                        </li>
-
-                        <li class="nav-item">
-                            <a href="{{ route('party.monthly.employee-report') }}"
-                            class="nav-link {{ request()->routeIs('party.monthly.employee-report') ? 'active' : '' }}">
-                                <i class="bi bi-calendar3 me-2"></i>
-                                <p>Employee Monthly Debit/Credit</p>
-                            </a>
-                        </li>
-
-                        <li class="nav-item">
-                            <a href="{{ route('party.monthly.state-report') }}"
-                            class="nav-link {{ request()->routeIs('party.monthly.state-report') ? 'active' : '' }}">
-                                <i class="bi bi-geo-alt me-2"></i>
-                                <p>State Monthly Debit/Credit</p>
                             </a>
                         </li>
 

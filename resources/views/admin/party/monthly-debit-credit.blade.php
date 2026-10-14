@@ -8,6 +8,21 @@
 
 @section('title', $title.' | Trackag')
 
+@push('styles')
+<link rel="stylesheet" href="https://cdn.datatables.net/fixedcolumns/4.3.0/css/fixedColumns.dataTables.min.css">
+<style>
+    #monthly-party-report-table th.dtfc-fixed-left,
+    #monthly-party-report-table td.dtfc-fixed-left {
+        background-color: #fff !important;
+        z-index: 1;
+    }
+
+    #monthly-party-report-table thead th.dtfc-fixed-left {
+        background-color: #f8f9fa !important;
+    }
+</style>
+@endpush
+
 @section('content')
 <main class="app-main">
     <div class="app-content-header py-3 bg-light border-bottom">
@@ -106,6 +121,7 @@
 @endsection
 
 @push('scripts')
+<script src="https://cdn.datatables.net/fixedcolumns/4.3.0/js/dataTables.fixedColumns.min.js"></script>
 <script>
     $(function () {
         $('#monthly-party-report-table').DataTable({
@@ -114,7 +130,10 @@
             autoWidth: false,
             pageLength: 50,
             lengthMenu: [15, 25, 50, 100],
-            order: []
+            order: [],
+            fixedColumns: {
+                left: {{ $groupBy === 'employee' ? 3 : 2 }}
+            }
         });
     });
 </script>
