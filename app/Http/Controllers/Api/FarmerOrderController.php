@@ -582,17 +582,13 @@ class FarmerOrderController extends Controller
             fwrite($output, "\xEF\xBB\xBF");
 
             $headers = [
-                'Order Number', 'Created At', 'Updated At', 'Order Type', 'Order Status',
-                'Employee Name', 'Employee Mobile', 'Employee State',
-                'Farmer Name', 'Farmer Mobile', 'Farmer Alternate Mobile', 'Farmer State',
+                'Order Number', 'Created At', 'Order Type',
+                'Employee Name', 'Employee State',
+                'Farmer Name', 'Farmer Mobile', 'Farmer State',
                 'Farmer District', 'Farmer Taluka', 'Farmer Village',
-                'Farmer Land Acres', 'Farmer Land Acres Size',
-                'Farmer Irrigation Type', 'Farmer Latitude', 'Farmer Longitude',
-                'Depo Name', 'Delivery Place', 'Preferred Transport', 'Employee Remark',
-                'Back Office Remark', 'LR Number', 'Transport Name', 'Destination', 'Dispatch Date', 'Dispatch Image',
                 'Product Name', 'Product GST Rate', 'Packing',
-                'Quantity', 'Shipper Size', 'Unit Price', 'Amount', 'Discount', 'GST Amount', 'Grand Total',
-                'Order Amount Total', 'Order Discount Total', 'Order GST Total', 'Order Grand Total',
+                'Quantity', 'Unit Price', 'Amount', 'GST Amount', 'Grand Total',
+                'Order Amount Total',
             ];
             fputcsv($output, $headers);
 
@@ -601,23 +597,16 @@ class FarmerOrderController extends Controller
 
                 foreach ($items as $item) {
                     $row = [
-                        $order->order_no, $order->created_at?->toDateTimeString(), $order->updated_at?->toDateTimeString(),
-                        $order->order_type, $order->status, $order->user?->name, $order->user?->mobile,
+                        $order->order_no, $order->created_at?->toDateTimeString(),
+                        $order->order_type, $order->user?->name,
                         $order->user?->state?->name, $order->farmer?->farmer_name, $order->farmer?->mobile_no,
-                        $order->farmer?->mobile_no_2, $order->farmer?->state?->name,
+                        $order->farmer?->state?->name,
                         $order->farmer?->district?->name, $order->farmer?->talukaDetail?->name, $order->farmer?->village,
-                        $order->farmer?->land_acr,
-                        $order->farmer?->land_acr_size, $order->farmer?->irrigation_type, $order->farmer?->latitude,
-                        $order->farmer?->longitude, $order->depo?->depo_name,
-                        $order->delivery_place, $order->preferred_transport, $order->remark, $order->remark2,
-                        $order->lr_number, $order->transport_name, $order->destination,
-                        $order->dispatch_date?->toDateTimeString(), $order->dispatch_image,
                         $item?->product?->product_name, $item?->product?->gst,
                         $item ? trim(($item->packing?->packing_value ?? '').' '.($item->packing?->packing_size ?? '')) : null,
-                        $item?->qty, $item?->shipper_size, $item?->price, $item?->total_price,
-                        $item?->discount, $item?->gst, $item?->grand_total,
-                        $order->items->sum('total_price'), $order->items->sum('discount'),
-                        $order->items->sum('gst'), $order->items->sum('grand_total'),
+                        $item?->qty, $item?->price, $item?->total_price,
+                        $item?->gst, $item?->grand_total,
+                        $order->items->sum('total_price'),
                     ];
 
                     fputcsv($output, array_map(function ($value) {
