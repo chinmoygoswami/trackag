@@ -31,6 +31,11 @@ class Order extends Model
         return $this->hasMany(OrderItem::class);
     }
 
+    public function images()
+    {
+        return $this->hasMany(OrderImage::class);
+    }
+
     public function dispatches()
     {
         return $this->hasMany(OrderDispatch::class);

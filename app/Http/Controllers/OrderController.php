@@ -6,6 +6,7 @@ use App\Models\Company;
 use App\Models\Customer;
 use App\Models\Depo;
 use App\Models\Order;
+use App\Models\OrderImage;
 use App\Models\OrderDispatch;
 use App\Models\OrderDispatchDetail;
 use App\Models\State;
@@ -169,7 +170,8 @@ class OrderController extends Controller
             $query->where('status', $request->status);
         }
 
-        $orders = $query->get();
+        $orderImagesAvailable = OrderImage::isAvailable();
+        $orders = ($orderImagesAvailable ? $query->withCount('images') : $query)->get();
 
         $companyCount = Company::count();
         $company = null;
@@ -222,6 +224,7 @@ class OrderController extends Controller
 
         return view('admin.order.index', [
             'orders' => $orders,
+            'orderImagesAvailable' => $orderImagesAvailable,
             'states' => $states,
             'users' => $employees,
             'customers' => $customer,

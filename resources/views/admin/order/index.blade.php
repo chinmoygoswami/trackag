@@ -169,6 +169,7 @@
                                         <th>Pending</th>
                                         <th>Amount</th>
                                         <th width="160">Status</th>
+                                        <th>Images</th>
                                         <!-- <th>Action</th> -->
                                     </tr>
                                 </thead>
@@ -267,8 +268,17 @@
                                                 </select>
                                                                     
                                         </td>
-
-                                                                       
+                                        <td>
+                                            @if($orderImagesAvailable)
+                                            <button type="button" class="btn btn-sm btn-outline-primary order-images-btn"
+                                                data-url="{{ route('order.images.index', ['order' => $order->id]) }}"
+                                                data-order-no="{{ $order->order_no }}">
+                                                <i class="fas fa-images me-1"></i>View (<span class="order-images-count">{{ $order->images_count }}</span>)
+                                            </button>
+                                            @else
+                                                <span class="text-muted">—</span>
+                                            @endif
+                                        </td>
 
                                     </tr>
 
@@ -289,6 +299,8 @@
 
 
     <!-- ORDER SUMMARY MODAL (Read Only) -->
+    @include('admin.order.partials.images')
+
     <div class="modal fade" id="orderItemsModal" tabindex="-1" aria-labelledby="orderItemsModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-xl">
             <div class="modal-content">

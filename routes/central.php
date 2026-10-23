@@ -212,6 +212,9 @@ Route::middleware(['web'])->group(function () {
             Route::get('order-report', [OrderController::class, 'report'])->name('order.report');
             Route::get('order-report/export', [OrderController::class, 'exportReportCsv'])->name('order.report.export');
             Route::resource('order', OrderController::class);
+            Route::get('order/{order}/images', [\App\Http\Controllers\OrderImageController::class, 'adminIndex'])->whereNumber('order')->name('order.images.index');
+            Route::post('order/{order}/images', [\App\Http\Controllers\OrderImageController::class, 'adminStore'])->whereNumber('order')->name('order.images.store');
+            Route::get('order/{order}/images/{image}', [\App\Http\Controllers\OrderImageController::class, 'adminShow'])->whereNumber(['order', 'image'])->name('order.images.show');
             Route::get('farmer-order-report/export', [FarmerOrderController::class, 'exportAdminReportCsv'])->name('farmer-order.report.export');
             Route::get('farmer-orders', [FarmerOrderController::class, 'adminIndex'])->name('farmer-order.index');
             Route::get('farmer-order-report', [FarmerOrderController::class, 'adminReportPage'])->name('farmer-order.report');

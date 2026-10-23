@@ -22,6 +22,7 @@ use App\Http\Controllers\Api\FarmVisitController;
 use App\Http\Controllers\Api\MonthlyPlanApiController;
 use App\Http\Controllers\Api\MonthlyPlanReportController;
 use App\Http\Controllers\Api\OrderController;
+use App\Http\Controllers\Api\OrderImageController;
 use App\Http\Controllers\Api\FarmerOrderController;
 use App\Http\Controllers\Api\StockController;
 use App\Http\Controllers\Api\TallyAuthController;
@@ -142,6 +143,15 @@ Route::middleware([TenantAuthenticate::class])->group(function () {
     Route::get('packing-details', [OrderController::class, 'getPackingDetails']);
 
     Route::get('orders-list', [OrderController::class, 'index']);
+    Route::get('orders-images-list/{order}', [OrderImageController::class, 'index'])->whereNumber('order')->name('api.order.images.list');
+    Route::post('orders-images-store/{order}', [OrderImageController::class, 'store'])->whereNumber('order')->name('api.order.images.upload');
+    Route::get('orders-images-view/{order}/{image}', [OrderImageController::class, 'show'])->whereNumber(['order', 'image'])->name('api.order.images.view');
+    Route::delete('orders-images-delete/{order}/{image}', [OrderImageController::class, 'destroy'])->whereNumber(['order', 'image'])->name('api.order.images.delete');
+    // Keep the original attachment URLs available for callers already using them.
+    Route::get('orders/{order}/images', [OrderImageController::class, 'index'])->whereNumber('order')->name('api.order.images.index');
+    Route::post('orders/{order}/images', [OrderImageController::class, 'store'])->whereNumber('order')->name('api.order.images.store');
+    Route::get('orders/{order}/images/{image}', [OrderImageController::class, 'show'])->whereNumber(['order', 'image'])->name('api.order.images.show');
+    Route::delete('orders/{order}/images/{image}', [OrderImageController::class, 'destroy'])->whereNumber(['order', 'image'])->name('api.order.images.destroy');
     Route::post('orders-store', [OrderController::class, 'store']);
     Route::post('orders-update/{id}', [OrderController::class, 'update']);
     Route::delete('orders-delete/{id}', [OrderController::class, 'destroy']);
