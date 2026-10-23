@@ -106,24 +106,20 @@ $(document).ready(function() {
         
         $.fn.dataTable.ext.search.push(
             function( settings, data, dataIndex ) {
+                if (settings.nTable.id !== 'data-table') { return true; }
+
                 var minDateStr = $('#min-date').val();
                 var maxDateStr = $('#max-date').val();
-                
-                var min = minDateStr ? new Date(minDateStr) : null;
-                if (min) min.setHours(0,0,0,0);
-                
-                var max = maxDateStr ? new Date(maxDateStr) : null;
-                if (max) max.setHours(23,59,59,999);
-                
-                var dateStr = data[2] || ""; 
-                var rowDate = null;
-                var parts = dateStr.split('-');
-                if (parts.length === 3) {
-                    rowDate = new Date(parts[2], parts[1] - 1, parts[0]);
-                }
-                
-                if (min && rowDate && rowDate < min) { return false; }
-                if (max && rowDate && rowDate > max) { return false; }
+                if (!minDateStr && !maxDateStr) { return true; }
+
+                // Invoice Date is column 3 (column 2 is Financial Year).
+                // Compare ISO calendar dates without browser timezone conversion.
+                var parts = (data[3] || '').trim().match(/^(\d{2})-(\d{2})-(\d{4})$/);
+                if (!parts) { return false; }
+                var rowDate = parts[3] + '-' + parts[2] + '-' + parts[1];
+
+                if (minDateStr && rowDate < minDateStr) { return false; }
+                if (maxDateStr && rowDate > maxDateStr) { return false; }
                 return true;
             }
         );

@@ -77,6 +77,11 @@
                             <div class="col-md-2 d-flex align-items-end">
                                 <a href="{{ route('order.report') }}" class="btn btn-secondary w-100"><i class="bi bi-arrow-clockwise me-1"></i>Reset</a>
                             </div>
+                            <div class="col-md-2 d-flex align-items-end">
+                                <button type="submit" formaction="{{ route('order.report.export') }}" class="btn btn-success w-100">
+                                    <i class="bi bi-file-earmark-spreadsheet me-1"></i>Export CSV
+                                </button>
+                            </div>
                         </div>
                     </form>
                 </div>

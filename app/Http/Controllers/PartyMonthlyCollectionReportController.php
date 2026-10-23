@@ -102,9 +102,11 @@ class PartyMonthlyCollectionReportController extends Controller
             }
         }
 
+        // Both monthly collection reports use the sales amount excluding GST.
         $sales = TallySalesBill::query()
             ->whereBetween('invoice_date', [$start->toDateString(), $end->toDateString()])
-            ->selectRaw("party_name, DATE_FORMAT(invoice_date, '%Y-%m') as month_key, SUM(grand_total) as total_amount")
+            ->selectRaw("party_name, DATE_FORMAT(invoice_date, '%Y-%m') as month_key")
+            ->withSalesTotalWithoutGst()
             ->groupBy('party_name', 'month_key')
             ->get();
         foreach ($sales as $sale) {

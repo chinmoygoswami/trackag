@@ -639,7 +639,8 @@ class PartyController extends Controller
         $partiesByCode = $parties->keyBy('master_id');
         $partiesByName = $parties->keyBy('party_name');
         
-        $sales = \App\Models\TallySalesBill::selectRaw('party_name, YEAR(invoice_date) as year, MONTH(invoice_date) as month, SUM(grand_total) as total_amount, SUM(qty) as total_qty')
+        $sales = \App\Models\TallySalesBill::selectRaw('party_name, YEAR(invoice_date) as year, MONTH(invoice_date) as month, SUM(qty) as total_qty')
+            ->withSalesTotalWithoutGst()
             ->groupBy('party_name', 'year', 'month')
             ->get();
             

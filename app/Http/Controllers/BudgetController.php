@@ -68,7 +68,8 @@ class BudgetController extends Controller
         // 5. Load TallySalesBill totals for all FY months in one query
         //    grouped by party_name -> YYYY-MM
         $allYearMonths = array_values($monthYearMap);
-        $salesData = TallySalesBill::selectRaw('party_name, DATE_FORMAT(invoice_date, "%Y-%m") as ym, SUM(grand_total) as total_amount')
+        $salesData = TallySalesBill::selectRaw('party_name, DATE_FORMAT(invoice_date, "%Y-%m") as ym')
+            ->withSalesTotalWithoutGst()
             ->whereIn(DB::raw('DATE_FORMAT(invoice_date, "%Y-%m")'), $allYearMonths)
             ->groupBy('party_name', 'ym')
             ->get()
@@ -281,7 +282,8 @@ class BudgetController extends Controller
 
         // 5. Load TallySalesBill totals for all FY months in one query
         $allYearMonths = array_values($monthYearMap);
-        $salesData = TallySalesBill::selectRaw('party_name, DATE_FORMAT(invoice_date, "%Y-%m") as ym, SUM(grand_total) as total_amount')
+        $salesData = TallySalesBill::selectRaw('party_name, DATE_FORMAT(invoice_date, "%Y-%m") as ym')
+            ->withSalesTotalWithoutGst()
             ->whereIn(DB::raw('DATE_FORMAT(invoice_date, "%Y-%m")'), $allYearMonths)
             ->groupBy('party_name', 'ym')
             ->get()

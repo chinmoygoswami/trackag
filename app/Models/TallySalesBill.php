@@ -3,11 +3,18 @@
 namespace App\Models;
 
 use App\Traits\TenantConnectionTrait;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 class TallySalesBill extends Model
 {
     use TenantConnectionTrait;
+
+    /** Fetch the stored pre-GST sales total for sales performance reports. */
+    public function scopeWithSalesTotalWithoutGst(Builder $query): Builder
+    {
+        return $query->selectRaw('SUM(amount) as total_amount');
+    }
 
     protected $fillable = [
         'financial_year',

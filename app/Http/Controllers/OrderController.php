@@ -19,6 +19,55 @@ class OrderController extends Controller
     public function report(Request $request)
     {
         $filters = $this->getRoleBasedStateAndEmployeeFilters();
+        return view('admin.order.report', [
+            'orders' => $this->orderReportQuery($request, $filters)->get(),
+            'states' => $filters['states'],
+            'users' => $filters['employees'],
+            'customers' => Customer::where('is_active', true)->orderBy('agro_name')->get(),
+        ]);
+    }
+
+    public function exportReportCsv(Request $request)
+    {
+        $filters = $this->getRoleBasedStateAndEmployeeFilters();
+        $orders = $this->orderReportQuery($request, $filters)
+            ->with(['items.product', 'items.packing'])->get();
+
+        return response()->streamDownload(function () use ($orders) {
+            $output = fopen('php://output', 'w');
+            fwrite($output, "\xEF\xBB\xBF");
+            fputcsv($output, [
+                'Order Number', 'Created At', 'Order Type', 'Employee Name', 'Employee State',
+                'Party Name', 'Product Name', 'Product GST Rate', 'Packing', 'Quantity',
+                'Unit Price', 'Amount', 'GST Amount', 'Grand Total', 'Order Amount Total', 'Order Status',
+            ]);
+
+            foreach ($orders as $order) {
+                $items = $order->items->isNotEmpty() ? $order->items : collect([null]);
+                foreach ($items as $item) {
+                    $row = [
+                        $order->order_no, $order->created_at?->toDateTimeString(), $order->order_type,
+                        $order->user?->name, $order->user?->state?->name, $order->customer?->agro_name,
+                        $item?->product?->product_name, $item?->product?->gst,
+                        $item ? trim(($item->packing?->packing_value ?? '').' '.($item->packing?->packing_size ?? '')) : null,
+                        $item?->qty, $item?->price, $item?->total_price, $item?->gst, $item?->grand_total,
+                        $order->items->sum('total_price'), ucwords(str_replace('_', ' ', $order->status)),
+                    ];
+                    fputcsv($output, array_map(function ($value) {
+                        if (is_string($value) && preg_match('/^[=+@\\-\\t\\r]/', $value)) {
+                            return "'".$value;
+                        }
+
+                        return $value;
+                    }, $row));
+                }
+            }
+            fclose($output);
+        }, 'order-report-'.now()->format('Ymd-His').'.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
+    private function orderReportQuery(Request $request, array $filters)
+    {
         $roleName = $filters['roleName'];
 
         $query = Order::with(['user.state', 'customer', 'items'])
@@ -52,12 +101,7 @@ class OrderController extends Controller
             $query->where('order_no', 'like', '%' . $request->order_no . '%');
         }
 
-        return view('admin.order.report', [
-            'orders' => $query->get(),
-            'states' => $filters['states'],
-            'users' => $filters['employees'],
-            'customers' => Customer::where('is_active', true)->orderBy('agro_name')->get(),
-        ]);
+        return $query;
     }
 
     public function index(Request $request)

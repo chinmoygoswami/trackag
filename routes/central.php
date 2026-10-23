@@ -210,6 +210,7 @@ Route::middleware(['web'])->group(function () {
             Route::get('order/{order}/dispatch-data', [OrderController::class, 'getDispatchData'])->name('order.dispatch.data');
             Route::post('order/dispatch/store', [OrderController::class, 'storeDispatch'])->name('order.dispatch.store');
             Route::get('order-report', [OrderController::class, 'report'])->name('order.report');
+            Route::get('order-report/export', [OrderController::class, 'exportReportCsv'])->name('order.report.export');
             Route::resource('order', OrderController::class);
             Route::get('farmer-order-report/export', [FarmerOrderController::class, 'exportAdminReportCsv'])->name('farmer-order.report.export');
             Route::get('farmer-orders', [FarmerOrderController::class, 'adminIndex'])->name('farmer-order.index');

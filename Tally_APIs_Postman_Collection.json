@@ -448,6 +448,253 @@
             "response": []
         },
         {
+            "name": "Farmers - Profile & Master Data",
+            "description": "Farmer profile APIs and lookup data. Mobile API calls require a login token and X-Company-Code. Create/update requests write farmer records.",
+            "item": [
+                {
+                    "name": "Active States",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-Company-Code",
+                                "value": "{{company_code}}"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{mobile_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/states"
+                        },
+                        "description": "Returns state lookup data. Use returned IDs for farmer fields."
+                    }
+                },
+                {
+                    "name": "Districts by State",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-Company-Code",
+                                "value": "{{company_code}}"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{mobile_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/districts/{{state_id}}"
+                        },
+                        "description": "Replace state_id with an active state ID."
+                    }
+                },
+                {
+                    "name": "Talukas by District",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-Company-Code",
+                                "value": "{{company_code}}"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{mobile_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/tehsils/{{district_id}}"
+                        },
+                        "description": "Replace district_id with an ID returned by Districts by State."
+                    }
+                },
+                {
+                    "name": "Crop Sowing Lookup",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-Company-Code",
+                                "value": "{{company_code}}"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{mobile_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/crop-sowing-list?crop_category_id={{crop_category_id}}"
+                        },
+                        "description": "crop_category_id is optional; omit the query parameter to return all active crop sowing entries."
+                    }
+                },
+                {
+                    "name": "Farmer Crop Sowing",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-Company-Code",
+                                "value": "{{company_code}}"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{mobile_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/farmer-crop-sowing/{{farmer_id}}"
+                        }
+                    }
+                },
+                {
+                    "name": "My Farmers List",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-Company-Code",
+                                "value": "{{company_code}}"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{mobile_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/farmers-list"
+                        },
+                        "description": "Returns farmers owned by the signed-in employee."
+                    }
+                },
+                {
+                    "name": "Create Farmer",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-Company-Code",
+                                "value": "{{company_code}}"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{mobile_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/farmers-store"
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"mobile_no\": \"9876543210\",\n  \"mobile_no_2\": \"9876501234\",\n  \"farmer_name\": \"Postman Sample Farmer\",\n  \"village\": \"Sample Village\",\n  \"state_id\": \"{{state_id}}\",\n  \"district_id\": \"{{district_id}}\",\n  \"taluka_id\": \"{{taluka_id}}\",\n  \"crop_sowing_id\": [\n    \"{{crop_sowing_id}}\"\n  ],\n  \"land_acr\": \"acre\",\n  \"land_acr_size\": \"2.5\",\n  \"irrigation_type\": \"Drip\",\n  \"latitude\": 22.3072,\n  \"longitude\": 73.1812\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "description": "Writes a farmer record and crop-sowing associations. Use valid lookup IDs and a unique mobile number in a test environment."
+                    }
+                },
+                {
+                    "name": "Update Farmer",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-Company-Code",
+                                "value": "{{company_code}}"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{mobile_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/farmers-update/{{farmer_id}}"
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"mobile_no\": \"9876543210\",\n  \"mobile_no_2\": \"9876501234\",\n  \"farmer_name\": \"Postman Sample Farmer Updated\",\n  \"village\": \"Sample Village\",\n  \"state_id\": \"{{state_id}}\",\n  \"district_id\": \"{{district_id}}\",\n  \"taluka_id\": \"{{taluka_id}}\",\n  \"crop_sowing_id\": [\n    \"{{crop_sowing_id}}\"\n  ],\n  \"land_acr\": \"acre\",\n  \"land_acr_size\": \"2.5\",\n  \"irrigation_type\": \"Drip\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "description": "Replaces the farmer crop-sowing associations. Use a farmer owned by the signed-in employee."
+                    }
+                },
+                {
+                    "name": "Admin Farmer List",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-Company-Code",
+                                "value": "{{company_code}}"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{mobile_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/admin/farmer-list?state_id={{state_id_filter}}&employee_id={{employee_id}}&start_date=2026-01-01&end_date=2026-12-31"
+                        },
+                        "description": "Admin-only (master_admin/sub_admin). Filters are optional; remove empty or unwanted query parameters."
+                    }
+                }
+            ]
+        },
+        {
             "name": "Mobile Sales Bill Register - Bill Details",
             "request": {
                 "method": "POST",
@@ -491,7 +738,7 @@
         },
         {
             "name": "Farmer Orders - Isolated Flow",
-            "description": "Farmer order APIs use their own farmer_orders / farmer_order_items / dispatch tables and are separate from party order APIs. Set tenant credentials and valid IDs before running. Suggested sequence: Login, Farmer List, product/packing lookups, Store, List, Update, PDF, Delete. Deletion only removes the test farmer order. Admin report requires master_admin or sub_admin. Run login first. The response variables are shared across the collection. The farmer item ID can be copied from Farmer Orders List into farmer_order_item_id for admin item/dispatch requests.",
+            "description": "Farmer-specific ordering APIs backed by separate farmer-order tables and farmer price lists. Requires Mobile Login, then X-Company-Code and Bearer token. Prices are recalculated server-side from the farmer price list. Store/update/delete requests change data; PDF details generates and stores a PDF.",
             "item": [
                 {
                     "name": "Mobile Login",
@@ -745,6 +992,113 @@
                     ]
                 },
                 {
+                    "name": "Farmer Order Product List (Second Product)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-Company-Code",
+                                "value": "{{company_code}}"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{mobile_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/farmer-order-products?order_type={{order_type}}"
+                        },
+                        "description": "Choose a different eligible product for the second line."
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "const p=pm.response.json()?.data||[];",
+                                    "if(p[1]?.id) pm.collectionVariables.set(\"product_id_2\",p[1].id);"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Farmer Order Packings (Second Product)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-Company-Code",
+                                "value": "{{company_code}}"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{mobile_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/farmer-order-packings?product_id={{product_id_2}}&order_type={{order_type}}"
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "const p=pm.response.json()?.data||[];",
+                                    "if(p[0]?.id) pm.collectionVariables.set(\"packing_id_2\",p[0].id);"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Farmer Order Packing Quote (Second Product)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-Company-Code",
+                                "value": "{{company_code}}"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{mobile_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/farmer-order-packing-details?packing_id={{packing_id_2}}&order_type={{order_type}}&qty={{qty_2}}&discount=0"
+                        },
+                        "description": "Returns the server-calculated price, GST and total for the second product line."
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "const d=pm.response.json()?.data;",
+                                    "if(d){pm.collectionVariables.set(\"unit_price_2\",d.unit_price);pm.collectionVariables.set(\"line_total_2\",d.total_price);pm.collectionVariables.set(\"gst_amount_2\",d.gst_amount);pm.collectionVariables.set(\"grand_total_2\",d.grand_total);}"
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
                     "name": "Store Farmer Order (Single Product)",
                     "request": {
                         "method": "POST",
@@ -778,13 +1132,14 @@
                         },
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"farmer_id\": \"{{farmer_id}}\",\n  \"order_type\": \"{{order_type}}\",\n  \"delivery_place\": \"Postman test delivery\",\n  \"preferred_transport\": \"Test transport\",\n  \"remark\": \"Postman isolated farmer order test\",\n  \"products\": [\n    {\n      \"product_id\": \"{{product_id}}\",\n      \"packing_id\": \"{{packing_id}}\",\n      \"price\": \"{{unit_price}}\",\n      \"total_price\": \"{{line_total}}\",\n      \"gst\": \"{{gst_amount}}\",\n      \"discount\": 0,\n      \"grand_total\": \"{{grand_total}}\",\n      \"qty\": \"{{qty}}\"\n    }\n  ]\n}",
+                            "raw": "{\n  \"farmer_id\": \"{{farmer_id}}\",\n  \"order_type\": \"{{order_type}}\",\n  \"delivery_place\": \"Sample Village delivery point\",\n  \"preferred_transport\": \"Local transport\",\n  \"remark\": \"Example single-product farmer order\",\n  \"products\": [\n    {\n      \"product_id\": \"{{product_id}}\",\n      \"packing_id\": \"{{packing_id}}\",\n      \"qty\": \"{{qty}}\",\n      \"discount\": 0\n    }\n  ]\n}",
                             "options": {
                                 "raw": {
                                     "language": "json"
                                 }
                             }
-                        }
+                        },
+                        "description": "Creates a farmer order with one product line. Amount fields are calculated server-side from the farmer price list; qty is units and shipper_size is ignored."
                     },
                     "response": [],
                     "event": [
@@ -800,6 +1155,43 @@
                             }
                         }
                     ]
+                },
+                {
+                    "name": "Store Farmer Order (Multiple Products)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "X-Company-Code",
+                                "value": "{{company_code}}"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{mobile_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/farmer-orders-store"
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"farmer_id\": \"{{farmer_id}}\",\n  \"order_type\": \"{{order_type}}\",\n  \"depo_id\": null,\n  \"delivery_place\": \"Sample Village delivery point\",\n  \"preferred_transport\": \"Local transport\",\n  \"remark\": \"Example multi-product farmer order\",\n  \"products\": [\n    {\n      \"product_id\": \"{{product_id}}\",\n      \"packing_id\": \"{{packing_id}}\",\n      \"qty\": \"{{qty}}\",\n      \"discount\": 0\n    },\n    {\n      \"product_id\": \"{{product_id_2}}\",\n      \"packing_id\": \"{{packing_id_2}}\",\n      \"qty\": \"{{qty_2}}\",\n      \"discount\": 0\n    }\n  ]\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "description": "Example payload for a farmer order with two product lines. Use IDs and unit prices from the product, packing, and quote requests. Server-calculated amounts are authoritative; farmer orders use qty as units and ignore shipper_size."
+                    }
                 },
                 {
                     "name": "Farmer Orders List",
@@ -997,7 +1389,8 @@
                                     "value": ""
                                 }
                             ]
-                        }
+                        },
+                        "description": "Admin-only (master_admin/sub_admin). Optional filters: employee_id, state_id, farmer_id, start_date, end_date. This mobile account must have an authorized admin role to receive the report."
                     },
                     "response": []
                 },
@@ -2441,13 +2834,13 @@
         },
         {
             "key": "company_mobile",
-            "value": "1234567890",
-            "description": "Employee mobile number."
+            "value": "replace-with-employee-mobile",
+            "description": "Employee mobile number for Mobile Login. Supply credentials locally in Postman; do not commit production credentials."
         },
         {
             "key": "mobile_password",
-            "value": "replace-me",
-            "description": "Employee password."
+            "value": "replace-with-password",
+            "description": "Employee password for Mobile Login. Supply credentials locally in Postman; do not commit production credentials."
         },
         {
             "key": "farmer_id",
@@ -2541,33 +2934,33 @@
         },
         {
             "key": "product_id_2",
-            "value": "1",
-            "description": "Second eligible product for bulk party order example."
+            "value": "2",
+            "description": "Second active product eligible for the employee state and order type."
         },
         {
             "key": "packing_id_2",
-            "value": "1",
-            "description": "Packing ID for the second party order line."
+            "value": "2",
+            "description": "Packing ID from Farmer Order Packings (Second Product)."
         },
         {
             "key": "unit_price_2",
             "value": "100",
-            "description": "Use the second product quote; it defaults to the sample value."
+            "description": "Example only; replace with second line quote unit_price."
         },
         {
             "key": "line_total_2",
-            "value": "100",
-            "description": "Pre-tax line amount for second line."
+            "value": "200",
+            "description": "Example only; replace with second line quote total_price."
         },
         {
             "key": "gst_amount_2",
-            "value": "18",
-            "description": "GST value for second line."
+            "value": "36",
+            "description": "Example only; replace with second line quote gst_amount."
         },
         {
             "key": "grand_total_2",
-            "value": "118",
-            "description": "Total including GST for second line."
+            "value": "236",
+            "description": "Example only; replace with second line quote grand_total."
         },
         {
             "key": "admin_mobile",
@@ -2578,6 +2971,46 @@
             "key": "admin_password",
             "value": "replace-me",
             "description": "Password for a web admin account."
+        },
+        {
+            "key": "district_id",
+            "value": "1",
+            "description": "Use a district ID returned by GET /api/districts/{{state_id}}."
+        },
+        {
+            "key": "taluka_id",
+            "value": "1",
+            "description": "Use a taluka ID returned by GET /api/tehsils/{{district_id}}."
+        },
+        {
+            "key": "state_id",
+            "value": "1",
+            "description": "Use an active state ID returned by GET /api/states."
+        },
+        {
+            "key": "crop_sowing_id",
+            "value": "1",
+            "description": "Use an active crop sowing ID returned by GET /api/crop-sowing-list."
+        },
+        {
+            "key": "qty_2",
+            "value": "2",
+            "description": "Second farmer order line quantity in units."
+        },
+        {
+            "key": "employee_id",
+            "value": "1",
+            "description": "Admin report filter; use an employee ID when filtering."
+        },
+        {
+            "key": "state_id_filter",
+            "value": "1",
+            "description": "Admin report/list filter; use a state ID returned by /api/states."
+        },
+        {
+            "key": "crop_category_id",
+            "value": "1",
+            "description": "Optional lookup filter. Use a valid crop category ID or remove this query parameter."
         }
     ]
 }

@@ -68,7 +68,7 @@
             <div class="card shadow-sm border-0">
                 <div class="card-header bg-white py-3">
                     <h5 class="mb-1 text-primary fw-semibold">{{ $title }}</h5>
-                    <div class="text-muted small">Debit Bill is summed from Tally sales bills; Payment is summed from Tally party payment credits.</div>
+                    <div class="text-muted small">Debit Bill is summed from Tally sales bills excluding GST; Payment is summed from Tally party payment credits.</div>
                 </div>
                 <div class="card-body table-responsive">
                     <table id="monthly-party-report-table" class="table table-bordered table-striped table-hover align-middle text-nowrap">
