@@ -278,49 +278,6 @@
                 </li>
                 @endcanany
 
-                <!-- Tracking -->
-                {{-- @canany(['view_tracking','create_tracking','edit_tracking','delete_tracking']) --}}
-                @php
-                    $trackingActive = request()->is(
-                        'admin/tracking',
-                        'admin/tracking/*',
-                        'admin/daily-trip*'
-                    );
-                @endphp
-
-                <li class="nav-item {{ $trackingActive ? 'menu-open' : '' }}">
-                    <a href="#" class="nav-link {{ $trackingActive ? 'active' : '' }}">
-                        <i class="bi bi-geo-alt-fill me-2"></i>
-                        <p>
-                            Tracking
-                            <i class="bi bi-chevron-right ms-auto"></i>
-                        </p>
-                    </a>
-
-                    <ul class="nav nav-treeview" style="{{ $trackingActive ? 'display:block;' : '' }}">
-
-                        {{-- Emp On Map --}}
-                        <li class="nav-item">
-                            <a href="{{ url('admin/tracking') }}"
-                            class="nav-link {{ (request()->is('admin/tracking') || request()->is('admin/tracking/*')) ? 'active' : '' }}">
-                                <i class="bi bi-map-fill me-2"></i>
-                                <p>Emp On Map</p>
-                            </a>
-                        </li>
-
-                        {{-- Daily Trip --}}
-                        <!-- <li class="nav-item">
-                            <a href="{{ url('admin/daily-trip') }}"
-                            class="nav-link {{ request()->is('admin/daily-trip*') ? 'active' : '' }}">
-                                <i class="bi bi-truck-front-fill me-2"></i>
-                                <p>Daily Trip</p>
-                            </a>
-                        </li> -->
-
-                    </ul>
-                </li>
-                {{-- @endcanany --}}
-
                 <!-- Attendance -->
                 @canany(['view_attendance','create_attendance','edit_attendance','delete_attendance'])
                 <li class="nav-item {{ request()->is('admin/hr/attendance*') ? 'menu-open' : '' }}">

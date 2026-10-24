@@ -20,6 +20,14 @@
 
         <!-- End Navbar -->
         <ul class="navbar-nav ms-auto align-items-center">
+            <li class="nav-item">
+                <a href="{{ url('admin/tracking') }}"
+                   class="nav-link d-flex align-items-center gap-1 text-nowrap {{ request()->is('admin/tracking', 'admin/tracking/*') ? 'active' : '' }}"
+                   @if(request()->is('admin/tracking', 'admin/tracking/*')) aria-current="page" @endif>
+                    <i class="bi bi-geo-alt-fill" aria-hidden="true"></i>
+                    <span>Live Tracking</span>
+                </a>
+            </li>
             <!-- Fullscreen Toggle -->
             <li class="nav-item">
                 <a class="nav-link" href="#" data-lte-toggle="fullscreen">
