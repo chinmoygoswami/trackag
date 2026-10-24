@@ -63,9 +63,9 @@ Returns HTTP 200 with `status: true`, `message: "Order images fetched successful
 
 `GET /api/orders-images-view/{order_id}/{image_id}`
 
-Returns the original image inline. A browser already logged into the same tenant's admin site can open this URL using its existing session, without company or token headers. Browser access uses the same owner/manager/admin permission checks as the admin gallery. A session from another tenant is rejected.
+Returns the original image inline without authentication, a browser session, bearer token, or company header. Anyone with an image link can view it. Only these two image-content GET routes are public; listing, uploading, and deleting images still require the existing owner authentication.
 
-Mobile clients still send the bearer token. On a registered tenant domain, image-content requests can infer the company code from that domain when the header is omitted. On a central API domain, send the company header as before. A mobile login alone does not create a browser session; an external browser must also be logged in, or the app must load the image using its authenticated client. Image URLs remain private.
+The URL's domain selects the tenant. Headers and cookies cannot select another tenant for public image viewing. Unknown domains are rejected, and the image must belong to the specified order within that domain's database. Files remain on their existing storage disk; the new behavior does not expose storage directories or dispatch images.
 
 The previously documented URLs (`GET/POST /api/orders/{order_id}/images` and `GET /api/orders/{order_id}/images/{image_id}`) remain supported. Both URL styles use the same mobile response format. The returned image URL can use the original content route.
 

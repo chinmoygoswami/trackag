@@ -75,6 +75,11 @@ class OrderImageController extends Controller
         return $this->serve($request, $this->findOrder($order), $image, true);
     }
 
+    public function publicShow(Request $request, int $order, int $image)
+    {
+        return $this->imageResponse($this->findOrder($order), $image);
+    }
+
     public function destroy(Request $request, int $order, int $image)
     {
         $record = $this->findOrder($order);
@@ -105,6 +110,12 @@ class OrderImageController extends Controller
     private function serve(Request $request, Order $order, int $imageId, bool $admin)
     {
         $this->images->authorize($request->user(), $order, $admin);
+
+        return $this->imageResponse($order, $imageId);
+    }
+
+    private function imageResponse(Order $order, int $imageId)
+    {
         $image = $order->images()->findOrFail($imageId);
         $disk = Storage::disk($image->disk);
         abort_unless($disk->exists($image->file_path), 404);
