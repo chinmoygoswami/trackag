@@ -4,7 +4,7 @@ Images are optional attachments to an existing order. Uploading appends files; i
 
 ## Mobile API
 
-Every request, including image content requests, requires:
+List, upload, and delete requests require:
 
 ```http
 Authorization: Bearer <token>
@@ -63,7 +63,9 @@ Returns HTTP 200 with `status: true`, `message: "Order images fetched successful
 
 `GET /api/orders-images-view/{order_id}/{image_id}`
 
-Returns the original image inline. Send the same token and company headers when loading the returned URL; this is not a public storage URL. Mobile image widgets must support authenticated request headers or download the image using the authenticated API client.
+Returns the original image inline. A browser already logged into the same tenant's admin site can open this URL using its existing session, without company or token headers. Browser access uses the same owner/manager/admin permission checks as the admin gallery. A session from another tenant is rejected.
+
+Mobile clients still send the bearer token. On a registered tenant domain, image-content requests can infer the company code from that domain when the header is omitted. On a central API domain, send the company header as before. A mobile login alone does not create a browser session; an external browser must also be logged in, or the app must load the image using its authenticated client. Image URLs remain private.
 
 The previously documented URLs (`GET/POST /api/orders/{order_id}/images` and `GET /api/orders/{order_id}/images/{image_id}`) remain supported. Both URL styles use the same mobile response format. The returned image URL can use the original content route.
 

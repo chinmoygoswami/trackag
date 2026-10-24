@@ -24,6 +24,10 @@ class OrderImageController extends AttachmentController
 
     public function show(Request $request, int $order, int $image)
     {
+        if ($request->attributes->get('order_image_browser_session')) {
+            return $this->apiResponse(fn () => parent::adminShow($request, $order, $image));
+        }
+
         return $this->apiResponse(fn () => parent::show($request, $order, $image));
     }
 

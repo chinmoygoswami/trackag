@@ -145,12 +145,16 @@ Route::middleware([TenantAuthenticate::class])->group(function () {
     Route::get('orders-list', [OrderController::class, 'index']);
     Route::get('orders-images-list/{order}', [OrderImageController::class, 'index'])->whereNumber('order')->name('api.order.images.list');
     Route::post('orders-images-store/{order}', [OrderImageController::class, 'store'])->whereNumber('order')->name('api.order.images.upload');
-    Route::get('orders-images-view/{order}/{image}', [OrderImageController::class, 'show'])->whereNumber(['order', 'image'])->name('api.order.images.view');
+    Route::get('orders-images-view/{order}/{image}', [OrderImageController::class, 'show'])
+        ->withoutMiddleware(TenantAuthenticate::class)->middleware(\App\Http\Middleware\AuthenticateOrderImage::class)
+        ->whereNumber(['order', 'image'])->name('api.order.images.view');
     Route::delete('orders-images-delete/{order}/{image}', [OrderImageController::class, 'destroy'])->whereNumber(['order', 'image'])->name('api.order.images.delete');
     // Keep the original attachment URLs available for callers already using them.
     Route::get('orders/{order}/images', [OrderImageController::class, 'index'])->whereNumber('order')->name('api.order.images.index');
     Route::post('orders/{order}/images', [OrderImageController::class, 'store'])->whereNumber('order')->name('api.order.images.store');
-    Route::get('orders/{order}/images/{image}', [OrderImageController::class, 'show'])->whereNumber(['order', 'image'])->name('api.order.images.show');
+    Route::get('orders/{order}/images/{image}', [OrderImageController::class, 'show'])
+        ->withoutMiddleware(TenantAuthenticate::class)->middleware(\App\Http\Middleware\AuthenticateOrderImage::class)
+        ->whereNumber(['order', 'image'])->name('api.order.images.show');
     Route::delete('orders/{order}/images/{image}', [OrderImageController::class, 'destroy'])->whereNumber(['order', 'image'])->name('api.order.images.destroy');
     Route::post('orders-store', [OrderController::class, 'store']);
     Route::post('orders-update/{id}', [OrderController::class, 'update']);
