@@ -114,7 +114,7 @@ Attachment errors use `status: false` and `message`; validation errors also incl
 
 ## Admin screen
 
-The order index has an **Images** column immediately after **Status**. **View (count)** opens the gallery and multi-file upload form. Viewing full-size images uses the existing admin session. Admin endpoints are:
+The order index has an **Images** column immediately after **Status**. **View (count)** opens a read-only gallery with full-size previews. This page has no image upload controls. Viewing full-size images uses the existing admin session. Existing admin endpoints remain available:
 
 - `GET /admin/order/{order_id}/images`
 - `POST /admin/order/{order_id}/images` (multipart `images[]`, session authentication and CSRF token)
