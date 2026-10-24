@@ -67,6 +67,8 @@ Returns the original image inline without authentication, a browser session, bea
 
 The URL's domain selects the tenant. Headers and cookies cannot select another tenant for public image viewing. Unknown domains are rejected, and the image must belong to the specified order within that domain's database. Files remain on their existing storage disk; the new behavior does not expose storage directories or dispatch images.
 
+Uploads and lists made through the central API host return public image links on the authenticated tenant's registered domain. When using one of that tenant's domains directly, links retain the current domain. Tenants must have a registered domain; a missing domain returns 503 before an API upload writes files.
+
 The previously documented URLs (`GET/POST /api/orders/{order_id}/images` and `GET /api/orders/{order_id}/images/{image_id}`) remain supported. Both URL styles use the same mobile response format. The returned image URL can use the original content route.
 
 ### Delete one image

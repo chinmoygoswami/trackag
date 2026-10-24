@@ -55,6 +55,10 @@ class OrderImageController extends Controller
             'images' => ['required', 'array', 'min:1', 'max:'.config('order_images.max_images')],
             'images.*' => ['required', 'file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:'.config('order_images.max_file_size_kb')],
         ]);
+        // Validate the public link's tenant domain before persisting any files.
+        if (! $admin) {
+            $this->publicImageOrigin();
+        }
         $images = $this->images->append($order, $request->user(), $request->file('images'));
 
         return response()->json([
@@ -129,13 +133,36 @@ class OrderImageController extends Controller
 
     private function imageData(Order $order, Collection $images, bool $admin): Collection
     {
+        $origin = $admin ? null : $this->publicImageOrigin();
+
         return $images->map(fn ($image) => [
             'id' => $image->id,
             'name' => $image->original_name,
             'mime_type' => $image->mime_type,
             'size' => $image->file_size,
             'uploaded_at' => $image->created_at?->toIso8601String(),
-            'url' => route($admin ? 'order.images.show' : 'api.order.images.show', ['order' => $order->id, 'image' => $image->id]),
+            'url' => $admin
+                ? route('order.images.show', ['order' => $order->id, 'image' => $image->id])
+                : $origin.route('api.order.images.show', ['order' => $order->id, 'image' => $image->id], false),
         ]);
+    }
+
+    private function publicImageOrigin(): string
+    {
+        $request = request();
+        $tenant = tenancy()->tenant;
+        if (! $tenant) {
+            return $request->getSchemeAndHttpHost();
+        }
+
+        $domains = $tenant->domains()->orderBy('id')->pluck('domain');
+        if ($domains->contains($request->getHost())) {
+            return $request->getSchemeAndHttpHost();
+        }
+
+        $domain = $domains->first();
+        abort_unless($domain, 503, 'A registered tenant domain is required for public order image links.');
+
+        return $request->getScheme().'://'.$domain;
     }
 }
