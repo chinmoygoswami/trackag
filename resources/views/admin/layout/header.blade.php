@@ -20,10 +20,11 @@
 
         <!-- End Navbar -->
         <ul class="navbar-nav ms-auto align-items-center">
-            <li class="nav-item">
+            <li class="nav-item me-2">
                 <a href="{{ url('admin/tracking') }}"
-                   class="nav-link d-flex align-items-center gap-1 text-nowrap {{ request()->is('admin/tracking', 'admin/tracking/*') ? 'active' : '' }}"
+                   class="btn {{ request()->is('admin/tracking', 'admin/tracking/*') ? 'btn-primary' : 'btn-warning' }} rounded-pill d-flex align-items-center gap-2 px-3 py-2 fw-bold shadow-sm text-nowrap"
                    @if(request()->is('admin/tracking', 'admin/tracking/*')) aria-current="page" @endif>
+                    <span class="rounded-circle {{ request()->is('admin/tracking', 'admin/tracking/*') ? 'bg-white' : 'bg-success' }}" style="width:8px;height:8px;" aria-hidden="true"></span>
                     <i class="bi bi-geo-alt-fill" aria-hidden="true"></i>
                     <span>Live Tracking</span>
                 </a>
