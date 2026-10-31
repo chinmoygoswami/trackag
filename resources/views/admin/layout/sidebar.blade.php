@@ -187,6 +187,7 @@
                         'admin/order',
                         'admin/order/*',
                         'admin/order-report*',
+                        'admin/product-monthwise-report/*',
                         'admin/farmer-orders*',
                         'admin/farmer-order/*',
                         'admin/farmer-order-report*'
@@ -208,6 +209,16 @@
                                 <p>Order</p>
                             </a>
                         </li>
+
+                        @can('view_order')
+                        @foreach(['party' => 'Party', 'employee' => 'Employee', 'state' => 'State'] as $dimension => $caption)
+                        <li class="nav-item">
+                            <a href="{{ route('reports.monthly-products', ['dimension' => $dimension]) }}" class="nav-link {{ request()->is('admin/product-monthwise-report/'.$dimension) ? 'active' : '' }}">
+                                <i class="bi bi-table me-2"></i><p>{{ $caption }} vs Product Report</p>
+                            </a>
+                        </li>
+                        @endforeach
+                        @endcan
 
                         {{-- Order Report --}}
                         <li class="nav-item">

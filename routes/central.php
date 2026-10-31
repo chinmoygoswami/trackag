@@ -210,6 +210,9 @@ Route::middleware(['web'])->group(function () {
             Route::get('order/{order}/dispatch-data', [OrderController::class, 'getDispatchData'])->name('order.dispatch.data');
             Route::post('order/dispatch/store', [OrderController::class, 'storeDispatch'])->name('order.dispatch.store');
             Route::get('order-report', [OrderController::class, 'report'])->name('order.report');
+            Route::get('product-monthwise-report/{dimension}', [\App\Http\Controllers\MonthlyProductReportController::class, 'index'])
+                ->whereIn('dimension', ['party', 'employee', 'state'])
+                ->middleware('permission:view_order')->name('reports.monthly-products');
             Route::get('order-report/export', [OrderController::class, 'exportReportCsv'])->name('order.report.export');
             Route::resource('order', OrderController::class);
             Route::get('order/{order}/images', [\App\Http\Controllers\OrderImageController::class, 'adminIndex'])->whereNumber('order')->name('order.images.index');
