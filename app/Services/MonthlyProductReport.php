@@ -6,6 +6,14 @@ class MonthlyProductReport
 {
     public const ORDER_STATUSES = ['approved', 'part_dispatched', 'dispatched'];
 
+    public static function formatNumber(float|int $value, int $decimals = 2): string
+    {
+        $parts = explode('.', number_format($value, $decimals, '.', ''));
+        $parts[0] = preg_replace('/\B(?=(\d{2})*\d{3}$)/', ',', $parts[0]);
+
+        return implode('.', $parts);
+    }
+
     public static function orderRows(iterable $orders): array
     {
         $rows = [];

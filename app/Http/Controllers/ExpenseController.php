@@ -326,7 +326,6 @@ class ExpenseController extends Controller
             'state_id' => ['nullable', 'integer'],
             'user_id' => ['nullable', 'integer'],
             'per_page' => ['nullable', 'integer', 'in:10,25,50,100'],
-            'search' => ['nullable', 'string', 'max:100'],
         ]);
         $user = auth()->user();
         $roleName = $user->getRoleNames()->first();
@@ -366,17 +365,33 @@ class ExpenseController extends Controller
             $query->where('user_id', $request->user_id);
         }
 
-        if ($request->filled('search')) {
-            $search = trim($request->input('search'));
-            $query->where(function ($query) use ($search) {
-                $query->where('place_to_visit', 'like', '%' . $search . '%')
-                    ->orWhereHas('user', fn ($userQuery) => $userQuery->where('name', 'like', '%' . $search . '%'));
-            });
-        }
-
+        $isDataTable = $request->has('draw');
+        $perPage = $isDataTable
+            ? max(10, min(100, (int) $request->input('length', 50)))
+            : (int) $request->input('per_page', 50);
+        $page = $isDataTable
+            ? intdiv(max(0, (int) $request->input('start', 0)), $perPage) + 1
+            : null;
         $data = $query->latest()->orderByDesc('id')
-            ->paginate((int) $request->input('per_page', 25))->withQueryString();
+            ->paginate($perPage, ['*'], 'page', $page)->withQueryString();
         app(\App\Services\ExpenseReportCalculator::class)->populate($data->getCollection());
+
+        if ($isDataTable) {
+            return response()->json([
+                'draw' => max(0, (int) $request->input('draw')),
+                'recordsTotal' => $data->total(),
+                'recordsFiltered' => $data->total(),
+                'data' => [],
+                'rows' => view('admin.expense.report_rows', compact('data'))->render(),
+                'totals' => [
+                    'travel_km' => $data->sum(fn ($trip) => $trip->end_km - $trip->starting_km),
+                    'ta' => $data->sum('ta_exp'),
+                    'da' => $data->sum('da_exp'),
+                    'other' => $data->sum('other_exp'),
+                    'total' => $data->sum('total_exp'),
+                ],
+            ]);
+        }
 
         $companyCount = Company::count();
         $company = null;

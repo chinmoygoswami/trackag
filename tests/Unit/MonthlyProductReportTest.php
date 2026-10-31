@@ -8,6 +8,22 @@ use PHPUnit\Framework\TestCase;
 
 class MonthlyProductReportTest extends TestCase
 {
+    public function test_indian_number_grouping_preserves_decimal_precision(): void
+    {
+        foreach ([
+            [0, 2, '0.00'],
+            [1234.5, 2, '1,234.50'],
+            [123456.78, 2, '1,23,456.78'],
+            [234567890, 2, '23,45,67,890.00'],
+            [-1234567.89, 2, '-12,34,567.89'],
+            [123456.789, 3, '1,23,456.789'],
+            [1234567, 0, '12,34,567'],
+            [99999.999, 2, '1,00,000.00'],
+        ] as [$value, $decimals, $expected]) {
+            self::assertSame($expected, MonthlyProductReport::formatNumber($value, $decimals));
+        }
+    }
+
     private function sale(string $party, string $product = 'Product - 1 Kg', string $date = '2026-05-01', float $qty = 2.5, float $value = 100): object
     {
         return (object) ['party_name' => $party, 'product_name_with_packing' => $product, 'invoice_date' => new DateTimeImmutable($date), 'qty' => $qty, 'amount' => $value, 'grand_total' => 9999];

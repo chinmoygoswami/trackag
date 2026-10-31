@@ -76,13 +76,13 @@ class ExpenseReportTest extends TestCase
         $this->app->instance('request', $request);
         $view = (new ExpenseController)->expenseReport($request)->getData();
         self::assertSame(10000, $view['data']->total());
-        self::assertSame(25, $view['data']->perPage());
+        self::assertSame(50, $view['data']->perPage());
         self::assertSame(2, $view['data']->currentPage());
         self::assertSame(250.0, $view['data'][0]->total_exp);
         self::assertSame(500.0, $view['total_total']);
         $queries = self::$queries;
         $tripQuery = array_values(array_filter($queries, fn ($q) => str_contains($q[0], 'select * from `trips`')))[0];
-        self::assertStringContainsString('limit 25 offset 25', $tripQuery[0]);
+        self::assertStringContainsString('limit 50 offset 50', $tripQuery[0]);
         self::assertSame(['approved', '2026-10-01', '2026-10-31'], $tripQuery[1]);
         foreach (['expenses', 'ta_da_tour_slabs', 'ta_da_vehicle_slabs', 'ta_da_slabs'] as $table) {
             self::assertCount(1, array_filter($queries, fn ($q) => str_contains($q[0], 'from `'.$table.'`')));
@@ -90,7 +90,7 @@ class ExpenseReportTest extends TestCase
         self::assertFalse((bool) array_filter($queries, fn ($q) => str_contains($q[0], 'trip_logs') || str_contains($q[0], 'customer_trip')));
     }
 
-    public function test_search_is_combined_with_selected_state_and_employee(): void
+    public function test_selected_state_and_employee_filters_are_applied(): void
     {
         $request = Request::create('http://localhost/admin/expense-report', 'GET', [
             'month' => '2026-10', 'state_id' => 3, 'user_id' => 1, 'search' => 'Ahmedabad', 'per_page' => 50,
@@ -101,8 +101,26 @@ class ExpenseReportTest extends TestCase
         $tripQuery = array_values(array_filter(self::$queries, fn ($q) => str_contains($q[0], 'select * from `trips`')))[0];
         self::assertStringContainsString('`state_id` = ?', $tripQuery[0]);
         self::assertStringContainsString('`user_id` = ?', $tripQuery[0]);
-        self::assertStringContainsString('`place_to_visit` like ?', $tripQuery[0]);
-        self::assertContains('%Ahmedabad%', $tripQuery[1]);
+        self::assertStringNotContainsString('`place_to_visit` like ?', $tripQuery[0]);
+    }
+
+    public function test_datatable_requests_return_requested_page_rows_and_totals(): void
+    {
+        $request = Request::create('http://localhost/admin/expense-report', 'GET', [
+            'month' => '2026-10', 'draw' => 3, 'start' => 100, 'length' => 50,
+        ]);
+        $this->app->instance('request', $request);
+        $result = (new ExpenseController)->expenseReport($request)->getData(true);
+        self::assertSame(3, $result['draw']);
+        self::assertSame(10000, $result['recordsTotal']);
+        self::assertSame(10000, $result['recordsFiltered']);
+        self::assertSame(500, $result['totals']['total']);
+        self::assertSame(40, $result['totals']['travel_km']);
+        self::assertStringContainsString('rowCheckbox', $result['rows']);
+        self::assertStringContainsString('101&nbsp;', $result['rows']);
+        self::assertStringContainsString('250.00', $result['rows']);
+        $tripQuery = array_values(array_filter(self::$queries, fn ($q) => str_contains($q[0], 'select * from `trips`')))[0];
+        self::assertStringContainsString('limit 50 offset 100', $tripQuery[0]);
     }
 
     public function test_empty_page_does_not_query_allowances_or_expenses(): void

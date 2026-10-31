@@ -1,22 +1,28 @@
 @extends('admin.layout.layout')
 @section('title', 'Expense Report | Trackag')
 @push('styles')
+<link rel="stylesheet" href="https://cdn.datatables.net/fixedcolumns/4.3.0/css/fixedColumns.dataTables.min.css">
 <style>
-    .action-buttons {
-        display: flex;
-        gap: 5px;
-        align-items: center;
+    .expense-report-table-wrap { width: 100%; }
+    #expenses-report-table { width: 100% !important; margin-bottom: 0; }
+    #expenses-report-table th { white-space: nowrap; }
+    #expenses-report-table td { vertical-align: middle; }
+    #expenses-report-table td:nth-child(n+9),
+    #expenses-report-table tfoot th:not(:first-child) {
+        text-align: right;
         white-space: nowrap;
+        font-variant-numeric: tabular-nums;
     }
-
-    .action-buttons .btn-sm {
-        padding: 2px 6px;
-        font-size: 11px;
+    #expenses-report-table td:nth-child(7) { min-width: 180px; max-width: 300px; overflow-wrap: anywhere; }
+    .expense-report-footer .pagination { margin-bottom: 0; flex-wrap: wrap; }
+    .expense-report-note { max-width: 520px; }
+    @media (max-width: 575.98px) {
+        .expense-report-footer > * { width: 100%; }
     }
 </style>
 @endpush
 @section('content')
-<main class="app-main">
+<main class="app-main expense-report">
 
     <!-- Header Section -->
     <div class="app-content-header">
@@ -27,8 +33,7 @@
                 </div>
                 <div class="col-sm-6">
                     <ol class="breadcrumb float-sm-end">
-                        <li class="breadcrumb-item"><a href="#">Expenses Report
-                            </a></li>
+                        <li class="breadcrumb-item"><a href="{{ url('admin/dashboard') }}">Dashboard</a></li>
                         <li class="breadcrumb-item active">Expenses Report</li>
                     </ol>
                 </div>
@@ -42,9 +47,9 @@
             <div class="card card-primary card-outline mb-4">
 
                 <!-- Card Header -->
-                <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="card-header d-flex flex-column flex-lg-row justify-content-between align-items-start gap-2">
                     <h5 class="card-title mb-0">Expenses Report List</h5>
-                    <div class="ms-auto text-end text-danger" style="max-width: 520px; line-height:1.3;">
+                    <div class="expense-report-note small text-danger">
                         <strong>Notes:</strong> Please ensure that all data is reviewed before granting approval for the expense.
                         After approval, the data cannot be modified.
                     </div>
@@ -52,10 +57,10 @@
                 </div>
 
                 <!-- Card Body -->
-                <div class="card-body table-responsive">
+                <div class="card-body">
                     <div class="mb-2" id="bulkApproveBox" style="display:none;">
                         <button type="button" class="btn btn-success btn-sm" id="approveSelected">
-                            Approve Selected
+                            Approve Selected (<span id="selectedCount">0</span>)
                         </button>
                     </div>
                     <form id="bulkApproveForm" action="{{ route('expense.bulk.approve') }}" method="POST">
@@ -71,9 +76,9 @@
                     </script>
 
 
-                    <form action="{{ route('expense.report') }}" method="GET" class="row g-3 mb-3">
+                    <form action="{{ route('expense.report') }}" method="GET" id="expenseFilters" class="row g-3 mb-3 align-items-end">
 
-                        <div class="col-md-2">
+                        <div class="col-12 col-sm-6 col-xl-4">
                         <label for="month" class="form-label">Select Month</label>
                         <select name="month" id="month" class="form-select form-select-sm">
                             @php
@@ -96,8 +101,8 @@
                         </select>
                         </div>
 
-                        <div class="col-md-2">
-                            <label class="form-label">State</label>
+                        <div class="col-12 col-sm-6 col-xl-4">
+                            <label for="stateSelect" class="form-label">State</label>
                             <select id="stateSelect" name="state_id" class="form-select form-select-sm">
                                 <option value="">All</option>
                                 @foreach($states as $state)
@@ -109,8 +114,8 @@
                             </select>
                         </div>
 
-                        <div class="col-md-2">
-                            <label class="form-label">Employee</label>
+                        <div class="col-12 col-sm-6 col-xl-4">
+                            <label for="user_id" class="form-label">Employee</label>
                             <select name="user_id" id="user_id" class="form-select form-select-sm">
                                 <option value="">All</option>
                                 @foreach($employees as $user)
@@ -122,43 +127,29 @@
                             </select>
                         </div>
 
-                        <div class="col-md-3">
-                            <label for="reportSearch" class="form-label">Search employee or visit place</label>
-                            <input type="search" id="reportSearch" name="search" class="form-control form-control-sm" maxlength="100" value="{{ request('search') }}">
-                        </div>
-                        <div class="col-md-2">
-                            <label for="perPage" class="form-label">Rows per page</label>
-                            <select id="perPage" name="per_page" class="form-select form-select-sm">
-                                @foreach([10, 25, 50, 100] as $size)
-                                    <option value="{{ $size }}" @selected((int) request('per_page', 25) === $size)>{{ $size }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-
-                        <div class="col-md-2 d-flex align-items-end">
-                            <button type="submit" class="btn btn-sm btn-primary w-100">
-                                <i class="fas fa-filter"></i> Filter
+                        <div class="col-12 d-flex flex-wrap gap-2">
+                            <button type="submit" id="applyExpenseFilters" class="btn btn-sm btn-primary">
+                                <i class="fas fa-filter me-1" aria-hidden="true"></i> Apply filters
                             </button>
-                        </div>
-
-                        <div class="col-md-2 d-flex align-items-end">
-                            <a href="{{ route('expense.report') }}" class="btn btn-sm btn-secondary w-100">
-                                <i class="fas fa-sync"></i> Reset
+                            <a href="{{ route('expense.report') }}" class="btn btn-sm btn-outline-secondary">
+                                <i class="fas fa-sync me-1" aria-hidden="true"></i> Reset
                             </a>
-                        </div>
-                        <div class="col-md-2 d-flex align-items-end">
-                            <a href="{{ route('expense.pdf.list') }}" class="btn btn-sm btn-primary">
+                            <a href="{{ route('expense.pdf.list') }}" class="btn btn-sm btn-outline-primary ms-sm-auto">
                                 Expense PDF List
                             </a>
+                        </div>
+                        <div class="col-12">
+                            <p id="employeeLoadStatus" class="small text-danger mb-0" role="status" hidden></p>
                         </div>
 
                     </form>
 
                     <!-- 📋 Expense Table -->
+                    <div class="expense-report-table-wrap border rounded" role="region" aria-label="Expense report table" tabindex="0">
                     <table id="expenses-report-table" class="table table-bordered table-striped align-middle">
                         <thead class="table-light">
                             <tr>
-                                <th><input type="checkbox" id="selectAll"></th>
+                                <th scope="col"><span class="me-1">#</span><input type="checkbox" id="selectAll" aria-label="Select all eligible trips on this page"></th>
                                 <th>Name</th>
                                 <th>Date</th>
                                 <th>Tour Type</th>
@@ -178,38 +169,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @forelse($data as $key => $report)
-                                <tr>
-                                    <td>{{ $data->firstItem() + $key }}&nbsp;
-                                        @if($report->pdf_status == 0)
-                                        <input type="checkbox" class="rowCheckbox" name="trip_ids[]" value="{{ $report->id }}" data-start-km="{{ $report->starting_km }}" data-end-km="{{ $report->end_km }}">
-                                        @endif
-                                    </td>
-                                    <td>{{ $report->user->name ?? "" }}</td>
-                                    <td>{{ \Carbon\Carbon::parse($report->trip_date)->format('d M Y') }}</td>
-                                    <td>{{ $report->tourType->name ?? "-" }}</td>
-                                    <td>{{ $report->start_time ?? "-" }}</td>
-                                    <td>{{ $report->end_time ?? "-" }}</td>
-                                    <td>{{ $report->place_to_visit ?? "-" }}</td>
-                                    <td>{{ $report->travelMode->name ?? "-" }}</td>
-                                    <td>{{ $report->starting_km ?? "-" }}</td>
-                                    <td>{{ $report->end_km ?? "-" }}</td>
-                                    <td>{{ $report->end_km - $report->starting_km }}</td>
-                                    <td>{{ $report->total_distance_km ?? "-" }}</td>
-                                    {{-- <td>{{ $report->end_km - $report->starting_km }}</td> --}}
-                                    <td>{{ (($report->end_km ?? 0) - ($report->starting_km ?? 0)) - ($report->total_distance_km ?? 0) }}</td>
-                                    <td>{{ $report->ta_exp ?? 0 }}</td>
-                                    <td>{{ $report->da_exp ?? 0 }}</td>
-                                    <td>{{ $report->other_exp ?? 0 }}</td>
-                                    <td>{{ $report->total_exp ?? 0 }}</td>
-
-                               
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="17" class="text-center">No expenses found.</td>
-                                </tr>
-                            @endforelse
+                            @include('admin.expense.report_rows')
                         </tbody>
                         <tfoot class="table-light">
                             <tr>
@@ -224,11 +184,9 @@
                             </tr>
                         </tfoot>
                     </table>
-                    <p class="text-muted small">Totals and “Select all” apply to this page.</p>
-                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
-                        <span class="text-muted small">Showing {{ $data->firstItem() ?? 0 }}–{{ $data->lastItem() ?? 0 }} of {{ $data->total() }} trips</span>
-                        {{ $data->links('pagination::bootstrap-5') }}
                     </div>
+                    <p class="text-muted small">Totals and “Select all” apply to this page.</p>
+
 
                 </div> <!-- /.card-body -->
             </div> <!-- /.card -->
@@ -239,32 +197,71 @@
 
 
 @push('scripts')
+<script src="https://cdn.datatables.net/fixedcolumns/4.3.0/js/dataTables.fixedColumns.min.js"></script>
 <script>
 $(document).ready(function() {
-    // Toggle All Checkboxes
-    $("#selectAll").on("change", function() {
-        $(".rowCheckbox").prop("checked", this.checked);
-        toggleApproveButton();
-    });
-
-    // Single row checkbox click
-    $(document).on("change", ".rowCheckbox", function () {
-        if ($(".rowCheckbox:checked").length === $(".rowCheckbox").length) {
-            $("#selectAll").prop("checked", true);
-        } else {
-            $("#selectAll").prop("checked", false);
-        }
-        toggleApproveButton();
-    });
-
-    // Show/hide Approve button
-    function toggleApproveButton() {
-        if ($(".rowCheckbox:checked").length > 0) {
-            $("#bulkApproveBox").show();
-        } else {
-            $("#bulkApproveBox").hide();
-        }
+    function updateSelection() {
+        const rows = $('.rowCheckbox');
+        const count = rows.filter(':checked').length;
+        $('#selectAll').prop('disabled', rows.length === 0)
+            .prop('checked', rows.length > 0 && count === rows.length)
+            .prop('indeterminate', count > 0 && count < rows.length);
+        $('#selectedCount').text(count);
+        $('#bulkApproveBox').toggle(count > 0);
     }
+    $('#selectAll').on('change', function () {
+        $('.rowCheckbox').prop('checked', this.checked);
+        updateSelection();
+    });
+    $(document).on('change', '.rowCheckbox', updateSelection);
+    updateSelection();
+
+    const appliedFilters = {
+        month: @json($month),
+        state_id: @json(request('state_id', '')),
+        user_id: @json(request('user_id', ''))
+    };
+    let pageTotals = null;
+    $('#expenses-report-table').DataTable({
+        processing: true,
+        serverSide: true,
+        ordering: false,
+        searching: false,
+        deferLoading: {{ $data->total() }},
+        displayStart: {{ max(0, ($data->currentPage() - 1) * $data->perPage()) }},
+        pageLength: {{ $data->perPage() }},
+        lengthMenu: [10, 25, 50, 100],
+        responsive: false,
+        scrollX: true,
+        scrollCollapse: true,
+        fixedColumns: { leftColumns: 2 },
+        autoWidth: false,
+        ajax: {
+            url: "{{ route('expense.report') }}",
+            data: function (data) { Object.assign(data, appliedFilters); },
+            dataSrc: function (response) {
+                pageTotals = response.totals;
+                const body = $('<tbody>').html(response.rows);
+                return body.children('tr').map(function () {
+                    return [$(this).children('td').map(function () { return this.innerHTML; }).get()];
+                }).get();
+            }
+        },
+        drawCallback: function () {
+            updateSelection();
+            if (pageTotals) {
+                const cells = $(this.api().table().footer()).find('th');
+                const format = $.fn.dataTable.render.number(',', '.', 2).display;
+                cells.eq(1).text(format(pageTotals.travel_km));
+                ['ta', 'da', 'other', 'total'].forEach(function (key, index) {
+                    cells.eq(index + 4).text(format(pageTotals[key]));
+                });
+            }
+        },
+        language: { emptyTable: 'No expenses found.' }
+    });
+
+
 });
 
 $("#approveSelected").on("click", function () {
@@ -367,26 +364,37 @@ $("#approveSelected").on("click", function () {
     });
 });
 
+let employeeRequest;
 $('#stateSelect').on('change', function () {
-    let stateId = $(this).val();
-
-    $.ajax({
+    if (employeeRequest) employeeRequest.abort();
+    const employeeSelect = $('#user_id');
+    const filterButton = $('#applyExpenseFilters');
+    const status = $('#employeeLoadStatus');
+    employeeSelect.empty().append(new Option('Loading employees…', '')).prop('disabled', true);
+    filterButton.prop('disabled', true);
+    status.prop('hidden', true);
+    employeeRequest = $.ajax({
         url: "{{ route('admin.getEmployeesByState') }}",
-        type: "GET",
-        data: { state_id: stateId },
+        type: 'GET',
+        data: { state_id: $(this).val() },
         success: function (res) {
-            let employeeSelect = $('#user_id');
-            employeeSelect.empty();
-            employeeSelect.append('<option value="">All</option>');
-
-            $.each(res, function (key, emp) {
-                employeeSelect.append(
-                    `<option value="${emp.id}">${emp.name}</option>`
-                );
+            employeeSelect.empty().append(new Option('All', ''));
+            res.forEach(function (employee) {
+                employeeSelect.append(new Option(employee.name, employee.id));
             });
+        },
+        error: function (xhr, state) {
+            if (state === 'abort') return;
+            employeeSelect.empty().append(new Option('All', ''));
+            status.text('Could not load employees. Change the state to try again, or apply filters with All employees.').prop('hidden', false);
+        },
+        complete: function () {
+            employeeSelect.prop('disabled', false);
+            filterButton.prop('disabled', false);
         }
     });
 });
+
 
 </script>
 @endpush
