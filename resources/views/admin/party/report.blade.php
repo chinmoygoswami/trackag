@@ -185,10 +185,13 @@
 <script>
 $(document).ready(function () {
 
-    // Initial load
-    loadReportData();
+
 
     // 🔍 Get Report
+    $('#filterForm').on('submit', function (event) {
+        event.preventDefault();
+        loadReportData();
+    });
     $('#btnFilter').click(function () {
         loadReportData();
     });
@@ -215,94 +218,67 @@ $(document).ready(function () {
         });
     });
 
-    // Load main table report data
+    let reportTable;
+    let target = 0;
+
+    // DataTables requests only the visible page; state and employee are optional.
     function loadReportData() {
-        let stateId = $('#stateSelect').val();
-        let employeeId = $('#employeeSelect').val();
-        let financialYear = $('#financialYearSelect').val();
-
-        let btn = $('#btnFilter');
-        let orgText = btn.html();
-        btn.html('<i class="fas fa-spinner fa-spin"></i> Loading...').prop('disabled', true);
-
-        $.ajax({
-            url: "{{ route('party-visit-report.data') }}",
-            type: 'GET',
-            data: {
-                state_id: stateId,
-                employee_id: employeeId,
-                financial_year: financialYear
-            },
-            success: function (response) {
-                renderTable(response.columns, response.data, response.target);
-            },
-            error: function () {
-                alert('Error loading report data');
-            },
-            complete: function() {
-                btn.html(orgText).prop('disabled', false);
-            }
-        });
-    }
-
-    function renderTable(columnsParam, dataParam, targetParam) {
-        let target = targetParam || 0;
-        const $table = $('#reportTableData');
-
-        // Destroy existing table if exists
-        if ($.fn.DataTable.isDataTable($table)) {
-            $table.DataTable().clear().destroy();
-            $table.empty(); // clear DOM
+        if (reportTable) {
+            const pendingRequest = reportTable.settings()[0].jqXHR;
+            if (pendingRequest && pendingRequest.readyState !== 4) pendingRequest.abort();
+            reportTable.destroy();
+            $('#reportTableData').empty();
         }
-
-        if (!columnsParam || columnsParam.length === 0) {
-            $table.html('<tbody><tr><td class="text-center text-muted py-4">No data available</td></tr></tbody>');
-            return;
+        const startYear = Number($('#financialYearSelect').val().split('-')[0]);
+        const columns = [
+            { title: 'Party Name', data: 'party_name', render: $.fn.dataTable.render.text() },
+            { title: 'Employee Name', data: 'employee_name', render: $.fn.dataTable.render.text() }
+        ];
+        for (let index = 0; index < 12; index++) {
+            const date = new Date(startYear, 3 + index, 1);
+            columns.push({
+                title: date.toLocaleString('en', { month: 'short' }) + '-' + String(date.getFullYear()).slice(-2),
+                data: 'month_' + index,
+                render: function (data, type, row) {
+                    const count = data ? data.count : 0;
+                    if (type !== 'display') return count;
+                    const color = count < target ? 'text-danger' : 'text-success';
+                    return count > 0
+                        ? `<span class="clickable-count ${color}" title="Click to view details" data-customer="${row.customer_id}" data-year="${data.year}" data-month="${data.month}">${count}</span>`
+                        : `<span class="${color} fw-bold">0</span>`;
+                }
+            });
         }
-
-        // Format columns for datatables
-        const dtColumns = columnsParam.map(function(col, idx) {
-            let columnDef = {
-                title: col.title,
-                data: col.data
-            };
-            
-            // If it's a month column
-            if (col.data.startsWith('month_')) {
-                columnDef.render = function(data, type, row) {
-                    if (type === 'display') {
-                        let count = data ? data.count : 0;
-                        let colorClass = count < target ? 'text-danger' : 'text-success';
-                        if (count > 0) {
-                            return `<span class="clickable-count ${colorClass}" title="Click to view details" data-customer="${row.customer_id}" data-year="${data.year}" data-month="${data.month}">${count}</span>`;
-                        } else {
-                            return `<span class="${colorClass} fw-bold">0</span>`;
-                        }
-                    }
-                    return data ? data.count : 0;
-                };
-            }
-            return columnDef;
-        });
-
-        // Initialize DataTable
-        $table.DataTable({
-            data: dataParam,
-            columns: dtColumns,
+        reportTable = $('#reportTableData').DataTable({
+            processing: true,
+            serverSide: true,
+            ordering: false,
+            searchDelay: 400,
+            ajax: {
+                url: "{{ route('party-visit-report.data') }}",
+                data: function (data) {
+                    data.state_id = $('#stateSelect').val();
+                    data.employee_id = $('#employeeSelect').val();
+                    data.financial_year = $('#financialYearSelect').val();
+                },
+                dataSrc: function (response) {
+                    target = response.target || 0;
+                    return response.data;
+                }
+            },
+            columns: columns,
             responsive: false,
             scrollX: true,
             scrollCollapse: true,
-            fixedColumns: {
-                leftColumns: 2
-            },
+            fixedColumns: { leftColumns: 2 },
             autoWidth: false,
             pageLength: 25,
             lengthMenu: [10, 25, 50, 100],
-            language: {
-                emptyTable: "No records found for the selected criteria"
-            }
+            language: { emptyTable: 'No records found for the selected criteria' }
         });
     }
+
+    loadReportData();
 
     // Modal click handler for visits
     $(document).on('click', '.clickable-count', function() {

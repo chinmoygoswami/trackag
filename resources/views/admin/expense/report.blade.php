@@ -122,6 +122,19 @@
                             </select>
                         </div>
 
+                        <div class="col-md-3">
+                            <label for="reportSearch" class="form-label">Search employee or visit place</label>
+                            <input type="search" id="reportSearch" name="search" class="form-control form-control-sm" maxlength="100" value="{{ request('search') }}">
+                        </div>
+                        <div class="col-md-2">
+                            <label for="perPage" class="form-label">Rows per page</label>
+                            <select id="perPage" name="per_page" class="form-select form-select-sm">
+                                @foreach([10, 25, 50, 100] as $size)
+                                    <option value="{{ $size }}" @selected((int) request('per_page', 25) === $size)>{{ $size }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
                         <div class="col-md-2 d-flex align-items-end">
                             <button type="submit" class="btn btn-sm btn-primary w-100">
                                 <i class="fas fa-filter"></i> Filter
@@ -167,7 +180,7 @@
                         <tbody>
                             @forelse($data as $key => $report)
                                 <tr>
-                                    <td>{{ $key + 1 }}&nbsp;
+                                    <td>{{ $data->firstItem() + $key }}&nbsp;
                                         @if($report->pdf_status == 0)
                                         <input type="checkbox" class="rowCheckbox" name="trip_ids[]" value="{{ $report->id }}" data-start-km="{{ $report->starting_km }}" data-end-km="{{ $report->end_km }}">
                                         @endif
@@ -200,7 +213,7 @@
                         </tbody>
                         <tfoot class="table-light">
                             <tr>
-                                <th colspan="10" class="text-end">TOTAL :</th>
+                                <th colspan="10" class="text-end">PAGE TOTAL :</th>
                                 <th>{{ number_format($total_travel_km, 2) }}</th>
                                 <th>-</th>
                                 <th>-</th>
@@ -211,6 +224,11 @@
                             </tr>
                         </tfoot>
                     </table>
+                    <p class="text-muted small">Totals and “Select all” apply to this page.</p>
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                        <span class="text-muted small">Showing {{ $data->firstItem() ?? 0 }}–{{ $data->lastItem() ?? 0 }} of {{ $data->total() }} trips</span>
+                        {{ $data->links('pagination::bootstrap-5') }}
+                    </div>
 
                 </div> <!-- /.card-body -->
             </div> <!-- /.card -->
@@ -251,7 +269,7 @@ $(document).ready(function() {
 
 $("#approveSelected").on("click", function () {
     let selected = $(".rowCheckbox:checked");
-    let selectedUserId = $("#user_id").val();
+    let selectedUserId = @json(request('user_id', ''));
 
     if(selectedUserId == ""){
         alert("Please select Employee");

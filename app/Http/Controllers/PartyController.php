@@ -476,16 +476,16 @@ class PartyController extends Controller
         $employeeId = $request->get('employee_id');
         $financialYear = $request->get('financial_year');
 
-        // Parse Financial Year
-        if ($financialYear) {
-            $parts = explode('-', $financialYear);
-            $startYear = $parts[0];
-            $endYear = $parts[1] ?? ($startYear + 1);
-        } else {
-            $currentMonth = (int)date('n');
-            $startYear = $currentMonth >= 4 ? (int)date('Y') : (int)date('Y') - 1;
-            $endYear = $startYear + 1;
-        }
+        $request->validate([
+            'financial_year' => ['nullable', 'regex:/^\d{4}-\d{4}$/'],
+            'state_id' => ['nullable', 'integer'],
+            'employee_id' => ['nullable', 'integer'],
+        ]);
+        $startYear = $financialYear
+            ? (int) substr($financialYear, 0, 4)
+            : (now()->month >= 4 ? now()->year : now()->year - 1);
+        $endYear = $startYear + 1;
+        $draw = max(0, (int) $request->input('draw', 0));
 
         $startDate = $startYear . '-04-01';
         $endDate = $endYear . '-03-31';
@@ -496,7 +496,7 @@ class PartyController extends Controller
             if ($userStateAccess && !empty($userStateAccess->state_ids)) {
                 $stateIds = $userStateAccess->state_ids;
             } else {
-                return response()->json(['data' => []]);
+                return response()->json(['draw' => $draw, 'recordsTotal' => 0, 'recordsFiltered' => 0, 'data' => []]);
             }
         }
 
@@ -519,17 +519,28 @@ class PartyController extends Controller
             $customerQuery->where('user_id', $employeeId);
         }
 
-        $customers = $customerQuery->orderBy('agro_name')->get();
-        if ($customers->isEmpty()) {
-            return response()->json(['data' => []]);
+        $recordsTotal = (clone $customerQuery)->count();
+        $search = trim((string) $request->input('search.value', ''));
+        if ($search !== '') {
+            $customerQuery->where(function ($query) use ($search) {
+                $query->where('agro_name', 'like', '%' . $search . '%')
+                    ->orWhereHas('user', fn ($userQuery) => $userQuery->where('name', 'like', '%' . $search . '%'));
+            });
         }
-        $customerIds = $customers->pluck('id')->toArray();
+        $recordsFiltered = $search === '' ? $recordsTotal : (clone $customerQuery)->count();
+        $length = max(10, min(100, (int) $request->input('length', 25)));
+        $customers = $customerQuery->select(['id', 'agro_name', 'user_id'])
+            ->orderBy('agro_name')->orderBy('id')
+            ->offset(max(0, (int) $request->input('start', 0)))->limit($length)->get();
 
-        // Fetch Visits
-        $visits = PartyVisit::whereIn('customer_id', $customerIds)
+        // Only aggregate visits for the parties on the requested page.
+        $visits = $customers->isEmpty() ? collect() : PartyVisit::query()
+            ->whereIn('customer_id', $customers->pluck('id'))
             ->whereNotNull('check_in_time')
             ->whereBetween('visited_date', [$startDate, $endDate])
-            ->get();
+            ->selectRaw("customer_id, SUBSTR(visited_date, 1, 7) as visit_month, COUNT(*) as visit_count")
+            ->groupBy('customer_id', 'visit_month')->get()
+            ->keyBy(fn ($visit) => $visit->customer_id . ':' . $visit->visit_month);
 
         // Build columns strictly based on FY
         $months = [];
@@ -542,17 +553,13 @@ class PartyController extends Controller
 
         $data = [];
         foreach ($customers as $customer) {
-            $customerVisits = $visits->where('customer_id', $customer->id);
             
             // Format months keys
             $monthData = [];
             foreach ($months as $idx => $m) {
-                $count = $customerVisits->filter(function($v) use ($m) {
-                    $d = Carbon::parse($v->visited_date);
-                    return $d->year == $m['year'] && $d->month == $m['month'];
-                })->count();
-                
-                $monthKey = Carbon::create($m['year'], $m['month'], 1)->format('M-2y'); // e.g. Apr-26
+                $visitKey = $customer->id . ':' . sprintf('%04d-%02d', $m['year'], $m['month']);
+                $count = (int) ($visits->get($visitKey)->visit_count ?? 0);
+                $monthKey = Carbon::create($m['year'], $m['month'], 1)->format('M-y');
                 $monthData['month_' . $idx] = [
                     'label' => $monthKey,
                     'count' => $count,
@@ -586,7 +593,7 @@ class PartyController extends Controller
         $targetObj = \App\Models\PartyVisitTarget::first();
         $target = $targetObj ? $targetObj->target : 0;
 
-        return response()->json(['data' => $data, 'columns' => $columns, 'target' => $target]);
+        return response()->json(['draw' => $draw, 'recordsTotal' => $recordsTotal, 'recordsFiltered' => $recordsFiltered, 'data' => $data, 'columns' => $columns, 'target' => $target]);
     }
 
     public function getPartyVisitDetails(Request $request)
