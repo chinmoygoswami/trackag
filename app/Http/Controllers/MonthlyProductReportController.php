@@ -38,12 +38,12 @@ class MonthlyProductReportController extends Controller
             $orders = Order::with(['customer', 'user.state', 'items.product', 'items.packing'])
                 ->whereIn('status', MonthlyProductReport::ORDER_STATUSES)
                 ->when(! $isAdmin, fn ($q) => $q->whereIn('user_id', $allowedIds))->get();
-            $rows = MonthlyProductReport::orderRows($orders);
+            $rows = MonthlyProductReport::orderRows($orders, $filters['states']);
         } else {
             $rows = MonthlyProductReport::salesRows(
                 TallySalesBill::select(['invoice_date', 'party_name', 'product_name_with_packing', 'qty', 'amount'])->get(),
                 Customer::with(['user.state', 'state'])->get(), TallyPartySync::get(), Product::get(),
-                $isAdmin, $allowedIds->all()
+                $isAdmin, $allowedIds->all(), $filters['states']
             );
         }
         $latest = collect($rows)->max('month');

@@ -65,6 +65,29 @@ class MonthlyProductReportTest extends TestCase
         self::assertSame([], MonthlyProductReport::build([], 'party', ['2026-01'])['groups']);
     }
 
+    public function test_state_spacing_variants_merge_using_master_spelling_without_changing_assignments(): void
+    {
+        $customer = $this->customer(1);
+        $customer->state = (object) ['id' => 25, 'name' => 'UttarPradesh'];
+        $sync = (object) ['master_id' => 'unmatched', 'party_name' => 'Tally Only', 'state' => ' Uttar Pradesh '];
+        $rows = MonthlyProductReport::salesRows(
+            [$this->sale('Tally Only'), $this->sale('Party 1')],
+            [$customer], [$sync], [], true, [], [$customer->state]
+        );
+        self::assertSame('UttarPradesh', $rows[0]['state_name']);
+        self::assertSame($rows[0]['state_key'], $rows[1]['state_key']);
+        self::assertNull($rows[0]['state_id']);
+        self::assertSame(25, $rows[1]['state_id']);
+        $report = MonthlyProductReport::build($rows, 'state', ['2026-05']);
+        self::assertCount(1, $report['groups']);
+        self::assertSame(200.0, $report['total']['value']);
+        self::assertSame('UttarPradesh', reset($report['groups'])['name']);
+        // State spelling must not grant an unmatched Tally party employee access.
+        self::assertSame([], MonthlyProductReport::salesRows(
+            [$this->sale('Tally Only')], [$customer], [$sync], [], false, [4], [$customer->state]
+        ));
+    }
+
     public function test_sync_aliases_unmatched_sales_and_restricted_access(): void
     {
         $sync = (object) ['master_id' => 'code1', 'party_name' => 'Tally Party', 'state' => 'Gujarat'];

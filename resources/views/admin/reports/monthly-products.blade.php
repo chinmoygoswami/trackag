@@ -64,7 +64,7 @@ $selects['product_key'] = ['Product / Packing', $products, 'name'];
 </div></div>
 <div class="row g-3 mb-3">
 @foreach([['Total Quantity', $report['total']['qty'], 'primary'], [$source === 'tally' ? 'Total Sales Value' : 'Total Order Value', $report['total']['value'], 'success'], ['Total '.($dimension === 'party' ? 'Parties' : ($dimension === 'employee' ? 'Employees' : 'States')), count($report['groups']), 'warning'], ['Total Products', $report['product_count'], 'info']] as [$caption, $value, $color])
-<div class="col-md-3 col-6"><div class="card metric bg-{{ $color }}-subtle"><div class="card-body"><div>{{ $caption }}</div><h4 class="text-{{ $color }} mb-0">{{ in_array($caption, ['Total Sales Value', 'Total Order Value']) ? '₹ ' : '' }}{{ \App\Services\MonthlyProductReport::formatNumber($value, $caption === 'Total Quantity' ? 3 : (in_array($caption, ['Total Sales Value', 'Total Order Value']) ? 2 : 0)) }}</h4></div></div></div>
+<div class="col-md-3 col-6"><div class="card metric bg-{{ $color }}-subtle"><div class="card-body"><div>{{ $caption }}</div><h4 class="text-{{ $color }} mb-0">{{ in_array($caption, ['Total Sales Value', 'Total Order Value']) ? '₹ ' : '' }}{{ \App\Services\MonthlyProductReport::formatNumber($value, $caption === 'Total Quantity' ? 2 : (in_array($caption, ['Total Sales Value', 'Total Order Value']) ? 2 : 0)) }}</h4></div></div></div>
 @endforeach
 </div>
 <div class="card"><div class="card-body p-0 table-responsive"><table class="table table-bordered report-table mb-0">
