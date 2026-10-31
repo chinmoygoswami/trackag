@@ -28,10 +28,12 @@ class MonthlyProductReportTenancyTest extends TestCase
     private $app;
 
     public static array $queriedTables = [];
+    public static bool $manyParties = false;
 
     protected function setUp(): void
     {
         parent::setUp();
+        self::$manyParties = false;
         $this->app = require __DIR__.'/../../bootstrap/app.php';
         $this->app->make(Kernel::class)->bootstrap();
         restore_error_handler();
@@ -59,6 +61,18 @@ class MonthlyProductReportTenancyTest extends TestCase
                         if (str_contains($query, 'from `'.$table.'`')) {
                             MonthlyProductReportTenancyTest::$queriedTables[] = $table;
 
+                            if (MonthlyProductReportTenancyTest::$manyParties && in_array($table, ['customers', 'tally_sales_bills'], true)) {
+                                return array_map(function ($id) use ($row, $table, $company) {
+                                    $row['id'] = $id;
+                                    if ($table === 'customers') {
+                                        $row['agro_name'] = $company.' Party '.$id;
+                                        $row['party_code'] = 'code'.$id;
+                                    } else {
+                                        $row['party_name'] = $company.' Party '.$id;
+                                    }
+                                    return (object) $row;
+                                }, range(1, 60));
+                            }
                             return [(object) $row];
                         }
                     }
@@ -150,6 +164,70 @@ class MonthlyProductReportTenancyTest extends TestCase
         }
         $data = $controller->index(Request::create('http://localhost/report'), 'party')->getData();
         self::assertSame('tally', $data['source']);
+    }
+
+    public function test_party_owner_filter_replaces_category_only_in_party_report(): void
+    {
+        $controller = new class extends MonthlyProductReportController
+        {
+            protected function getRoleBasedStateAndEmployeeFilters()
+            {
+                return ['employees' => collect(), 'user' => User::first(), 'roleName' => 'master_admin', 'states' => State::get()];
+            }
+        };
+        foreach (['tally', 'orders'] as $source) {
+            $data = $controller->index(Request::create('http://localhost/report', 'GET', ['source' => $source]), 'party')->getData();
+            self::assertSame(1, $data['employees']->first()->id);
+            self::assertSame(1, $data['parties']->first()->employee_id);
+            self::assertTrue($data['categories']->isEmpty());
+            $filtered = $controller->index(Request::create('http://localhost/report', 'GET', [
+                'source' => $source, 'user_id' => 99,
+            ]), 'party')->getData();
+            self::assertSame([], $filtered['report']['groups']);
+            $category = $controller->index(Request::create('http://localhost/report', 'GET', [
+                'source' => $source, 'product_category_id' => 999,
+            ]), 'party')->getData();
+            self::assertSame($data['report']['total'], $category['report']['total']);
+            $state = $controller->index(Request::create('http://localhost/report', 'GET', [
+                'source' => $source, 'product_category_id' => 999,
+            ]), 'state')->getData();
+            self::assertSame([], $state['report']['groups']);
+            self::assertNotEmpty($state['categories']);
+        }
+    }
+
+    public function test_only_party_report_paginates_whole_groups_and_keeps_full_totals_and_exports(): void
+    {
+        self::$manyParties = true;
+        $controller = new class extends MonthlyProductReportController
+        {
+            protected function getRoleBasedStateAndEmployeeFilters()
+            {
+                return ['employees' => collect(), 'user' => User::first(), 'roleName' => 'master_admin', 'states' => State::get()];
+            }
+        };
+        $request = fn ($params = []) => Request::create('http://localhost/report', 'GET', $params);
+        $first = $controller->index($request(), 'party')->getData();
+        self::assertCount(50, $first['report']['groups']);
+        self::assertSame(60, $first['groupCount']);
+        self::assertSame(18000.0, $first['report']['total']['value']);
+        $second = $controller->index($request(['per_page' => 25, 'page' => 2]), 'party')->getData();
+        self::assertCount(25, $second['report']['groups']);
+        self::assertSame(26, $second['partyPagination']->firstItem());
+        self::assertSame(18000.0, $second['report']['total']['value']);
+        self::assertSame('central Party 26', reset($second['report']['groups'])['name']);
+        foreach (['state', 'employee'] as $dimension) {
+            $other = $controller->index($request(), $dimension)->getData();
+            self::assertNull($other['partyPagination']);
+        }
+        $print = $controller->index($request(['print' => 1]), 'party')->getData();
+        self::assertCount(60, $print['report']['groups']);
+        $export = $controller->index($request(['page' => 2, 'per_page' => 25, 'export' => 'csv']), 'party');
+        ob_start();
+        $export->sendContent();
+        $csv = ob_get_clean();
+        self::assertStringContainsString('central Party 1', $csv);
+        self::assertStringContainsString('central Party 60', $csv);
     }
 
     private function assertTenantReport(string $database, float $value): void
