@@ -24,6 +24,67 @@
         <nav class="mt-3">
             <ul class="nav sidebar-menu flex-column" data-lte-toggle="treeview" role="menu" data-accordion="false">
 
+                {{-- Daily Activity --}}
+                <li class="nav-item {{ request()->is('admin/trips*') || request()->is('admin/party*') || request()->is('admin/new-party*') || request()->is('admin/expense*') || request()->is('admin/hr/attendance*') ? 'menu-open' : '' }}">
+                    {{-- Parent --}}
+                    <a href="#" class="nav-link {{ request()->is('admin/trips*') || request()->is('admin/party*') || request()->is('admin/new-party*') || request()->is('admin/expense*') || request()->is('admin/hr/attendance*') ? 'active' : '' }}">
+                        <i class="bi bi-activity me-2"></i>
+                        <p>Daily Activity<i class="bi bi-chevron-right ms-auto"></i></p>
+                    </a>
+
+                    {{-- Child Menu --}}
+                    <ul class="nav nav-treeview">
+                        {{-- All Trips --}}
+                        @canany(['view_all_trip','create_all_trip','edit_all_trip','delete_all_trip'])
+                        <li class="nav-item">
+                            <a href="{{ url('admin/trips') }}"
+                            class="nav-link {{ request()->is('admin/trips*') ? 'active' : '' }}">
+                                <i class="bi bi-truck-front me-2"></i><p>All Trips</p>
+                            </a>
+                        </li>
+                        @endcanany
+
+                        {{-- Party Visit --}}
+                        @canany(['view_party_visit','create_party_visit','edit_party_visit','delete_party_visit'])
+                        <li class="nav-item">
+                            <a href="{{ url('admin/party') }}"
+                            class="nav-link {{ request()->is('admin/party*') ? 'active' : '' }}">
+                                <i class="bi bi-shop me-2"></i><p>Party Visit</p>
+                            </a>
+                        </li>
+                        @endcanany
+
+                        {{-- New Party --}}
+                        @canany(['view_new_party'])
+                        <li class="nav-item">
+                            <a href="{{ url('admin/new-party') }}"
+                            class="nav-link {{ request()->is('admin/new-party*') ? 'active' : '' }}">
+                                <i class="bi bi-person-plus-fill me-2"></i><p>New Party</p>
+                            </a>
+                        </li>
+                        @endcanany
+
+                        {{-- Expense --}}
+                        <li class="nav-item">
+                            <a href="{{ url('admin/expense') }}"
+                            class="nav-link {{ request()->is('admin/expense*') ? 'active' : '' }}">
+                                <i class="bi bi-wallet2 me-2"></i><p>Expense</p>
+                            </a>
+                        </li>
+
+                        {{-- Attendance --}}
+                        @canany(['view_attendance','create_attendance','edit_attendance','delete_attendance'])
+                        <li class="nav-item">
+                            <a href="{{ url('admin/hr/attendance') }}"
+                            class="nav-link {{ request()->is('admin/hr/attendance*') ? 'active' : '' }}">
+                                <i class="bi bi-clock-history me-2"></i><p>Attendance</p>
+                            </a>
+                        </li>
+                        @endcanany
+
+                    </ul>
+                </li>
+
                 {{-- Report Card --}}
                 <li class="nav-item {{ request()->routeIs('reports.index') || request()->routeIs('reports.unified') ? 'menu-open' : '' }}">
                     <a href="#" class="nav-link {{ request()->routeIs('reports.index') || request()->routeIs('reports.unified') ? 'active' : '' }}">
@@ -45,7 +106,7 @@
                 </li>
 
                 @php
-                    $planningActive = request()->is('admin/budget*', 'admin/monthly*', 'admin/achievement*', 'admin/party-monthly-employee-report*', 'admin/party-monthly-state-report*');
+                    $planningActive = request()->is('admin/budget*', 'admin/monthly*', 'admin/achievement*');
                 @endphp
                 @canany(['view_budget_plan','create_budget_plan','edit_budget_plan','delete_budget_plan','view_monthly_plan','create_monthly_plan','edit_monthly_plan','delete_monthly_plan','view_plan_vs_achievement','create_plan_vs_achievement','edit_plan_vs_achievement','delete_plan_vs_achievement'])
                 <li class="nav-item {{ $planningActive ? 'menu-open' : '' }}">
@@ -71,13 +132,7 @@
                                 <p>Budget Report</p>
                             </a>
                         </li>
-                        <li class="nav-item">
-                            <a href="{{ route('party.monthly.employee-report') }}"
-                               class="nav-link {{ request()->routeIs('party.monthly.employee-report', 'party.monthly.state-report') ? 'active' : '' }}">
-                                <i class="bi bi-bar-chart-line me-2"></i>
-                                <p>Monthly Debit/Credit</p>
-                            </a>
-                        </li>
+
                         @canany(['view_monthly_plan','create_monthly_plan','edit_monthly_plan','delete_monthly_plan'])
                         <li class="nav-item">
                             <a href="{{ url('admin/monthly') }}" class="nav-link {{ request()->is('admin/monthly*') ? 'active' : '' }}">
@@ -179,18 +234,14 @@
 
                 @endcanany
 
-
                 <!-- Order -->
                 @canany(['view_order','create_order','edit_order','delete_order'])
                 @php
                     $orderActive = request()->is(
                         'admin/order',
                         'admin/order/*',
-                        'admin/order-report*',
-                        'admin/product-monthwise-report/*',
                         'admin/farmer-orders*',
-                        'admin/farmer-order/*',
-                        'admin/farmer-order-report*'
+                        'admin/farmer-order/*'
                     );
                 @endphp
 
@@ -210,38 +261,11 @@
                             </a>
                         </li>
 
-                        @can('view_order')
-                        @foreach(['party' => 'Party', 'employee' => 'Employee', 'state' => 'State'] as $dimension => $caption)
-                        <li class="nav-item">
-                            <a href="{{ route('reports.monthly-products', ['dimension' => $dimension]) }}" class="nav-link {{ request()->is('admin/product-monthwise-report/'.$dimension) ? 'active' : '' }}">
-                                <i class="bi bi-table me-2"></i><p>{{ $caption }} vs Product Report</p>
-                            </a>
-                        </li>
-                        @endforeach
-                        @endcan
-
-                        {{-- Order Report --}}
-                        <li class="nav-item">
-                            <a href="{{ url('admin/order-report') }}"
-                            class="nav-link {{ request()->is('admin/order-report*') ? 'active' : '' }}">
-                                <i class="bi bi-bar-chart-line-fill me-2"></i>
-                                <p>Order Report</p>
-                            </a>
-                        </li>
-
                         <li class="nav-item">
                             <a href="{{ route('farmer-order.index') }}"
                             class="nav-link {{ request()->is('admin/farmer-orders*', 'admin/farmer-order/*') ? 'active' : '' }}">
                                 <i class="bi bi-person-vcard me-2"></i>
                                 <p>Farmer Orders</p>
-                            </a>
-                        </li>
-
-                        <li class="nav-item">
-                            <a href="{{ route('farmer-order.report') }}"
-                            class="nav-link {{ request()->is('admin/farmer-order-report*') ? 'active' : '' }}">
-                                <i class="bi bi-bar-chart-line-fill me-2"></i>
-                                <p>Farmer Order Report</p>
                             </a>
                         </li>
 
@@ -424,71 +448,66 @@
                     </ul>
                 </li>
 
-                {{-- Daily Activity --}}
-                <li class="nav-item {{ request()->is('admin/trips*') || request()->is('admin/party*') || request()->is('admin/new-party*') || request()->is('admin/expense*') || request()->is('admin/hr/attendance*') ? 'menu-open' : '' }}">
-                    {{-- Parent --}}
-                    <a href="#" class="nav-link {{ request()->is('admin/trips*') || request()->is('admin/party*') || request()->is('admin/new-party*') || request()->is('admin/expense*') || request()->is('admin/hr/attendance*') ? 'active' : '' }}">
-                        <i class="bi bi-activity me-2"></i>
-                        <p>Daily Activity<i class="bi bi-chevron-right ms-auto"></i></p>
+
+
+
+
+
+                @php
+                    $reportsActive = request()->is('admin/product-monthwise-report/*', 'admin/order-report*', 'admin/farmer-order-report*')
+                        || request()->routeIs('party.monthly.employee-report', 'party.monthly.state-report');
+                @endphp
+                {{-- Reports --}}
+
+                @canany(array_merge(['view_order','create_order','edit_order','delete_order'],['view_budget_plan','create_budget_plan','edit_budget_plan','delete_budget_plan','view_monthly_plan','create_monthly_plan','edit_monthly_plan','delete_monthly_plan','view_plan_vs_achievement','create_plan_vs_achievement','edit_plan_vs_achievement','delete_plan_vs_achievement']))
+                <li class="nav-item {{ $reportsActive ? 'menu-open' : '' }}">
+                    <a href="#" class="nav-link {{ $reportsActive ? 'active' : '' }}">
+                        <i class="bi bi-file-earmark-bar-graph me-2"></i>
+                        <p>Reports<i class="bi bi-chevron-right ms-auto"></i></p>
                     </a>
-
-                    {{-- Child Menu --}}
-                    <ul class="nav nav-treeview">
-                        {{-- All Trips --}}
-                        @canany(['view_all_trip','create_all_trip','edit_all_trip','delete_all_trip'])
+                    <ul class="nav nav-treeview" style="{{ $reportsActive ? 'display:block;' : '' }}">
+                        @can('view_order')
+                        @foreach(['party' => 'Party', 'employee' => 'Employee', 'state' => 'State'] as $dimension => $caption)
                         <li class="nav-item">
-                            <a href="{{ url('admin/trips') }}"
-                            class="nav-link {{ request()->is('admin/trips*') ? 'active' : '' }}">
-                                <i class="bi bi-truck-front me-2"></i><p>All Trips</p>
+                            <a href="{{ route('reports.monthly-products', ['dimension' => $dimension]) }}" class="nav-link {{ request()->is('admin/product-monthwise-report/'.$dimension) ? 'active' : '' }}">
+                                <i class="bi bi-table me-2"></i><p>{{ $caption }} vs Product Report</p>
+                            </a>
+                        </li>
+                        @endforeach
+                        @endcan
+                        @canany(['view_budget_plan','create_budget_plan','edit_budget_plan','delete_budget_plan','view_monthly_plan','create_monthly_plan','edit_monthly_plan','delete_monthly_plan','view_plan_vs_achievement','create_plan_vs_achievement','edit_plan_vs_achievement','delete_plan_vs_achievement'])
+                        <li class="nav-item">
+                            <a href="{{ route('party.monthly.employee-report') }}"
+                               class="nav-link {{ request()->routeIs('party.monthly.employee-report', 'party.monthly.state-report') ? 'active' : '' }}">
+                                <i class="bi bi-bar-chart-line me-2"></i>
+                                <p>Monthly Debit/Credit</p>
                             </a>
                         </li>
                         @endcanany
-
-                        {{-- Party Visit --}}
-                        @canany(['view_party_visit','create_party_visit','edit_party_visit','delete_party_visit'])
+                        @canany(['view_order','create_order','edit_order','delete_order'])
+                        {{-- Order Report --}}
                         <li class="nav-item">
-                            <a href="{{ url('admin/party') }}"
-                            class="nav-link {{ request()->is('admin/party*') ? 'active' : '' }}">
-                                <i class="bi bi-shop me-2"></i><p>Party Visit</p>
+                            <a href="{{ url('admin/order-report') }}"
+                            class="nav-link {{ request()->is('admin/order-report*') ? 'active' : '' }}">
+                                <i class="bi bi-bar-chart-line-fill me-2"></i>
+                                <p>Order Report</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{{ route('farmer-order.report') }}"
+                            class="nav-link {{ request()->is('admin/farmer-order-report*') ? 'active' : '' }}">
+                                <i class="bi bi-bar-chart-line-fill me-2"></i>
+                                <p>Farmer Order Report</p>
                             </a>
                         </li>
                         @endcanany
-
-                        {{-- New Party --}}
-                        @canany(['view_new_party'])
-                        <li class="nav-item">
-                            <a href="{{ url('admin/new-party') }}"
-                            class="nav-link {{ request()->is('admin/new-party*') ? 'active' : '' }}">
-                                <i class="bi bi-person-plus-fill me-2"></i><p>New Party</p>
-                            </a>
-                        </li>
-                        @endcanany
-
-                        {{-- Expense --}}
-                        <li class="nav-item">
-                            <a href="{{ url('admin/expense') }}"
-                            class="nav-link {{ request()->is('admin/expense*') ? 'active' : '' }}">
-                                <i class="bi bi-wallet2 me-2"></i><p>Expense</p>
-                            </a>
-                        </li>
-
-                        {{-- Attendance --}}
-                        @canany(['view_attendance','create_attendance','edit_attendance','delete_attendance'])
-                        <li class="nav-item">
-                            <a href="{{ url('admin/hr/attendance') }}"
-                            class="nav-link {{ request()->is('admin/hr/attendance*') ? 'active' : '' }}">
-                                <i class="bi bi-clock-history me-2"></i><p>Attendance</p>
-                            </a>
-                        </li>
-                        @endcanany
-
                     </ul>
                 </li>
-
-
+                @endcanany
 
 
                 <!-- Master Management -->
+
                 @canany([
                 'view_states','create_states','edit_states','delete_states',
                 'view_districts','create_districts','edit_districts','delete_districts',
