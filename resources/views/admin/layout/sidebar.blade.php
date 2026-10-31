@@ -257,7 +257,7 @@
                             <a href="{{ url('admin/order') }}"
                             class="nav-link {{ (request()->is('admin/order') || request()->is('admin/order/*')) ? 'active' : '' }}">
                                 <i class="bi bi-receipt me-2"></i>
-                                <p>Order</p>
+                                <p>Party Order</p>
                             </a>
                         </li>
 
@@ -490,7 +490,7 @@
                             <a href="{{ url('admin/order-report') }}"
                             class="nav-link {{ request()->is('admin/order-report*') ? 'active' : '' }}">
                                 <i class="bi bi-bar-chart-line-fill me-2"></i>
-                                <p>Order Report</p>
+                                <p>Party Order Reports</p>
                             </a>
                         </li>
                         <li class="nav-item">
