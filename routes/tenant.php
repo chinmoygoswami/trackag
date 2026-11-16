@@ -21,6 +21,7 @@ use App\Http\Controllers\BudgetController;
 use App\Http\Controllers\MonthlyController;
 use App\Http\Controllers\AchievementController;
 use App\Http\Controllers\PartyController;
+use App\Http\Controllers\PaymentCollectionPlanController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\StockController;
 use App\Http\Controllers\TrackingController;
@@ -103,6 +104,12 @@ Route::prefix('admin')->group(function () {
         Route::resource('monthly', MonthlyController::class);
         Route::resource('achievement', AchievementController::class);
         Route::resource('party', PartyController::class);
+        Route::middleware('role_or_permission:sub_admin|view_party_visit|create_party_visit|edit_party_visit|delete_party_visit')
+            ->controller(PaymentCollectionPlanController::class)->group(function () {
+                Route::get('payment-collection-plan', 'index')->name('payment-collection-plan.index');
+                Route::post('payment-collection-plan', 'store')->name('payment-collection-plan.store');
+                Route::patch('payment-collection-plan/{plan}/review', 'review')->whereNumber('plan')->name('payment-collection-plan.review');
+            });
         Route::get('order-report', [OrderController::class, 'report'])->name('order.report');
         Route::get('product-monthwise-report/{dimension}', [\App\Http\Controllers\MonthlyProductReportController::class, 'index'])
             ->whereIn('dimension', ['party', 'employee', 'state'])

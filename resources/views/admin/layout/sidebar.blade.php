@@ -153,6 +153,16 @@
                 </li>
                 @endcanany
 
+                @if ($user && ($user->hasRole('sub_admin') || $user->canAny(['view_party_visit', 'create_party_visit', 'edit_party_visit', 'delete_party_visit'])))
+                <li class="nav-item">
+                    <a href="{{ route('payment-collection-plan.index') }}"
+                        class="nav-link {{ request()->routeIs('payment-collection-plan.*') ? 'active' : '' }}">
+                        <i class="bi bi-calendar-check me-2"></i>
+                        <p>Payment Collection Plan</p>
+                    </a>
+                </li>
+                @endif
+
                 @php
                     $partyActive = request()->is(
                         'admin/party',
