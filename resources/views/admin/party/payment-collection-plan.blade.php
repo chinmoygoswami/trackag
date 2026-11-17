@@ -47,7 +47,15 @@
     <div class="app-content-header py-3 bg-light border-bottom">
         <div class="container-fluid px-3 px-lg-4">
             <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
-                <h3 class="mb-0 text-primary"><i class="bi bi-calendar-check me-2"></i>Payment Collection Plan</h3>
+                <div class="d-flex align-items-center flex-wrap gap-3">
+                    <h3 class="mb-0 text-primary"><i class="bi bi-calendar-check me-2"></i>Payment Collection Plan</h3>
+                    @if ($pendingApprovalCount > 0)
+                        <span class="badge rounded-pill text-bg-warning px-3 py-2">
+                            <i class="bi bi-hourglass-split me-1" aria-hidden="true"></i>
+                            {{ $pendingApprovalCount }} pending your approval
+                        </span>
+                    @endif
+                </div>
                 <ol class="breadcrumb mb-0">
                     <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">Dashboard</a></li>
                     <li class="breadcrumb-item active">Payment Collection Plan</li>
@@ -171,7 +179,7 @@
                 <div class="card-header py-3">
                     <h5 class="mb-1 text-primary fw-semibold" id="collection-report-title">{{ $views[$view][0] }}</h5>
                     <div class="small text-body-secondary">
-                        Outstanding updates with Tally during the current month. Past months show the saved closing balance from their last day. A dash means no balance is available.
+                        Next month’s outstanding updates with Tally until the current month closes. Each month then shows the saved closing balance from the last day of the previous month.
                         @if ($view === 'party')
                             Add or edit targets for upcoming months only. Select Review in the Planned column for any submission you can approve. Scroll horizontally to see more months.
                         @endif

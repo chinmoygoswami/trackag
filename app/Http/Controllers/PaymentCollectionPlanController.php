@@ -52,7 +52,7 @@ class PaymentCollectionPlanController extends Controller
         }
 
         $months = collect();
-        for ($month = $from; $month->lessThanOrEqualTo($to); $month = $month->addMonth()) {
+        for ($month = $to; $month->greaterThanOrEqualTo($from); $month = $month->subMonth()) {
             $months->put($month->format('Y-m'), $month);
         }
 
@@ -62,8 +62,10 @@ class PaymentCollectionPlanController extends Controller
             ->pluck('name', 'id')->sort(SORT_NATURAL | SORT_FLAG_CASE);
 
         $view = $filters['view'] ?? 'party';
+        $reviewable = $this->reviewablePlans($user);
+        $pendingApprovalCount = (clone $reviewable)->count();
         $reviews = $view === 'party'
-            ? $this->reviewablePlans($user)->whereBetween('collection_month', [$from->toDateString(), $to->toDateString()])
+            ? $reviewable->whereBetween('collection_month', [$from->toDateString(), $to->toDateString()])
                 ->get(['id', 'customer_id', 'collection_month', 'pending_amount', 'planned_amount', 'submission_version'])
                 ->groupBy('customer_id')->map(fn (Collection $plans) => $plans->keyBy('collection_month'))
             : collect();
@@ -137,7 +139,7 @@ class PaymentCollectionPlanController extends Controller
 
         return view('admin.party.payment-collection-plan', compact(
             'filters', 'current', 'from', 'to', 'months', 'customers', 'employees', 'states',
-            'parties', 'totals', 'groups', 'view', 'accuracy', 'reportPartyCount', 'reviews', 'usesReportingManager'
+            'parties', 'totals', 'groups', 'view', 'accuracy', 'reportPartyCount', 'pendingApprovalCount', 'reviews', 'usesReportingManager'
         ));
     }
 
@@ -390,7 +392,7 @@ class PaymentCollectionPlanController extends Controller
             ->groupBy('party_name')->map(fn (Collection $entries) => $entries->pluck('amount', 'month_key'));
 
         $plans = PaymentCollectionPlan::query()->whereIn('customer_id', $customers->modelKeys())
-            ->whereBetween('collection_month', [$from->toDateString(), $to->addMonth()->toDateString()])->get()
+            ->whereBetween('collection_month', [$from->toDateString(), $to->toDateString()])->get()
             ->groupBy('customer_id')->map(fn (Collection $entries) => $entries->keyBy('collection_month'));
 
         $nextReviewerIds = $plans->flatMap(fn (Collection $entries) => $entries->pluck('next_reviewer_id'))
@@ -401,7 +403,9 @@ class PaymentCollectionPlanController extends Controller
             ->whereHas('roles', fn (Builder $roles) => $roles->where('name', 'sub_admin'))
             ->orderBy('name')->get(['id', 'name', 'company_id'])->groupBy('company_id');
 
-        return $customers->map(function ($party) use ($ledgers, $balances, $liveBalances, $payments, $plans, $months, $current, $user, $nextReviewerNames, $subAdminsByCompany) {
+        $upcomingMonth = $current->addMonth();
+
+        return $customers->map(function ($party) use ($ledgers, $balances, $liveBalances, $payments, $plans, $months, $upcomingMonth, $user, $nextReviewerNames, $subAdminsByCompany) {
             $ledger = $ledgers[$party->id];
             $balance = $balances->get($ledger);
             $liveOutstanding = $liveBalances->get($ledger)?->closing_balance_amt;
@@ -423,7 +427,7 @@ class PaymentCollectionPlanController extends Controller
                 'state' => $party->state?->name ?? 'Unassigned',
                 'closing' => $balance?->closing_balance_amt,
                 'balance_date' => $balance?->date?->format('d M Y'),
-                'monthly' => $months->map(function (CarbonImmutable $month, string $key) use ($partyPlans, $party, $user, $payments, $ledger, $nextReviewerNames, $firstApprover, $current, $liveOutstanding) {
+                'monthly' => $months->map(function (CarbonImmutable $month, string $key) use ($partyPlans, $party, $user, $payments, $ledger, $nextReviewerNames, $firstApprover, $upcomingMonth, $liveOutstanding) {
                     $plan = $partyPlans?->get($month->toDateString());
                     $approved = $plan?->approved_at !== null || ($plan?->planned_amount ?? 0) > 0;
                     $pending = ! $approved && $plan?->submitted_by !== null && (int) $plan->submitted_by === (int) $party->user_id;
@@ -431,12 +435,8 @@ class PaymentCollectionPlanController extends Controller
                     $ownSubmission = $pending && (int) $party->user_id === (int) $user->id;
 
                     return [
-                        'monthly_outstanding' => match (true) {
-                            $month->equalTo($current) => $liveOutstanding,
-                            // The next month's opening snapshot holds this month's final closing balance.
-                            $month->lessThan($current) => $partyPlans?->get($month->addMonth()->toDateString())?->previous_month_end_outstanding,
-                            default => null,
-                        },
+                        'monthly_outstanding' => $plan?->previous_month_end_outstanding
+                            ?? ($month->equalTo($upcomingMonth) ? $liveOutstanding : null),
                         'outstanding' => $plan?->outstanding_at_planning,
                         'planned' => $plan?->planned_amount ?? '0.00',
                         'actual' => (float) ($payments->get($ledger)?->get($key) ?? 0),
