@@ -209,7 +209,6 @@
                             </button>
                         </form>
                     @endif
-                    <button class="btn btn-sm btn-outline-secondary" type="button" id="printCollectionPlan"><i class="bi bi-printer me-1"></i>Print</button>
                 </div>
             </div>
 
@@ -425,7 +424,6 @@
 
 @push('scripts')
 <script>
-    document.getElementById('printCollectionPlan').addEventListener('click', () => window.print());
 
     const bulkReview = document.getElementById('bulkCollectionPlanReview');
     if (bulkReview) {
