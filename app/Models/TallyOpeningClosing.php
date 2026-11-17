@@ -2,9 +2,12 @@
 
 namespace App\Models;
 
+use App\Observers\PaymentCollectionMonthEndObserver;
 use App\Traits\TenantConnectionTrait;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Model;
 
+#[ObservedBy([PaymentCollectionMonthEndObserver::class])]
 class TallyOpeningClosing extends Model
 {
     use TenantConnectionTrait;

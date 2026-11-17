@@ -144,6 +144,7 @@
                         <div class="card-body py-3">
                             <h6 class="fw-bold mb-2"><i class="bi bi-calendar3 me-2"></i>{{ $month->format('M Y') }}</h6>
                             <div class="d-flex flex-wrap gap-3">
+                                <div><div class="small text-body-secondary">Outstanding</div><strong class="metric">{{ $money($values['monthly_outstanding']) }}</strong></div>
                                 <div><div class="small text-body-secondary">Planned</div><strong class="metric">{{ $money($values['planned']) }}</strong></div>
                                 <div><div class="small text-body-secondary">Actual</div><strong class="metric">{{ $money($values['actual']) }}</strong></div>
                                 <div><div class="small text-body-secondary">Achieved</div><strong class="metric">{{ $percent($achievement($values)) }}</strong></div>
@@ -170,9 +171,9 @@
                 <div class="card-header py-3">
                     <h5 class="mb-1 text-primary fw-semibold" id="collection-report-title">{{ $views[$view][0] }}</h5>
                     <div class="small text-body-secondary">
-                        Closing balances use the latest Tally snapshot. Actuals are monthly Tally payment credits. Planned amounts include approved targets.
+                        Outstanding updates with Tally during the current month. Past months show the saved closing balance from their last day. A dash means no balance is available.
                         @if ($view === 'party')
-                            Submit targets for your assigned parties. Select Review in the Planned column for any submission you can approve. Scroll horizontally to see more months.
+                            Add or edit targets for upcoming months only. Select Review in the Planned column for any submission you can approve. Scroll horizontally to see more months.
                         @endif
                     </div>
                 </div>
@@ -182,6 +183,7 @@
                             <thead class="table-light">
                                 <tr>
                                     <th scope="col">Month</th>
+                                    <th scope="col" class="text-end">Outstanding</th>
                                     <th scope="col" class="text-end">Planned</th>
                                     <th scope="col" class="text-end">Actual</th>
                                     <th scope="col" class="text-end">Achieved</th>
@@ -192,6 +194,7 @@
                                     @php($values = $totals['monthly'][$key])
                                     <tr>
                                         <th scope="row">{{ $month->format('F Y') }}</th>
+                                        <td class="text-end metric">{{ $money($values['monthly_outstanding']) }}</td>
                                         <td class="text-end metric">{{ $money($values['planned']) }}</td>
                                         <td class="text-end metric">{{ $money($values['actual']) }}</td>
                                         <td class="text-end metric">{{ $percent($achievement($values)) }}</td>
@@ -207,12 +210,13 @@
                                     @endif
                                     <th rowspan="2" scope="col" class="text-end">Latest closing balance</th>
                                     @foreach ($months as $month)
-                                        <th scope="colgroup" colspan="3" class="month-start text-center bg-{{ $monthTone($month) }}-subtle">{{ $month->format('M Y') }}</th>
+                                        <th scope="colgroup" colspan="4" class="month-start text-center bg-{{ $monthTone($month) }}-subtle">{{ $month->format('M Y') }}</th>
                                     @endforeach
                                 </tr>
                                 <tr>
                                     @foreach ($months as $month)
-                                        <th scope="col" class="month-start text-end">Planned</th>
+                                        <th scope="col" class="month-start text-end">Outstanding</th>
+                                        <th scope="col" class="text-end">Planned</th>
                                         <th scope="col" class="text-end">Actual</th>
                                         <th scope="col" class="text-end">Achieved</th>
                                     @endforeach
@@ -239,13 +243,15 @@
                                             @endif
                                         </td>
                                         @foreach ($row['monthly'] as $key => $values)
-                                            <td class="month-start text-end metric">
-                                                @php($review = $view === 'party' ? $reviews->get($row['id'])?->get($months[$key]->toDateString()) : null)
+                                            @php($review = $view === 'party' ? $reviews->get($row['id'])?->get($months[$key]->toDateString()) : null)
+                                            <td class="month-start text-end metric">{{ $money($values['monthly_outstanding']) }}</td>
+                                            <td class="text-end metric">
                                                 @if ($review)
                                                     <button type="button" class="btn btn-sm btn-outline-warning plan-button"
                                                         data-bs-toggle="modal" data-bs-target="#collectionPlanReview"
                                                         data-action="{{ route('payment-collection-plan.review', $review->id) }}"
                                                         data-version="{{ $review->submission_version }}" data-amount="{{ $review->pending_amount }}"
+                                                        data-editable="{{ $months[$key]->greaterThan($current) ? '1' : '0' }}"
                                                         data-party="{{ $row['name'] }}" data-month="{{ $months[$key]->format('F Y') }}"
                                                         data-current="{{ $money($review->planned_amount) }}"
                                                         aria-label="Review plan for {{ $row['name'] }} in {{ $months[$key]->format('F Y') }}">
@@ -255,14 +261,14 @@
                                                 @elseif ($view === 'party' && $values['approved'])
                                                     {{ $money($values['planned']) }}
                                                     <div class="mt-1"><span class="badge text-bg-success">Approved</span></div>
-                                                @elseif ($view === 'party' && $row['can_submit'] && !$values['forwarded'])
+                                                @elseif ($view === 'party' && $row['can_submit'] && $months[$key]->greaterThan($current) && !$values['forwarded'])
                                                     @php($displayAmount = $values['own_pending_amount'] ?? $values['planned'])
                                                     @php($hasTarget = $values['own_pending_amount'] !== null || $values['planned'] > 0)
                                                     <button type="button" class="btn btn-sm btn-outline-primary plan-button"
                                                         data-bs-toggle="modal" data-bs-target="#collectionPlanEditor"
                                                         data-customer="{{ $row['id'] }}" data-party="{{ $row['name'] }}"
                                                         data-month="{{ $key }}" data-month-label="{{ $months[$key]->format('F Y') }}"
-                                                        data-balance="{{ $money($row['closing']) }}" data-amount="{{ $displayAmount }}" data-pending="{{ $values['own_pending_amount'] !== null ? '1' : '0' }}"
+                                                        data-balance="{{ $money($values['outstanding'] ?? $row['closing']) }}" data-amount="{{ $displayAmount }}" data-pending="{{ $values['own_pending_amount'] !== null ? '1' : '0' }}"
                                                         aria-label="{{ $hasTarget ? 'Edit' : 'Add' }} plan for {{ $row['name'] }} in {{ $months[$key]->format('F Y') }}">
                                                         <i class="bi {{ $hasTarget ? 'bi-pencil' : 'bi-plus-lg' }} me-1" aria-hidden="true"></i>{{ $hasTarget ? $money($displayAmount) : 'Add plan' }}
                                                     </button>
@@ -285,7 +291,7 @@
                                         @endforeach
                                     </tr>
                                 @empty
-                                    <tr><td colspan="{{ ($view === 'party' ? 3 : 2) + 3 * $months->count() }}" class="text-center text-body-secondary py-4">No parties match these filters.</td></tr>
+                                    <tr><td colspan="{{ ($view === 'party' ? 3 : 2) + 4 * $months->count() }}" class="text-center text-body-secondary py-4">No parties match these filters.</td></tr>
                                 @endforelse
                             </tbody>
                             @if ($reportPartyCount > 0)
@@ -294,7 +300,8 @@
                                         <th scope="row" colspan="{{ $view === 'party' ? 2 : 1 }}">Total for all filtered parties</th>
                                         <td class="text-end metric">{{ $money($totals['closing']) }}</td>
                                         @foreach ($totals['monthly'] as $values)
-                                            <td class="month-start text-end metric">{{ $money($values['planned']) }}</td>
+                                            <td class="month-start text-end metric">{{ $money($values['monthly_outstanding']) }}</td>
+                                            <td class="text-end metric">{{ $money($values['planned']) }}</td>
                                             <td class="text-end metric">{{ $money($values['actual']) }}</td>
                                             <td class="text-end metric">{{ $percent($achievement($values)) }}</td>
                                         @endforeach
@@ -329,7 +336,7 @@
                         <div class="fw-semibold" data-plan-party></div>
                         <div class="text-body-secondary mb-3" data-plan-month></div>
                         <div class="d-flex justify-content-between bg-body-tertiary rounded p-3 mb-3">
-                            <span>Latest closing balance</span>
+                            <span>Outstanding at planning</span>
                             <strong data-plan-balance></strong>
                         </div>
                         <label for="planned_amount" class="form-label">Planned amount</label>
@@ -410,6 +417,7 @@
             form.action = plan.action;
             form.elements.submission_version.value = plan.version;
             amount.value = plan.amount;
+            amount.readOnly = plan.editable !== '1';
             planReview.querySelector('[data-review-party]').textContent = plan.party;
             planReview.querySelector('[data-review-month]').textContent = plan.month;
             planReview.querySelector('[data-review-current]').textContent = plan.current;

@@ -7,9 +7,9 @@ use App\Models\PaymentCollectionPlan;
 use App\Models\TallyOpeningClosing;
 use App\Models\TallyPartySync;
 use App\Models\TallyPartywisePaymentCredit;
-use App\Models\TallySalesBill;
 use App\Models\User;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -40,11 +40,8 @@ class PaymentCollectionPlanController extends Controller
         ]);
 
         $current = CarbonImmutable::now()->startOfMonth();
-        if (! isset($filters['from_month'], $filters['to_month'])) {
-            $financialYearStart = $this->defaultFinancialYearStart($current);
-            $filters['from_month'] ??= $financialYearStart->format('Y-m');
-            $filters['to_month'] ??= $financialYearStart->addMonths(11)->format('Y-m');
-        }
+        $filters['from_month'] ??= $current->subMonth()->format('Y-m');
+        $filters['to_month'] ??= $current->addMonth()->format('Y-m');
 
         $from = CarbonImmutable::parse($filters['from_month'].'-01');
         $to = CarbonImmutable::parse($filters['to_month'].'-01');
@@ -88,8 +85,8 @@ class PaymentCollectionPlanController extends Controller
             && (! isset($filters['party']) || (int) $filters['party'] === $party->id)
         )->values();
 
-        $assigned = $selected->whereIn('user_id', $assignedEmployees);
-        $rows = $this->reportRows($assigned, $months, $from, $to, $user);
+        $partyRows = $this->reportRows($selected, $months, $from, $to, $current, $user);
+        $rows = $partyRows->whereIn('employee_id', $assignedEmployees);
         $reportPartyCount = $rows->count();
         $usesReportingManager = $this->reportingManagerExists($user);
         $totals = $this->totals($rows, $months);
@@ -110,7 +107,7 @@ class PaymentCollectionPlanController extends Controller
         }
 
         // Same-company fallback reviews have a row for their pending cells only.
-        $detailRows = $selected->map(function ($party) use ($rows, $months) {
+        $detailRows = $selected->map(function ($party) use ($rows, $months, $partyRows, $reviews) {
             return $rows->get($party->id) ?? [
                 'id' => $party->id,
                 'name' => $party->agro_name,
@@ -119,7 +116,15 @@ class PaymentCollectionPlanController extends Controller
                 'state' => $party->state?->name ?? 'Unassigned',
                 'closing' => null,
                 'can_submit' => false,
-                'monthly' => $months->map(fn (CarbonImmutable $month) => ['planned' => null, 'actual' => null, 'pending' => false, 'approved' => false, 'forwarded' => false]),
+                'monthly' => $months->map(fn (CarbonImmutable $month, string $key) => [
+                    'monthly_outstanding' => $reviews->get($party->id)?->has($month->toDateString())
+                        ? $partyRows[$party->id]['monthly'][$key]['monthly_outstanding'] : null,
+                    'planned' => null,
+                    'actual' => null,
+                    'pending' => false,
+                    'approved' => false,
+                    'forwarded' => false,
+                ]),
             ];
         });
 
@@ -143,18 +148,8 @@ class PaymentCollectionPlanController extends Controller
         return $plan->getConnection()->getSchemaBuilder()->hasColumns($plan->getTable(), [
             'id', 'customer_id', 'collection_month', 'planned_amount', 'pending_amount',
             'submitted_by', 'next_reviewer_id', 'submission_version', 'approved_by', 'approved_at',
-            'created_at', 'updated_at',
+            'created_at', 'updated_at', 'outstanding_at_planning', 'previous_month_end_outstanding',
         ]);
-    }
-
-    private function defaultFinancialYearStart(CarbonImmutable $current): CarbonImmutable
-    {
-        // Party Performance selects the financial year containing the latest Tally sales or payment month.
-        $latest = max(TallySalesBill::max('invoice_date'), TallyPartywisePaymentCredit::max('payment_date'));
-        $reference = $latest ? CarbonImmutable::parse($latest) : $current;
-        $year = $reference->month < 4 ? $reference->year - 1 : $reference->year;
-
-        return $current->setDate($year, 4, 1);
     }
 
     public function store(Request $request)
@@ -174,13 +169,17 @@ class PaymentCollectionPlanController extends Controller
         $user = $request->user();
         $customerId = $validated['customer_id'];
         $month = $validated['collection_month'].'-01';
+        if ($month <= CarbonImmutable::now()->startOfMonth()->toDateString()) {
+            throw ValidationException::withMessages(['collection_month' => 'Collection targets can only be added or edited for upcoming months.']);
+        }
+
         $plans = PaymentCollectionPlan::query()->toBase();
 
         $plans->getConnection()->transaction(function () use ($plans, $customerId, $month, $user, $validated) {
             // Check ownership and lock the party on the same connection as the plan write.
             $customer = $plans->getConnection()->table('customers')
                 ->where('id', $customerId)->where('user_id', $user->id)
-                ->where('type', 'web')->where('is_active', 1)->lockForUpdate()->first(['id']);
+                ->where('type', 'web')->where('is_active', 1)->lockForUpdate()->first(['party_code', 'agro_name']);
             abort_unless($customer, 404);
 
             // A new owner can supersede a pending submission from the former owner.
@@ -193,10 +192,15 @@ class PaymentCollectionPlanController extends Controller
             ], ['customer_id', 'collection_month'], ['customer_id']);
 
             $target = (clone $plans)->where('customer_id', $customerId)->where('collection_month', $month);
+            $current = (clone $target)->first();
+            $outstanding = $current->outstanding_at_planning
+                ?? $this->latestOutstanding($plans->getConnection(), $customer->party_code, $customer->agro_name);
+
             $updated = $target->whereNull('approved_at')->where('planned_amount', 0)
                 ->where(fn ($pending) => $pending->whereNull('next_reviewer_id')->orWhere('submitted_by', '!=', $user->id))
                 ->update([
                     'pending_amount' => $validated['planned_amount'],
+                    'outstanding_at_planning' => $outstanding,
                     'submitted_by' => $user->id,
                     'next_reviewer_id' => null,
                     'submission_version' => (string) Str::uuid(),
@@ -204,8 +208,6 @@ class PaymentCollectionPlanController extends Controller
                 ]);
 
             if (! $updated) {
-                $current = $plans->getConnection()->table('payment_collection_plans')
-                    ->where('customer_id', $customerId)->where('collection_month', $month)->first();
                 $message = $current->approved_at !== null || $current->planned_amount > 0
                     ? 'This collection target is already approved and cannot be edited.'
                     : 'This target has moved to the next approver and cannot be edited.';
@@ -218,6 +220,16 @@ class PaymentCollectionPlanController extends Controller
         return redirect()->route('payment-collection-plan.index', $request->only([
             'from_month', 'to_month', 'employee', 'state', 'party', 'page',
         ]))->with('plan_status', 'Collection target submitted to '.$reviewer.' for approval.');
+    }
+
+    private function latestOutstanding(ConnectionInterface $connection, ?string $partyCode, ?string $partyName): ?string
+    {
+        $ledgers = $connection->table('tally_party_syncs');
+        $ledger = $partyCode ? (clone $ledgers)->where('master_id', $partyCode)->value('party_name') : null;
+        $ledger ??= $partyName ? $ledgers->where('party_name', $partyName)->value('party_name') : null;
+
+        return $ledger ? $connection->table('tally_opening_closings')->where('party_name', $ledger)
+            ->orderByDesc('date')->value('closing_balance_amt') : null;
     }
 
     public function review(Request $request, int $plan)
@@ -234,8 +246,13 @@ class PaymentCollectionPlanController extends Controller
 
         $reviewer = $request->user();
         $target = $this->reviewablePlans($reviewer)->where('payment_collection_plans.id', $plan);
-        $submission = (clone $target)->first(['submitted_by']);
+        $submission = (clone $target)->first(['submitted_by', 'collection_month', 'pending_amount']);
         abort_unless($submission, 404);
+
+        if ($submission->collection_month <= CarbonImmutable::now()->startOfMonth()->toDateString()
+            && (float) $validated['planned_amount'] !== (float) $submission->pending_amount) {
+            throw ValidationException::withMessages(['planned_amount' => 'Only the submitted amount can be approved for the current month or a past month.']);
+        }
 
         $next = $this->nextReviewer($reviewer, (int) $submission->submitted_by);
         $changes = $next
@@ -339,7 +356,7 @@ class PaymentCollectionPlanController extends Controller
         return Customer::query()->where('type', 'web')->where('is_active', 1);
     }
 
-    private function reportRows(Collection $customers, Collection $months, CarbonImmutable $from, CarbonImmutable $to, User $user): Collection
+    private function reportRows(Collection $customers, Collection $months, CarbonImmutable $from, CarbonImmutable $to, CarbonImmutable $current, User $user): Collection
     {
         if ($customers->isEmpty()) {
             return collect();
@@ -359,8 +376,11 @@ class PaymentCollectionPlanController extends Controller
                 ?? $byName->get($party->agro_name)?->party_name,
         ]);
         $ledgerNames = $ledgers->filter()->unique()->values();
-        $balances = TallyOpeningClosing::query()->whereIn('party_name', $ledgerNames)
-            ->orderByDesc('date')->get(['party_name', 'date', 'closing_balance_amt'])
+        $balanceRecords = TallyOpeningClosing::query()->whereIn('party_name', $ledgerNames)
+            ->orderByDesc('date')->get(['party_name', 'date', 'closing_balance_amt']);
+        $balances = $balanceRecords->unique('party_name')->keyBy('party_name');
+        $today = CarbonImmutable::today()->toDateString();
+        $liveBalances = $balanceRecords->filter(fn (TallyOpeningClosing $balance) => $balance->date->toDateString() <= $today)
             ->unique('party_name')->keyBy('party_name');
 
         $payments = TallyPartywisePaymentCredit::query()->whereIn('party_name', $ledgerNames)
@@ -370,7 +390,7 @@ class PaymentCollectionPlanController extends Controller
             ->groupBy('party_name')->map(fn (Collection $entries) => $entries->pluck('amount', 'month_key'));
 
         $plans = PaymentCollectionPlan::query()->whereIn('customer_id', $customers->modelKeys())
-            ->whereBetween('collection_month', [$from->toDateString(), $to->toDateString()])->get()
+            ->whereBetween('collection_month', [$from->toDateString(), $to->addMonth()->toDateString()])->get()
             ->groupBy('customer_id')->map(fn (Collection $entries) => $entries->keyBy('collection_month'));
 
         $nextReviewerIds = $plans->flatMap(fn (Collection $entries) => $entries->pluck('next_reviewer_id'))
@@ -381,9 +401,11 @@ class PaymentCollectionPlanController extends Controller
             ->whereHas('roles', fn (Builder $roles) => $roles->where('name', 'sub_admin'))
             ->orderBy('name')->get(['id', 'name', 'company_id'])->groupBy('company_id');
 
-        return $customers->map(function ($party) use ($ledgers, $balances, $payments, $plans, $months, $user, $nextReviewerNames, $subAdminsByCompany) {
+        return $customers->map(function ($party) use ($ledgers, $balances, $liveBalances, $payments, $plans, $months, $current, $user, $nextReviewerNames, $subAdminsByCompany) {
             $ledger = $ledgers[$party->id];
             $balance = $balances->get($ledger);
+            $liveOutstanding = $liveBalances->get($ledger)?->closing_balance_amt;
+            $partyPlans = $plans->get($party->id);
             $owner = $party->user;
             $manager = $owner?->reportingManager;
             $firstApprover = $manager && (int) $manager->id !== (int) $owner->id
@@ -401,14 +423,21 @@ class PaymentCollectionPlanController extends Controller
                 'state' => $party->state?->name ?? 'Unassigned',
                 'closing' => $balance?->closing_balance_amt,
                 'balance_date' => $balance?->date?->format('d M Y'),
-                'monthly' => $months->map(function (CarbonImmutable $month, string $key) use ($plans, $party, $user, $payments, $ledger, $nextReviewerNames, $firstApprover) {
-                    $plan = $plans->get($party->id)?->get($month->toDateString());
+                'monthly' => $months->map(function (CarbonImmutable $month, string $key) use ($partyPlans, $party, $user, $payments, $ledger, $nextReviewerNames, $firstApprover, $current, $liveOutstanding) {
+                    $plan = $partyPlans?->get($month->toDateString());
                     $approved = $plan?->approved_at !== null || ($plan?->planned_amount ?? 0) > 0;
                     $pending = ! $approved && $plan?->submitted_by !== null && (int) $plan->submitted_by === (int) $party->user_id;
                     $forwarded = $pending && $plan->next_reviewer_id !== null;
                     $ownSubmission = $pending && (int) $party->user_id === (int) $user->id;
 
                     return [
+                        'monthly_outstanding' => match (true) {
+                            $month->equalTo($current) => $liveOutstanding,
+                            // The next month's opening snapshot holds this month's final closing balance.
+                            $month->lessThan($current) => $partyPlans?->get($month->addMonth()->toDateString())?->previous_month_end_outstanding,
+                            default => null,
+                        },
+                        'outstanding' => $plan?->outstanding_at_planning,
                         'planned' => $plan?->planned_amount ?? '0.00',
                         'actual' => (float) ($payments->get($ledger)?->get($key) ?? 0),
                         'approved' => $approved,
@@ -427,10 +456,15 @@ class PaymentCollectionPlanController extends Controller
     {
         return [
             'closing' => $rows->sum('closing'),
-            'monthly' => $months->map(fn (CarbonImmutable $month, string $key) => [
-                'planned' => $rows->sum("monthly.$key.planned"),
-                'actual' => $rows->sum("monthly.$key.actual"),
-            ]),
+            'monthly' => $months->map(function (CarbonImmutable $month, string $key) use ($rows) {
+                $balances = $rows->pluck("monthly.$key.monthly_outstanding")->filter(fn ($amount) => $amount !== null);
+
+                return [
+                    'monthly_outstanding' => $balances->isEmpty() ? null : $balances->sum(),
+                    'planned' => $rows->sum("monthly.$key.planned"),
+                    'actual' => $rows->sum("monthly.$key.actual"),
+                ];
+            }),
         ];
     }
 }

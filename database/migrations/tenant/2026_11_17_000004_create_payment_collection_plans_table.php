@@ -1,5 +1,6 @@
 <?php
 
+use App\Services\PaymentCollectionMonthEnd;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -8,7 +9,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // Keep the latest migration name for databases that already added the reviewer field.
+        // Provision the full plan schema for a fresh install.
         if (! Schema::hasTable('payment_collection_plans')) {
             Schema::create('payment_collection_plans', function (Blueprint $table) {
                 $table->id();
@@ -20,7 +21,11 @@ return new class extends Migration
 
                 $this->addApprovalColumns($table);
                 $table->unsignedBigInteger('next_reviewer_id')->nullable()->index();
+                $table->decimal('outstanding_at_planning', 15, 2)->nullable();
+                $table->decimal('previous_month_end_outstanding', 15, 2)->nullable();
             });
+
+            $this->captureAvailableMonthEnds();
 
             return;
         }
@@ -37,6 +42,14 @@ return new class extends Migration
                 $table->unsignedBigInteger('next_reviewer_id')->nullable()->index();
             });
         }
+
+        foreach (['outstanding_at_planning', 'previous_month_end_outstanding'] as $column) {
+            if (! Schema::hasColumn('payment_collection_plans', $column)) {
+                Schema::table('payment_collection_plans', fn (Blueprint $table) => $table->decimal($column, 15, 2)->nullable());
+            }
+        }
+
+        $this->captureAvailableMonthEnds();
     }
 
     public function down(): void
@@ -46,11 +59,23 @@ return new class extends Migration
             ? Schema::getConnection()->table($history)->whereIn('migration', [
                 '2026_11_16_000001_create_payment_collection_plans_table',
                 '2026_11_17_000001_add_approval_to_payment_collection_plans_table',
+                '2026_11_17_000002_add_next_reviewer_to_payment_collection_plans_table',
+                '2026_11_17_000003_create_payment_collection_plans_table',
             ])->pluck('migration')
             : collect();
 
         if ($earlier->isNotEmpty()) {
             Schema::table('payment_collection_plans', function (Blueprint $table) use ($earlier) {
+                $table->dropColumn('previous_month_end_outstanding');
+                if ($earlier->contains('2026_11_17_000003_create_payment_collection_plans_table')) {
+                    return;
+                }
+
+                $table->dropColumn('outstanding_at_planning');
+                if ($earlier->contains('2026_11_17_000002_add_next_reviewer_to_payment_collection_plans_table')) {
+                    return;
+                }
+
                 $table->dropIndex(['next_reviewer_id']);
                 $table->dropColumn('next_reviewer_id');
 
@@ -64,6 +89,21 @@ return new class extends Migration
         }
 
         Schema::dropIfExists('payment_collection_plans');
+    }
+
+    private function captureAvailableMonthEnds(): void
+    {
+        if (! Schema::hasTable('tally_opening_closings') || ! Schema::hasTable('tally_party_syncs') || ! Schema::hasTable('customers')) {
+            return;
+        }
+
+        $connection = Schema::getConnection();
+        $connection->table('tally_opening_closings')->whereRaw('date = LAST_DAY(date)')
+            ->chunkById(250, function ($balances) use ($connection) {
+                foreach ($balances as $balance) {
+                    PaymentCollectionMonthEnd::capture($connection, $balance->date, $balance->party_name, $balance->closing_balance_amt);
+                }
+            });
     }
 
     private function addApprovalColumns(Blueprint $table): void
