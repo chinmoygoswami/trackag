@@ -16,6 +16,7 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class PaymentCollectionPlanController extends Controller
 {
@@ -246,25 +247,78 @@ class PaymentCollectionPlanController extends Controller
             'decision' => 'required|in:approve',
         ]);
 
-        $reviewer = $request->user();
+        $next = $this->approvePendingTarget($request->user(), $plan, $validated['submission_version'], $validated['planned_amount']);
+
+        return back()->with('plan_status', $next
+            ? 'Collection target forwarded to '.$next->name.' for approval.'
+            : 'Collection target approved.');
+    }
+
+    public function bulkReview(Request $request)
+    {
+        if (! $this->planStorageAvailable()) {
+            return redirect()->route('payment-collection-plan.index');
+        }
+
+        $validated = $request->validate([
+            'plans' => 'required|array|min:1|max:360',
+            'plans.*' => 'required|uuid',
+        ], ['plans.required' => 'Select at least one pending target.']);
+        validator(['ids' => array_keys($validated['plans'])], ['ids.*' => 'required|integer|min:1'])->validate();
+
+        $approved = 0;
+        $forwarded = 0;
+        $skipped = 0;
+        $warning = null;
+        foreach ($validated['plans'] as $id => $version) {
+            try {
+                if ($this->approvePendingTarget($request->user(), (int) $id, $version)) {
+                    $forwarded++;
+                } else {
+                    $approved++;
+                }
+            } catch (NotFoundHttpException) {
+                $skipped++;
+            } catch (ValidationException $exception) {
+                $skipped++;
+                $warning ??= $exception->getMessage();
+            }
+        }
+
+        $response = back();
+        if ($approved || $forwarded) {
+            $response->with('plan_status', "{$approved} approved · {$forwarded} forwarded.");
+        }
+
+        if ($skipped) {
+            $response->with('plan_warning', "{$skipped} could not be approved. ".($warning ?? 'They are no longer awaiting your approval.'));
+        }
+
+        return $response;
+    }
+
+    private function approvePendingTarget(User $reviewer, int $plan, string $version, ?string $amount = null): ?User
+    {
         $target = $this->reviewablePlans($reviewer)->where('payment_collection_plans.id', $plan);
         $submission = (clone $target)->first(['submitted_by', 'collection_month', 'pending_amount']);
         abort_unless($submission, 404);
 
+        $amount ??= $submission->pending_amount;
+
         if ($submission->collection_month <= CarbonImmutable::now()->startOfMonth()->toDateString()
-            && (float) $validated['planned_amount'] !== (float) $submission->pending_amount) {
+            && (float) $amount !== (float) $submission->pending_amount) {
             throw ValidationException::withMessages(['planned_amount' => 'Only the submitted amount can be approved for the current month or a past month.']);
         }
 
         $next = $this->nextReviewer($reviewer, (int) $submission->submitted_by);
         $changes = $next
             ? [
-                'pending_amount' => $validated['planned_amount'],
+                'pending_amount' => $amount,
                 'next_reviewer_id' => $next->id,
                 'submission_version' => (string) Str::uuid(),
             ]
             : [
-                'planned_amount' => $validated['planned_amount'],
+                'planned_amount' => $amount,
                 'pending_amount' => null,
                 'submitted_by' => null,
                 'next_reviewer_id' => null,
@@ -273,15 +327,13 @@ class PaymentCollectionPlanController extends Controller
                 'approved_at' => now(),
             ];
 
-        $updated = $target->where('submission_version', $validated['submission_version'])->toBase()
+        $updated = $target->where('submission_version', $version)->toBase()
             ->update([...$changes, 'updated_at' => now()]);
         if (! $updated) {
             throw ValidationException::withMessages(['planned_amount' => 'This submission has changed. Reload the page and review the latest amount.']);
         }
 
-        return back()->with('plan_status', $next
-            ? 'Collection target forwarded to '.$next->name.' for approval.'
-            : 'Collection target approved.');
+        return $next;
     }
 
     private function nextReviewer(User $reviewer, int $submitterId): ?User

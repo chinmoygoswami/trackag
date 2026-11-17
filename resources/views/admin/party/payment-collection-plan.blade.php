@@ -63,6 +63,7 @@
     $achievement = fn ($values) => $values['planned'] > 0 ? $values['actual'] / $values['planned'] * 100 : null;
     $percent = fn ($value) => $value === null ? '—' : number_format($value, 1) . '%';
     $monthTone = fn ($month) => $month->greaterThan($current) ? 'warning' : ($month->equalTo($current) ? 'success' : 'primary');
+    $canBulkReview = $view === 'party' && $parties->getCollection()->contains(fn ($row) => $reviews->has($row['id']));
     $views = [
         'party' => ['Party Detail', 'bi-people'],
         'employee' => ['Employee Summary', 'bi-person-badge'],
@@ -97,6 +98,9 @@
         <div class="container-fluid px-2 px-md-3">
             @if (session('plan_status'))
                 <div class="alert alert-success p-2 mb-2" role="status">{{ session('plan_status') }}</div>
+            @endif
+            @if (session('plan_warning'))
+                <div class="alert alert-warning p-2 mb-2" role="status">{{ session('plan_warning') }}</div>
             @endif
             @if ($errors->any())
                 <div class="alert alert-danger p-2 mb-2" role="alert">{{ $errors->first() }}</div>
@@ -192,7 +196,21 @@
                         </a>
                     @endforeach
                 </nav>
-                <button class="btn btn-sm btn-outline-secondary" type="button" id="printCollectionPlan"><i class="bi bi-printer me-1"></i>Print</button>
+                <div class="d-flex flex-wrap align-items-center gap-2">
+                    @if ($canBulkReview)
+                        <form id="bulkCollectionPlanReview" method="POST" action="{{ route('payment-collection-plan.bulk-review') }}" class="d-flex flex-wrap align-items-center gap-2">
+                            @csrf
+                            <label class="form-check mb-0">
+                                <input class="form-check-input" type="checkbox" id="selectCollectionPlanReviews">
+                                Select all on page
+                            </label>
+                            <button class="btn btn-sm btn-success" type="submit" id="approveSelectedCollectionPlans" disabled>
+                                Approve selected <span id="selectedCollectionPlanCount">(0)</span>
+                            </button>
+                        </form>
+                    @endif
+                    <button class="btn btn-sm btn-outline-secondary" type="button" id="printCollectionPlan"><i class="bi bi-printer me-1"></i>Print</button>
+                </div>
             </div>
 
             <section class="card shadow-sm" aria-labelledby="collection-report-title">
@@ -260,6 +278,10 @@
                                             <td class="month-start text-end metric">{{ $money($values['monthly_outstanding']) }}</td>
                                             <td class="text-end metric">
                                                 @if ($review)
+                                                    <input type="checkbox" class="form-check-input align-middle me-1 d-print-none"
+                                                        form="bulkCollectionPlanReview" name="plans[{{ $review->id }}]" value="{{ $review->submission_version }}"
+                                                        data-collection-plan-review
+                                                        aria-label="Select plan for {{ $row['name'] }} in {{ $months[$key]->format('F Y') }}">
                                                     <button type="button" class="btn btn-sm btn-outline-warning plan-button"
                                                         data-bs-toggle="modal" data-bs-target="#collectionPlanReview"
                                                         data-action="{{ route('payment-collection-plan.review', $review->id) }}"
@@ -404,6 +426,29 @@
 @push('scripts')
 <script>
     document.getElementById('printCollectionPlan').addEventListener('click', () => window.print());
+
+    const bulkReview = document.getElementById('bulkCollectionPlanReview');
+    if (bulkReview) {
+        const selectAll = document.getElementById('selectCollectionPlanReviews');
+        const approve = document.getElementById('approveSelectedCollectionPlans');
+        const count = document.getElementById('selectedCollectionPlanCount');
+        const checkboxes = Array.from(document.querySelectorAll('[data-collection-plan-review]'));
+
+        const updateSelection = () => {
+            const selected = checkboxes.filter(checkbox => checkbox.checked).length;
+            selectAll.checked = selected === checkboxes.length;
+            selectAll.indeterminate = selected > 0 && selected < checkboxes.length;
+            approve.disabled = selected === 0;
+            count.textContent = '(' + selected + ')';
+        };
+
+        selectAll.addEventListener('change', () => {
+            checkboxes.forEach(checkbox => { checkbox.checked = selectAll.checked; });
+            updateSelection();
+        });
+        checkboxes.forEach(checkbox => checkbox.addEventListener('change', updateSelection));
+        updateSelection();
+    }
 
     const planEditor = document.getElementById('collectionPlanEditor');
     if (planEditor) {

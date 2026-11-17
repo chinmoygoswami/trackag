@@ -108,6 +108,7 @@ Route::prefix('admin')->group(function () {
             ->controller(PaymentCollectionPlanController::class)->group(function () {
                 Route::get('payment-collection-plan', 'index')->name('payment-collection-plan.index');
                 Route::post('payment-collection-plan', 'store')->name('payment-collection-plan.store');
+                Route::post('payment-collection-plan/bulk-review', 'bulkReview')->name('payment-collection-plan.bulk-review');
                 Route::patch('payment-collection-plan/{plan}/review', 'review')->whereNumber('plan')->name('payment-collection-plan.review');
             });
         Route::get('order-report', [OrderController::class, 'report'])->name('order.report');
