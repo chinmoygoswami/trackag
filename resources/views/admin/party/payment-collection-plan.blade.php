@@ -14,10 +14,33 @@
     .collection-plan .report-table td { padding: .35rem .5rem; }
     .collection-plan .party-column { min-width: 10rem; max-width: 14rem; white-space: normal; }
     @media screen {
-        .collection-plan .report-table .party-column {
+        .collection-plan .report-table .party-column,
+        .collection-plan .party-detail-table .employee-state-column,
+        .collection-plan .party-detail-table .party-detail-total {
             position: sticky;
             inset-inline-start: 0;
             z-index: 1;
+        }
+
+        .collection-plan .party-detail-table {
+            --party-column-width: clamp(7.5rem, 18vw, 12rem);
+            --employee-state-width: clamp(7rem, 16vw, 10rem);
+        }
+
+        .collection-plan .party-detail-table .party-column {
+            width: var(--party-column-width);
+            min-width: var(--party-column-width);
+            max-width: var(--party-column-width);
+            overflow-wrap: anywhere;
+        }
+
+        .collection-plan .party-detail-table .employee-state-column {
+            inset-inline-start: var(--party-column-width);
+            width: var(--employee-state-width);
+            min-width: var(--employee-state-width);
+            max-width: var(--employee-state-width);
+            white-space: normal;
+            overflow-wrap: anywhere;
         }
     }
     .collection-plan .metric { font-variant-numeric: tabular-nums; }
@@ -177,7 +200,7 @@
                     <h5 class="mb-0 text-primary fw-semibold" id="collection-report-title">{{ $views[$view][0] }}</h5>
                 </div>
                 <div class="table-responsive" tabindex="0" aria-label="{{ $views[$view][0] }} table">
-                    <table class="report-table table table-sm table-bordered table-hover align-middle text-nowrap mb-0">
+                    <table class="report-table table table-sm table-bordered table-hover align-middle text-nowrap mb-0 {{ $view === 'party' ? 'party-detail-table' : '' }}">
                         @if ($view === 'month')
                             <thead class="table-light">
                                 <tr>
@@ -205,7 +228,7 @@
                                 <tr>
                                     <th rowspan="2" scope="col" class="party-column">{{ ucfirst($view) }}</th>
                                     @if ($view === 'party')
-                                        <th rowspan="2" scope="col">Employee / State</th>
+                                        <th rowspan="2" scope="col" class="employee-state-column">Employee / State</th>
                                     @endif
                                     @foreach ($months as $month)
                                         <th scope="colgroup" colspan="4" class="month-start text-center bg-{{ $monthTone($month) }}-subtle">{{ $month->format('M Y') }}</th>
@@ -230,7 +253,7 @@
                                             @endif
                                         </th>
                                         @if ($view === 'party')
-                                            <td>{{ $row['employee'] }}<div class="small text-body-secondary">{{ $row['state'] }}</div></td>
+                                            <td class="employee-state-column">{{ $row['employee'] }}<div class="small text-body-secondary">{{ $row['state'] }}</div></td>
                                         @endif
                                         @foreach ($row['monthly'] as $key => $values)
                                             @php($review = $view === 'party' ? $reviews->get($row['id'])?->get($months[$key]->toDateString()) : null)
@@ -287,7 +310,7 @@
                             @if ($reportPartyCount > 0)
                                 <tfoot class="table-success fw-semibold">
                                     <tr>
-                                        <th scope="row" colspan="{{ $view === 'party' ? 2 : 1 }}">Total for all filtered parties</th>
+                                        <th scope="row" colspan="{{ $view === 'party' ? 2 : 1 }}" class="{{ $view === 'party' ? 'party-detail-total' : '' }}">Total for all filtered parties</th>
                                         @foreach ($totals['monthly'] as $values)
                                             <td class="month-start text-end metric">{{ $money($values['monthly_outstanding']) }}</td>
                                             <td class="text-end metric">{{ $money($values['planned']) }}</td>
